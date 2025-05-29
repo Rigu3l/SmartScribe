@@ -1,5 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-900 text-white">
+  <div class="min-h-screen flex flex-col bg-gray-900 text-white" :style="{ fontSize: settings.fontSize + 'px' }">
     <!-- Header (same as other pages) -->
     <header class="p-4 bg-gray-800 flex justify-between items-center">
       <div class="text-xl font-bold">SmartScribe</div>
@@ -233,10 +233,15 @@
                   <p class="font-medium">Weekly Summary</p>
                   <p class="text-sm text-gray-400">Receive a weekly summary of your study progress</p>
                 </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" v-model="settings.notifications.weeklySummary" class="sr-only peer">
-                  <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <button
+                  @click="settings.notifications.weeklySummary = !settings.notifications.weeklySummary"
+                  :class="settings.notifications.weeklySummary
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-600 text-white'"
+                  class="px-4 py-2 rounded transition"
+                  >
+                  {{ settings.notifications.weeklySummary ? 'ON' : 'OFF' }}
+                </button>
               </div>
               
               <div class="flex items-center justify-between">
@@ -244,10 +249,15 @@
                   <p class="font-medium">Study Reminders</p>
                   <p class="text-sm text-gray-400">Receive reminders for your study goals</p>
                 </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" v-model="settings.notifications.studyReminders" class="sr-only peer">
-                  <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <button
+                  @click="settings.notifications.studyReminders = !settings.notifications.studyReminders"
+                  :class="settings.notifications.studyReminders
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-600 text-white'"
+                  class="px-4 py-2 rounded transition"
+                  >
+                  {{ settings.notifications.studyReminders ? 'ON' : 'OFF' }}
+                </button>
               </div>
               
               <div class="flex items-center justify-between">
@@ -255,10 +265,15 @@
                   <p class="font-medium">New Features</p>
                   <p class="text-sm text-gray-400">Receive updates about new features and improvements</p>
                 </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" v-model="settings.notifications.newFeatures" class="sr-only peer">
-                  <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <button
+                  @click="settings.notifications.newFeatures = !settings.notifications.newFeatures"
+                  :class="settings.notifications.newFeatures
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-600 text-white'"
+                  class="px-4 py-2 rounded transition"
+                  >
+                  {{ settings.notifications.newFeatures ? 'ON' : 'OFF' }}
+                </button>
               </div>
             </div>
           </div>
@@ -271,10 +286,15 @@
                   <p class="font-medium">Quiz Results</p>
                   <p class="text-sm text-gray-400">Show notifications for quiz results</p>
                 </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" v-model="settings.notifications.quizResults" class="sr-only peer">
-                  <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <button
+                  @click="settings.notifications.quizResults = !settings.notifications.quizResults"
+                  :class="settings.notifications.quizResults
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-600 text-white'"
+                  class="px-4 py-2 rounded transition"
+                  >
+                  {{ settings.notifications.quizResults ? 'ON' : 'OFF' }}
+                </button>
               </div>
               
               <div class="flex items-center justify-between">
@@ -282,10 +302,15 @@
                   <p class="font-medium">Goal Progress</p>
                   <p class="text-sm text-gray-400">Show notifications for goal progress updates</p>
                 </div>
-                <label class="relative inline-flex items-center cursor-pointer">
-                  <input type="checkbox" v-model="settings.notifications.goalProgress" class="sr-only peer">
-                  <div class="w-11 h-6 bg-gray-700 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-gray-300 after:border after:rounded-full after:h-5 after:w-5 after:transition-all peer-checked:bg-blue-600"></div>
-                </label>
+                <button
+                  @click="settings.notifications.goalProgress = !settings.notifications.goalProgress"
+                  :class="settings.notifications.goalProgress
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-600 text-white'"
+                  class="px-4 py-2 rounded transition"
+                  >
+                  {{ settings.notifications.goalProgress ? 'ON' : 'OFF' }}
+                </button>
               </div>
             </div>
           </div>
@@ -362,7 +387,8 @@
 </template>
 
 <script>
-import { ref } from 'vue';
+//import { theme } from 'tailwind.config';
+import { ref, reactive, watch } from 'vue';
 // import { useStore } from 'vuex'; //
 
 export default {
@@ -382,22 +408,38 @@ export default {
       new: '',
       confirm: ''
     });
+
     
-    const settings = ref({
-      theme: 'dark',
+    
+    const settings = reactive({
       fontSize: 16,
+      theme: 'dark',
       notifications: {
-        weeklySummary: true,
-        studyReminders: true,
-        newFeatures: true,
-        quizResults: true,
-        goalProgress: true
+        weeklySummary: false,
+        studyReminders: false,
+        newFeatures:  false,
+        quizResults: false,
+        goalProgress: false
       },
       api: {
         openaiKey: '',
         openaiModel: 'gpt-3.5-turbo',
         ocrEngine: 'tesseract',
         ocrKey: ''
+      }
+    });
+
+    // Watch for theme changes
+    watch(() => settings.theme, (newTheme) => {
+      const root = document.documentElement;
+
+      if (newTheme === 'dark') {
+        root.classList.add('dark');
+      } else if (newTheme === 'light') {
+        root.classList.remove('dark');
+      } else if (newTheme === 'system') {
+        const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
+        root.classList.toggle('dark', prefersDark);
       }
     });
     

@@ -56,6 +56,14 @@
         </nav>
       </aside>
 
+<div
+  v-if="showSaveConfirmation"
+  class="fixed top-5 right-5 bg-green-600 text-white px-4 py-2 rounded-lg shadow-lg z-50 transition-opacity duration-300"
+>
+  ✅ Summary saved successfully!
+</div>
+
+
       <!-- Main Dashboard -->
       <main class="flex-grow p-6">
         <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
@@ -74,8 +82,21 @@
               </button>
               <label class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition cursor-pointer">
                 <font-awesome-icon :icon="['fas', 'upload']" class="mr-2" /> Upload File
-                <input type="file" class="hidden" @change="handleFileUpload" accept="image/*" />
+                  <input type="file" class="hidden" @change="handleFileUpload" accept="image/*" />
               </label>
+            </div>
+
+            <!-- Add this below the buttons -->
+            <div v-if="showCamera" class="mt-6">
+              <video ref="video" autoplay class="w-full rounded-md border border-gray-600"></video>
+              <div class="flex justify-center space-x-4 mt-4">
+                <button @click="capturePhoto" class="px-4 py-2 bg-green-600 rounded-md hover:bg-green-700 transition">
+                  <font-awesome-icon :icon="['fas', 'camera-retro']" class="mr-2" /> Capture
+                </button>
+                <button @click="closeCamera" class="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 transition">
+                  <font-awesome-icon :icon="['fas', 'times']" class="mr-2" /> Cancel
+                </button>
+              </div>
             </div>
           </div>
         </div>
@@ -87,7 +108,7 @@
             <router-link to="/notes" class="text-blue-400 hover:underline">View All</router-link>
           </div>
           
-          <div v-if="recentNotes.length > 0">
+          <div v-if="recentNotes> 0">
             <div v-for="(note, index) in recentNotes" :key="index" class="bg-gray-700 rounded-lg p-4 mb-4">
               <div class="flex justify-between items-start">
                 <div>
@@ -123,14 +144,20 @@
 
 <script>
 import { ref, onMounted } from 'vue';
-import { useStore } from 'vuex';
+//import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import Tesseract from 'tesseract.js';
+import { nextTick } from 'vue';
 
 export default {
   name: 'DashboardView',
   setup() {
-    const store = useStore();
+    //const store = useStore();
     const router = useRouter();
+    const showCamera = ref(false);
+    const video = ref(null);
+    const ocrText = ref('');
+    const showSaveConfirmation = ref(false);
     
     const showUserMenu = ref(false);
     const user = ref({
@@ -142,14 +169,14 @@ export default {
     onMounted(async () => {
       try {
         // Get user info
-        const userInfo = store.getters['auth/getUser'];
-        if (userInfo) {
-          user.value = userInfo;
-        }
+        //const userInfo = store.getters['auth/getUser'];
+        //if (userInfo) {
+        //  user.value = userInfo;
+        //}
         
         // Get recent notes
-        await store.dispatch('notes/fetchNotes');
-        recentNotes.value = store.getters['notes/getRecentNotes'];
+        //await store.dispatch('notes/fetchNotes');
+        //recentNotes.value = store.getters['notes/getRecentNotes'];
       } catch (error) {
         console.error('Error loading dashboard data:', error);
       }
@@ -161,29 +188,129 @@ export default {
 
     const logout = async () => {
       try {
-        await store.dispatch('auth/logout');
+        //await store.dispatch('auth/logout');
         router.push('/login');
       } catch (error) {
         console.error('Error logging out:', error);
       }
     };
 
-    const openCamera = () => {
-      console.log('Opening camera...');
-      // In a real app, you would implement camera access here
+    const openCamera = async () => {
+  showCamera.value = true;
+
+  await nextTick(); // Wait for the video element to exist
+
+  try {
+    const stream = await navigator.mediaDevices.getUserMedia({ video: true });
+    if (video.value) {
+      video.value.srcObject = stream;
+    } else {
+      console.error('Video element not found');
+    }
+  } catch (err) {
+    console.error('Camera access denied or error:', err);
+  }
+};
+
+    const closeCamera = () => {
+      showCamera.value = false;
+      const stream = video.value.srcObject;
+      if (stream) {
+        stream.getTracks().forEach(track => track.stop());
+      }
+      video.value.srcObject = null;
+    };
+
+    const capturePhoto = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = video.value.videoWidth;
+      canvas.height = video.value.videoHeight;
+      canvas.getContext('2d').drawImage(video.value, 0, 0);
+
+      canvas.toBlob(async (blob) => {
+        try {
+          const { data: { text } } = await Tesseract.recognize(blob, 'eng', {
+            logger: m => console.log(m)
+          });
+
+          ocrText.value = text;
+          closeCamera();
+          // Optionally navigat or store the text
+          // router.push({ name: 'NoteEditorView', query: {rawText: encodedURIComponent(text) } });
+
+          await fetch('http://localhost:3000/api/notes/uploadProcessedNote', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+              content: text,
+              user_id: 1
+            })
+          });
+
+          showConfirmation();
+
+        }catch (error) {
+          console.error('OCR error:', error);
+        }
+      }, 'image/jpeg');
     };
 
     const handleFileUpload = async (event) => {
       const file = event.target.files[0];
-      if (file) {
-        try {
-          await store.dispatch('notes/processImage', file);
-          router.push('/notes/edit');
-        } catch (error) {
-          console.error('Error processing image:', error);
-        }
-      }
-    };
+  if (!file) {
+    console.warn('No file selected');
+    return;
+  } 
+
+  console.log('Uploading', file.name);
+
+  try {
+    const { data: { text } } = await Tesseract.recognize(file, 'eng', {
+      logger: m => console.log(m)
+    });
+
+    ocrText.value = text;
+    console.log('OCR Result:', text);
+
+    const response = await fetch('http://localhost:3000/api/notes/uploadProcessedNote', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify({
+        title: 'Scanned Note',
+        content: text,
+        user_id: 1,
+        image_path: null,
+        keywords: ''
+      })
+    });
+
+    const result = await response.json();
+    if (result.success) {
+      showSaveConfirmation.value = true;
+
+      setTimeout(() => {
+        showSaveConfirmation.value = false;
+      }, 3000);
+    } else {
+      console.error('Server error:', result.error);
+    }
+
+  } catch (error) {
+    console.error('Error processing image:', error);
+  }
+};
+
+const showConfirmation = () => {
+  showSaveConfirmation.value = true;
+  setTimeout(() => {
+    showSaveConfirmation.value = false;
+  }, 3000);
+};
+
 
     return {
       showUserMenu,
@@ -192,7 +319,14 @@ export default {
       toggleUserMenu,
       logout,
       openCamera,
-      handleFileUpload
+      handleFileUpload,
+      showCamera,
+      video,
+      closeCamera,
+      capturePhoto,
+      ocrText,
+      showSaveConfirmation,
+      showConfirmation
     };
   }
 }

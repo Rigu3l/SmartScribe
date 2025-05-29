@@ -98,13 +98,14 @@
 
 <script>
 import { ref } from 'vue';
-import { useStore } from 'vuex';
+// import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 
 export default {
   name: 'LoginView',
   setup() {
-    const store = useStore();
+    // const store = useStore();
     const router = useRouter();
     
     const email = ref('');
@@ -119,12 +120,20 @@ export default {
         isLoading.value = true;
         errorMessage.value = '';
         
-        await store.dispatch('auth/login', {
+        // await store.dispatch('auth/login', {
+        //   email: email.value,
+        //   password: password.value
+        // });
+        let data = await axios.post('http://localhost:3000/api/auth/login', {
           email: email.value,
           password: password.value
         });
+
+        if (data) {
+          localStorage.setItem("user", JSON.stringify(data.data.user));
+          router.push('/dashboard');
+        }
         
-        router.push('/dashboard');
       } catch (error) {
         errorMessage.value = error.message || 'Failed to login. Please try again.';
       } finally {
