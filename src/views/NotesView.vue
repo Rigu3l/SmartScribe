@@ -51,9 +51,9 @@
           <h1 class="text-2xl font-bold">My Notes</h1>
           <div class="flex space-x-3">
             <div class="relative">
-              <input 
-                type="text" 
-                placeholder="Search notes..." 
+              <input
+                type="text"
+                placeholder="Search notes..."
                 class="pl-10 pr-4 py-2 bg-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
               />
               <font-awesome-icon :icon="['fas', 'search']" class="absolute left-3 top-3 text-gray-400" />
@@ -63,43 +63,43 @@
             </button>
           </div>
         </div>
-        
+
         <!-- Notes Filter -->
         <div class="flex mb-6 space-x-2">
-          <button 
-            @click="activeFilter = 'all'" 
+          <button
+            @click="activeFilter = 'all'"
             :class="[
-              'px-3 py-1 rounded-md', 
+              'px-3 py-1 rounded-md',
               activeFilter === 'all' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
             ]"
           >
             All Notes
           </button>
-          <button 
-            @click="activeFilter = 'recent'" 
+          <button
+            @click="activeFilter = 'recent'"
             :class="[
-              'px-3 py-1 rounded-md', 
+              'px-3 py-1 rounded-md',
               activeFilter === 'recent' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
             ]"
           >
             Recent
           </button>
-          <button 
-            @click="activeFilter = 'favorites'" 
+          <button
+            @click="activeFilter = 'favorites'"
             :class="[
-              'px-3 py-1 rounded-md', 
+              'px-3 py-1 rounded-md',
               activeFilter === 'favorites' ? 'bg-blue-600' : 'bg-gray-700 hover:bg-gray-600'
             ]"
           >
             Favorites
           </button>
         </div>
-        
+
         <!-- Notes Grid -->
         <div v-if="notes.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-          <div 
-            v-for="(note, index) in filteredNotes" 
-            :key="index" 
+          <div
+            v-for="(note, index) in filteredNotes"
+            :key="index"
             class="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer"
             @click="viewNote(note.id)"
           >
@@ -116,11 +116,11 @@
                 </div>
               </div>
               <p class="text-sm text-gray-400 mb-2">{{ note.date }}</p>
-              <p class="text-sm text-gray-300 line-clamp-3 mb-3">{{ note.summary }}</p>
+              <p class="text-sm text-gray-300 line-clamp-3 mb-3">{{ note.original_text }}</p>
               <div class="flex flex-wrap gap-2">
-                <span 
-                  v-for="(tag, tagIndex) in note.tags" 
-                  :key="tagIndex" 
+                <span
+                  v-for="(tag, tagIndex) in note.tags"
+                  :key="tagIndex"
                   class="px-2 py-1 bg-gray-700 rounded-full text-xs"
                 >
                   {{ tag }}
@@ -129,7 +129,7 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Empty State -->
         <div v-else class="bg-gray-800 rounded-lg p-8 text-center">
           <div class="mb-4">
@@ -161,13 +161,13 @@ export default {
   setup() {
     // const store = useStore(); //
     const router = useRouter();
-    
+
     const notes = ref([
       {
         id: 1,
         title: 'Biology Notes - Chapter 5',
         date: 'May 14, 2025',
-        summary: 'Cells are the fundamental units of life, discovered by Robert Hooke in 1665. They are microscopic structures containing cytoplasm, proteins, and nucleic acids enclosed within a membrane.',
+        original_text: 'Cells are the fundamental units of life, discovered by Robert Hooke in 1665. They are microscopic structures containing cytoplasm, proteins, and nucleic acids enclosed within a membrane.',
         tags: ['Biology', 'Cell', 'Chapter 5'],
         isFavorite: true
       },
@@ -175,7 +175,7 @@ export default {
         id: 2,
         title: 'History - World War II',
         date: 'May 10, 2025',
-        summary: 'World War II was a global conflict that lasted from 1939 to 1945, involving many nations including all great powers, organized into two opposing alliances: the Allies and the Axis.',
+        original_text: 'World War II was a global conflict that lasted from 1939 to 1945, involving many nations including all great powers, organized into two opposing alliances: the Allies and the Axis.',
         tags: ['History', 'WWII'],
         isFavorite: false
       },
@@ -183,14 +183,14 @@ export default {
         id: 3,
         title: 'Mathematics - Calculus',
         date: 'May 5, 2025',
-        summary: 'Calculus is the mathematical study of continuous change. The two major branches of calculus are differential calculus and integral calculus.',
+        original_text: 'Calculus is the mathematical study of continuous change. The two major branches of calculus are differential calculus and integral calculus.',
         tags: ['Math', 'Calculus'],
         isFavorite: false
       }
     ]);
-    
+
     const activeFilter = ref('all');
-    
+
     const filteredNotes = computed(() => {
       if (activeFilter.value === 'all') {
         return notes.value;
@@ -207,6 +207,7 @@ export default {
         // In a real app, we would fetch notes from the store
         // await store.dispatch('notes/fetchNotes');
         // notes.value = store.getters['notes/getNotes'];
+        getNotes();
       } catch (error) {
         console.error('Error loading notes:', error);
       }
@@ -237,6 +238,15 @@ export default {
     const createNewNote = () => {
       router.push('/notes/edit');
     };
+
+    const getNotes = async () => {
+      const response = await fetch('http://localhost:3000/api/notes');
+
+      if (response.ok) {
+        let { data } = await response.json();
+        notes.value = data;
+      }
+    }
 
     return {
       notes,
