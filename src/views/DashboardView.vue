@@ -229,24 +229,24 @@ export default {
 
       canvas.toBlob(async (blob) => {
         try {
+          const formData = new FormData();
+          formData.append('image', blob);
+
           const { data: { text } } = await Tesseract.recognize(blob, 'eng', {
             logger: m => console.log(m)
           });
 
           ocrText.value = text;
+          console.log("text", text);
+          formData.append("text", text);
+          formData.append("title", "Temporary Title");
           closeCamera();
           // Optionally navigat or store the text
           // router.push({ name: 'NoteEditorView', query: {rawText: encodedURIComponent(text) } });
 
           await fetch('http://localhost:3000/api/notes/create', {
             method: 'POST',
-            headers: {
-              'Content-Type': 'application/json'
-            },
-            body: JSON.stringify({
-              content: text,
-              user_id: 1
-            })
+            body: formData
           });
 
           showConfirmation();
@@ -288,7 +288,7 @@ export default {
     ocrText.value = text;
     console.log('OCR Result:', text);
     formData.append("text", text);
-    formData.append("title", "Temp`orary Title");
+    formData.append("title", "Temporary Title");
 
     const response = await fetch('http://localhost:3000/api/notes/create', {
       method: 'POST',
