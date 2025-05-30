@@ -1,0 +1,7 @@
+{
+    "name": "marca/smartscribe-newnew",
+    "description": "An AI Study Helper that uses OCR and GPT for note processing and summarization",
+    "require": {
+        "thiagoalessio/tesseract_ocr": "^2.13"
+    }
+}

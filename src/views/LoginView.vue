@@ -13,8 +13,8 @@
     <main class="flex-grow flex items-center justify-center p-4">
       <div class="bg-gray-800 rounded-lg p-8 w-full max-w-md">
         <div class="flex justify-center mb-4">
-          <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-            <font-awesome-icon :icon="['fas', 'book']" class="text-gray-900 text-2xl" />
+          <div class="w-24 h-24 bg-white rounded-full overflow-hidden flex items-center justify-center shadow-md">
+            <img :src="logo" alt="App Logo" class="w-full h-full object-cover" />
           </div>
         </div>
         
@@ -45,7 +45,7 @@
               @click="passwordVisible = !passwordVisible"
               class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
             >
-              <font-awesome-icon :icon="['fas', passwordVisible ? 'eye-slash' : 'eye']" />
+              <font-awesome-icon :icon="['fas', passwordVisible ? 'eye' : 'eye-slash']" />
             </button>
           </div>
           
@@ -97,14 +97,16 @@
 </template>
 
 <script>
+import logo from '@/assets/image/logo.jpg'
 import { ref } from 'vue';
-import { useStore } from 'vuex';
+// import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 
 export default {
   name: 'LoginView',
   setup() {
-    const store = useStore();
+    // const store = useStore();
     const router = useRouter();
     
     const email = ref('');
@@ -119,12 +121,20 @@ export default {
         isLoading.value = true;
         errorMessage.value = '';
         
-        await store.dispatch('auth/login', {
+        // await store.dispatch('auth/login', {
+        //   email: email.value,
+        //   password: password.value
+        // });
+        let data = await axios.post('http://localhost:3000/api/auth/login', {
           email: email.value,
           password: password.value
         });
+
+        if (data) {
+          localStorage.setItem("user", JSON.stringify(data.data.user));
+          router.push('/dashboard');
+        }
         
-        router.push('/dashboard');
       } catch (error) {
         errorMessage.value = error.message || 'Failed to login. Please try again.';
       } finally {
@@ -138,7 +148,8 @@ export default {
       isLoading,
       errorMessage,
       handleLogin,
-      passwordVisible
+      passwordVisible,
+      logo
     };
   }
 }

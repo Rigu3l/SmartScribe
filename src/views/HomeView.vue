@@ -55,18 +55,14 @@
       </div>
     </main>
 
-    <footer class="bg-gray-800 p-4 text-gray-400 mt-auto">
-      <div class="container mx-auto">
-        <div class="flex justify-between items-center">
-          <div>© 2025 SmartScribe Inc.</div>
-          <div class="flex space-x-4">
-            <a href="#" class="hover:text-white">Docs</a>
-            <a href="#" class="hover:text-white">Guides</a>
-            <a href="#" class="hover:text-white">Help</a>
-            <a href="#" class="hover:text-white">Contact</a>
-          </div>
-        </div>
+    <footer class="p-4 bg-gray-800 text-gray-400 flex justify-between items-center text-sm">
+      <div class="flex space-x-4">
+        <a href="#" class="hover:text-white">Docs</a>
+        <a href="#" class="hover:text-white">Guides</a>
+        <a href="#" class="hover:text-white">Help</a>
+        <a href="#" class="hover:text-white">Contact</a>
       </div>
+      <div>© 2025 SmartScribe Inc.</div>
     </footer>
   </div>
 </template>

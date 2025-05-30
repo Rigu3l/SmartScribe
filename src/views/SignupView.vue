@@ -13,8 +13,8 @@
     <main class="flex-grow flex items-center justify-center p-4">
       <div class="bg-gray-800 rounded-lg p-8 w-full max-w-md">
         <div class="flex justify-center mb-4">
-          <div class="w-16 h-16 bg-white rounded-full flex items-center justify-center">
-            <font-awesome-icon :icon="['fas', 'user-plus']" class="text-gray-900 text-2xl" />
+          <div class="w-24 h-24 bg-white rounded-full overflow-hidden flex items-center justify-center shadow-md">
+            <img :src="logo" alt="App Logo" class="w-full h-full object-cover" />
           </div>
         </div>
         
@@ -92,7 +92,7 @@
             <span v-else>Create Account</span>
           </button>
         </form>
-        
+
         <div class="flex justify-center space-x-4 my-6">
           <button class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
             <font-awesome-icon :icon="['fab', 'facebook-f']" />
@@ -111,6 +111,20 @@
             <router-link to="/login" class="text-white cursor-pointer hover:underline">Sign In</router-link>
           </p>
         </div>
+        <!-- Success Modal -->
+    <transition name="fade">
+    <div v-if="showSuccessModal" class="fixed inset-0 flex items-center justify-center bg-black bg-opacity-50 z-50">
+      <div class="bg-white text-gray-800 rounded-xl p-6 w-full max-w-sm shadow-xl transform transition-all scale-100">
+        <div class="flex justify-center mb-4">
+          <div class="bg-green-100 text-green-600 w-16 h-16 flex items-center justify-center rounded-full">
+            <font-awesome-icon :icon="['fas', 'check-circle']" class="text-3xl" />
+          </div>
+        </div>
+        <h3 class="text-lg font-semibold text-center mb-2">Account Created!</h3>
+        <p class="text-center mb-4">Your account was created successfully. You can now log in.</p>
+      </div>
+    </div>
+    </transition>
       </div>
     </main>
 
@@ -128,15 +142,17 @@
 </template>
 
 <script>
+import logo from '@/assets/image/logo.jpg'
 import { ref } from 'vue';
-import { useStore } from 'vuex';
+// import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
+import axios from 'axios';
 // import { icon } from '@fortawesome/fontawesome-svg-core';
 
 export default {
   name: 'SignupView',
   setup() {
-    const store = useStore();
+    // const store = useStore();
     const router = useRouter();
     
     const name = ref('');
@@ -145,9 +161,15 @@ export default {
     const confirmPassword = ref('');
     const isLoading = ref(false);
     const errorMessage = ref('');
+    const showSuccessModal = ref(false);
 
     const passwordInput = ref(null);
     const confirmPasswordInput = ref(null);
+
+    const redirectToLogin = () => {
+      showSuccessModal.value = false;
+      router.push('/login')
+    }
 
     const togglePasswordField = (inputRef) => {
       const inputElement = inputRef === 'passwordInput' ? passwordInput.value : confirmPasswordInput.value;
@@ -177,13 +199,27 @@ export default {
         isLoading.value = true;
         errorMessage.value = '';
         
-        await store.dispatch('auth/register', {
+        // await store.dispatch('auth/register', {
+        //  name: name.value,
+        //  email: email.value,
+        //  password: password.value
+        //});
+        let data = await axios.post('http://localhost:3000/api/auth/register', {
           name: name.value,
           email: email.value,
           password: password.value
         });
+
+        if (data) {
+          localStorage.setItem("user", JSON.stringify(data.data.user));
+          showSuccessModal.value = true;
+
+          // Auto-close modal and redirect after 2.5 seconds
+          setTimeout(() => {
+            redirectToLogin()
+          }, 2500)
+        }
         
-        router.push('/dashboard');
       } catch (error) {
         errorMessage.value = error.message || 'Failed to create account. Please try again.';
       } finally {
@@ -201,7 +237,10 @@ export default {
       handleSignup,
       passwordInput,
       confirmPasswordInput,
-      togglePasswordField
+      togglePasswordField,
+      showSuccessModal,
+      redirectToLogin,
+      logo
     };
   }
 }

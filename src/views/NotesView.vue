@@ -253,10 +253,16 @@ export default {
 </script>
 
 <style>
-.line-clamp-3 {
+.line-clamp-2 {
   display: -webkit-box;
-  -webkit-line-clamp: 3;
+  display: box;
+  display: -moz-box;
+  display: -ms-box;
+  display: -o-box;
+  -webkit-line-clamp: 2;
+  line-clamp: 2; /* Standard property */
   -webkit-box-orient: vertical;
+  box-orient: vertical;
   overflow: hidden;
 }
 </style>

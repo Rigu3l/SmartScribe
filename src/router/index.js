@@ -4,10 +4,11 @@ import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import SignupView from '../views/SignupView.vue'
 import NotesView from '../views/NotesView.vue'
-// import NoteEditorView from '../views/NoteEditorView.vue'
 import ProgressView from '../views/ProgressView.vue'
 import SettingsView from '../views/SettingsView.vue'
-// import TestView from '@/views/TestView.vue'
+import NoteDetailView from '../views/NoteDetailView.vue'
+import NoteEditorView from '@/views/NoteEditorView.vue'
+import NotFoundView from '@/views/NotFoundView.vue'
 // import { meta } from '@babel/eslint-parser'
 
 const routes = [
@@ -30,42 +31,42 @@ const routes = [
     path: '/dashboard',
     name: 'dashboard',
     component: DashboardView,
-    meta: { requiresAuth: true }
+    //meta: { requiresAuth: true }
   },
   {
     path: '/notes',
     name: 'notes',
     component: NotesView,
-    meta: { requiresAuth: true }
+    //meta: { requiresAuth: true }
   },
   {
     path: '/notes/:id',
     name: 'note-detail',
-    component: () => import('../views/NoteDetailView.vue'),
-    meta: { requiresAuth: true }
+    component: NoteDetailView,
+    //meta: { requiresAuth: true }
   },
   {
-    //path: '/notes/edit',
-    //name: 'note-editor',
-    //component: NoteEditorView,
+    path: '/notes/edit',
+    name: 'note-editor',
+    component: NoteEditorView,
     //meta: { requiresAuth: true }
   },
   {
     path: '/progress',
     name: 'progress',
     component: ProgressView,
-    meta: { requiresAuth: true }
+    //meta: { requiresAuth: true }
   },
   {
     path: '/settings',
     name: 'settings',
     component: SettingsView,
-    meta: { requiresAuth: true }
+    //meta: { requiresAuth: true }
   },
   {
-    //path: '/:pathMatch(.*)*',
-    //name: 'not-found',
-    //component: NotFoundView,
+    path: '/:pathMatch(.*)*',
+    name: 'not-found',
+    component: NotFoundView,
     //meta: { requiresAuth: true }
   }
 ]
