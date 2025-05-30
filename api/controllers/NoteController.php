@@ -11,6 +11,24 @@ class NoteController {
         $this->note = new Note($db);
     }
 
+    public function index() {
+        $query = "SELECT n.*
+                  FROM notes n
+                  WHERE user_id = :user_id
+                  ORDER BY created_at DESC";
+
+        $userId = 17;
+        $stmt = $this->db->prepare($query);
+        $stmt->bindParam(':user_id', $userId);
+        $stmt->execute();
+
+        echo json_encode([
+            "success" => true,
+            "data" => $stmt->fetchAll()
+        ]);
+        // return $stmt->fetch();
+    }
+
     public function store() {
         // Ensure image & text posted
         $userId = 17; // Example — you can replace this with session or token-based user ID
