@@ -67,7 +67,7 @@
       <!-- Main Dashboard -->
       <main class="flex-grow p-6">
         <h1 class="text-2xl font-bold mb-6">Dashboard</h1>
-        
+
         <!-- Scan New Notes Section -->
         <div class="bg-gray-800 rounded-lg p-6 mb-6">
           <h2 class="text-xl font-semibold mb-4">Scan New Notes</h2>
@@ -100,14 +100,14 @@
             </div>
           </div>
         </div>
-        
+
         <!-- Recent Notes Section -->
         <div class="bg-gray-800 rounded-lg p-6">
           <div class="flex justify-between items-center mb-4">
             <h2 class="text-xl font-semibold">Recent Notes</h2>
             <router-link to="/notes" class="text-blue-400 hover:underline">View All</router-link>
           </div>
-          
+
           <div v-if="recentNotes> 0">
             <div v-for="(note, index) in recentNotes" :key="index" class="bg-gray-700 rounded-lg p-4 mb-4">
               <div class="flex justify-between items-start">
@@ -132,7 +132,7 @@
               </div>
             </div>
           </div>
-          
+
           <div v-else class="text-center py-8 text-gray-400">
             <p>No notes yet. Start by scanning your first note!</p>
           </div>
@@ -158,7 +158,7 @@ export default {
     const video = ref(null);
     const ocrText = ref('');
     const showSaveConfirmation = ref(false);
-    
+
     const showUserMenu = ref(false);
     const user = ref({
       name: 'User',
@@ -173,7 +173,7 @@ export default {
         //if (userInfo) {
         //  user.value = userInfo;
         //}
-        
+
         // Get recent notes
         //await store.dispatch('notes/fetchNotes');
         //recentNotes.value = store.getters['notes/getRecentNotes'];
@@ -262,7 +262,7 @@ export default {
   if (!file) {
     console.warn('No file selected');
     return;
-  } 
+  }
 
   const MAX_FILE_SIZE = 5 * 1024 * 1024;
   if (file.size > MAX_FILE_SIZE) {
@@ -287,6 +287,8 @@ export default {
 
     ocrText.value = text;
     console.log('OCR Result:', text);
+    formData.append("text", text);
+    formData.append("title", "Temp`orary Title");
 
     const response = await fetch('http://localhost:3000/api/notes/create', {
       method: 'POST',

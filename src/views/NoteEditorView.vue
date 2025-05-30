@@ -50,8 +50,8 @@
         <div class="flex justify-between items-center mb-6">
           <div>
             <h1 class="text-2xl font-bold">
-              <input 
-                v-model="note.title" 
+              <input
+                v-model="note.title"
                 class="bg-transparent border-b border-gray-700 focus:border-blue-500 focus:outline-none pb-1 w-full"
                 placeholder="Note Title"
               />
@@ -73,8 +73,8 @@
           <div class="bg-gray-800 rounded-lg p-6">
             <h2 class="text-lg font-semibold mb-4">Original Text</h2>
             <div class="relative">
-              <textarea 
-                v-model="note.originalText" 
+              <textarea
+                v-model="note.originalText"
                 class="w-full h-96 bg-gray-700 rounded-lg p-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="OCR extracted text will appear here"
               ></textarea>
@@ -95,8 +95,8 @@
               <h2 class="text-lg font-semibold">AI Summary</h2>
               <div class="flex items-center space-x-2">
                 <span class="text-sm text-gray-400">Summary Length:</span>
-                <select 
-                  v-model="summaryLength" 
+                <select
+                  v-model="summaryLength"
                   @change="generateSummary"
                   class="bg-gray-700 rounded p-1 text-sm"
                 >
@@ -107,8 +107,8 @@
               </div>
             </div>
             <div class="relative">
-              <textarea 
-                v-model="note.summary" 
+              <textarea
+                v-model="note.summary"
                 class="w-full h-96 bg-gray-700 rounded-lg p-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 placeholder="AI-generated summary will appear here"
               ></textarea>
@@ -128,8 +128,8 @@
         <div class="mt-6 bg-gray-800 rounded-lg p-6">
           <h2 class="text-lg font-semibold mb-4">Keywords & Tags</h2>
           <div class="flex flex-wrap gap-2 mb-4">
-            <span 
-              v-for="(keyword, index) in note.keywords" 
+            <span
+              v-for="(keyword, index) in note.keywords"
               :key="`keyword-${index}`"
               class="px-3 py-1 bg-blue-600 rounded-full text-sm flex items-center"
             >
@@ -138,8 +138,8 @@
                 <font-awesome-icon :icon="['fas', 'times']" />
               </button>
             </span>
-            <input 
-              v-model="newKeyword" 
+            <input
+              v-model="newKeyword"
               @keyup.enter="addKeyword"
               class="px-3 py-1 bg-gray-700 rounded-full text-sm focus:outline-none focus:ring-2 focus:ring-blue-500"
               placeholder="Add keyword..."
@@ -169,20 +169,20 @@
               <option value="15">15 Questions</option>
             </select>
           </div>
-          
+
           <div v-if="quizQuestions.length > 0" class="space-y-4">
             <div v-for="(question, qIndex) in quizQuestions" :key="`question-${qIndex}`" class="bg-gray-700 rounded-lg p-4">
               <p class="font-medium mb-2">{{ qIndex + 1 }}. {{ question.text }}</p>
               <div class="space-y-2 ml-4">
-                <div 
-                  v-for="(option, oIndex) in question.options" 
+                <div
+                  v-for="(option, oIndex) in question.options"
                   :key="`option-${qIndex}-${oIndex}`"
                   class="flex items-center space-x-2"
                 >
-                  <input 
-                    type="radio" 
-                    :id="`q${qIndex}-o${oIndex}`" 
-                    :name="`question-${qIndex}`" 
+                  <input
+                    type="radio"
+                    :id="`q${qIndex}-o${oIndex}`"
+                    :name="`question-${qIndex}`"
                     :value="oIndex"
                     v-model="question.selectedAnswer"
                     class="text-blue-600"
@@ -191,7 +191,7 @@
                 </div>
               </div>
             </div>
-            
+
             <div class="flex justify-between">
               <button @click="checkQuizAnswers" class="px-4 py-2 bg-green-600 rounded-md hover:bg-green-700 transition">
                 Check Answers
@@ -218,7 +218,7 @@ export default {
     const store = useStore();
     const router = useRouter();
     const route = useRoute();
-    
+
     const note = ref({
       title: '',
       lastEdited: new Date().toLocaleString(),
@@ -226,22 +226,22 @@ export default {
       summary: '',
       keywords: []
     });
-    
+
     const summaryLength = ref('medium');
     const newKeyword = ref('');
     const quizDifficulty = ref('medium');
     const quizQuestionCount = ref('5');
     const quizQuestions = ref([]);
-    
+
     onMounted(async () => {
       try {
         const noteId = route.query.id;
-        
+
         if (noteId) {
           // In a real app, we would fetch the note from the store
           // await store.dispatch('notes/fetchNote', noteId);
           // note.value = { ...store.getters['notes/getCurrentNote'] };
-          
+
           // For now, we'll use mock data
           setTimeout(() => {
             note.value = {
@@ -273,15 +273,15 @@ export default {
           alert('Please enter a title for your note.');
           return;
         }
-        
+
         if (!note.value.originalText.trim()) {
           alert('Please add some content to your note.');
           return;
         }
-        
+
         // Update last edited timestamp
         note.value.lastEdited = new Date().toLocaleString();
-        
+
         if (note.value.id) {
           // Update existing note
           await store.dispatch('notes/updateNote', {
@@ -293,7 +293,7 @@ export default {
           const newNote = await store.dispatch('notes/createNote', note.value);
           note.value.id = newNote.id;
         }
-        
+
         alert('Note saved successfully!');
         router.push('/notes');
       } catch (error) {
