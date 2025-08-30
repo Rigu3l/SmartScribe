@@ -4,7 +4,7 @@ function getDbConnection() {
     $host = 'localhost';
     $db   = 'smartscribe';
     $user = 'root';
-    $pass = '123'; // Default Laragon password is empty
+    $pass = ''; 
     $charset = 'utf8mb4';
 
     $dsn = "mysql:host=$host;dbname=$db;charset=$charset";

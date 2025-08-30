@@ -51,7 +51,7 @@
           <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-4xl text-blue-500" />
         </div>
         
-        <div v-else-if="note">
+        <div v-else-if="note && !error">
           <div class="flex justify-between items-center mb-6">
             <div>
               <h1 class="text-2xl font-bold">{{ note.title }}</h1>
@@ -159,14 +159,23 @@
           </div>
         </div>
         
-        <div v-else class="flex flex-col items-center justify-center h-full">
-          <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="text-4xl text-gray-400 mb-4" />
-          <h2 class="text-xl font-medium mb-2">Note Not Found</h2>
-          <p class="text-gray-400 mb-4">The note you're looking for doesn't exist or has been deleted.</p>
-          <router-link to="/notes" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
-            Back to Notes
-          </router-link>
-        </div>
+        <div v-else-if="error" class="flex flex-col items-center justify-center h-full">
+           <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="text-4xl text-red-400 mb-4" />
+           <h2 class="text-xl font-medium mb-2">Error Loading Note</h2>
+           <p class="text-gray-400 mb-4">{{ error }}</p>
+           <router-link to="/notes" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
+             Back to Notes
+           </router-link>
+         </div>
+
+         <div v-else class="flex flex-col items-center justify-center h-full">
+           <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="text-4xl text-gray-400 mb-4" />
+           <h2 class="text-xl font-medium mb-2">Note Not Found</h2>
+           <p class="text-gray-400 mb-4">The note you're looking for doesn't exist or has been deleted.</p>
+           <router-link to="/notes" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
+             Back to Notes
+           </router-link>
+         </div>
       </main>
     </div>
   </div>
@@ -176,6 +185,7 @@
 import { ref, onMounted } from 'vue';
 // import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
+import api from '@/services/api';
 
 export default {
   name: 'NoteDetailView',
@@ -183,34 +193,44 @@ export default {
     // const store = useStore();
     const router = useRouter();
     const route = useRoute();
-    
+
     const note = ref(null);
     const isLoading = ref(true);
     const showExportOptions = ref(false);
     const quizQuestions = ref([]);
-    
+    const error = ref(null);
+
     onMounted(async () => {
       try {
         const noteId = parseInt(route.params.id);
-        
-        // In a real app, we would fetch the note from the store
-        // await store.dispatch('notes/fetchNote', noteId);
-        // note.value = store.getters['notes/getCurrentNote'];
-        
-        // For now, we'll use mock data
-        setTimeout(() => {
-          note.value = {
-            id: noteId,
-            title: 'Biology Notes - Chapter 5',
-            lastEdited: 'May 14, 2025 at 3:45 PM',
-            originalText: 'The cell is the basic structural, functional, and biological unit of all known organisms. Cells are the smallest units of life, and hence are often referred to as the "building blocks of life". The study of cells is called cell biology, cellular biology, or cytology.\n\nCells consist of cytoplasm enclosed within a membrane, which contains many biomolecules such as proteins and nucleic acids. Most plant and animal cells are only visible under a light microscope, with dimensions between 1 and 100 micrometres. Cells were discovered by Robert Hooke in 1665, who named them for their resemblance to cells inhabited by Christian monks in a monastery.',
-            summary: 'Cells are the fundamental units of life, discovered by Robert Hooke in 1665. They are microscopic structures containing cytoplasm, proteins, and nucleic acids enclosed within a membrane. Cell biology (cytology) is the scientific study of cells. Cells range from 1-100 micrometers in size and are only visible under microscopes.',
-            keywords: ['Cell', 'Biology', 'Cytology', 'Robert Hooke', 'Microscopic']
-          };
+
+        if (!noteId || isNaN(noteId)) {
+          error.value = 'Invalid note ID';
           isLoading.value = false;
-        }, 1000);
+          return;
+        }
+
+        // Fetch the actual note data from API
+        const response = await api.getNote(noteId);
+
+        if (response.data.success && response.data.data) {
+          const noteData = response.data.data;
+
+          note.value = {
+            id: noteData.id,
+            title: noteData.title || 'Untitled Note',
+            lastEdited: noteData.last_edited || 'Unknown',
+            originalText: noteData.original_text || 'No content available',
+            summary: noteData.summary || 'No summary available',
+            keywords: noteData.keywords ? noteData.keywords.split(',').map(k => k.trim()) : []
+          };
+        } else {
+          error.value = response.data?.error || 'Note not found';
+        }
       } catch (error) {
         console.error('Error loading note:', error);
+        error.value = 'Failed to load note. Please try again.';
+      } finally {
         isLoading.value = false;
       }
     });
@@ -293,6 +313,7 @@ export default {
     return {
       note,
       isLoading,
+      error,
       showExportOptions,
       quizQuestions,
       editNote,

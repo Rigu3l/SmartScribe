@@ -1,7 +1,7 @@
 import { createApp } from 'vue'
 import App from './App.vue'
 import router from './router'
-import store from './store'
+import store from './store/modules'
 import './assets/css/main.css'
 
 // Font Awesome
@@ -40,5 +40,14 @@ const app = createApp(App)
 app.use(store)
 app.use(router)
 app.component('font-awesome-icon', FontAwesomeIcon)
+
+// Initialize app state and real-time services
+try {
+  store.dispatch('app/initialize').catch((error) => {
+    console.error('Error initializing app store:', error)
+  })
+} catch (error) {
+  console.error('Error initializing app store:', error)
+}
 
 app.mount('#app')

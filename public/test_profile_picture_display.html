@@ -1,0 +1,164 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Profile Picture Display Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #1f2937;
+            color: white;
+        }
+        .test-section {
+            background-color: #374151;
+            padding: 20px;
+            margin: 20px 0;
+            border-radius: 8px;
+        }
+        .profile-picture {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #3b82f6;
+        }
+        .fallback {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            background-color: #6b7280;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 2rem;
+        }
+        .status {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 4px;
+        }
+        .success { background-color: #10b981; }
+        .error { background-color: #ef4444; }
+        .info { background-color: #3b82f6; }
+    </style>
+</head>
+<body>
+    <h1>Profile Picture Display Test</h1>
+
+    <div class="test-section">
+        <h2>Test 1: Direct Image URL</h2>
+        <p>Testing direct access to profile picture file:</p>
+        <div id="direct-test">
+            <img src="/uploads/profile_pictures/profile_23_1756393498.jpg"
+                 alt="Profile Picture"
+                 class="profile-picture"
+                 onerror="showError('direct-test', 'Failed to load image')"
+                 onload="showSuccess('direct-test', 'Image loaded successfully')">
+        </div>
+        <div id="direct-status" class="status info">Loading...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 2: Image with Cache Buster</h2>
+        <p>Testing image with timestamp to prevent caching:</p>
+        <div id="cache-test">
+            <img src="/uploads/profile_pictures/profile_23_1756393498.jpg?t=1234567890"
+                 alt="Profile Picture"
+                 class="profile-picture"
+                 onerror="showError('cache-test', 'Failed to load image with cache buster')"
+                 onload="showSuccess('cache-test', 'Image loaded successfully with cache buster')">
+        </div>
+        <div id="cache-status" class="status info">Loading...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 3: Fallback Display</h2>
+        <p>Testing fallback when no profile picture is available:</p>
+        <div class="fallback">
+            <span>👤</span>
+        </div>
+        <div class="status success">Fallback display working</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Test 4: Vue.js Style Implementation</h2>
+        <p>Testing the same logic used in Vue components:</p>
+        <div id="vue-test">
+            <!-- This will be populated by JavaScript -->
+        </div>
+        <div id="vue-status" class="status info">Testing Vue-style implementation...</div>
+    </div>
+
+    <div class="test-section">
+        <h2>Debug Information</h2>
+        <p><strong>Expected Image URL:</strong> /uploads/profile_pictures/profile_23_1756393498.jpg</p>
+        <p><strong>Full Server Path:</strong> C:\xampp\htdocs\SmartScribe-main\public\uploads\profile_pictures\profile_23_1756393498.jpg</p>
+        <p><strong>Database Profile Picture Path:</strong> uploads/profile_pictures/profile_23_1756393498.jpg</p>
+        <p><strong>Image Dimensions:</strong> 279x180 pixels</p>
+        <p><strong>File Size:</strong> 7,044 bytes</p>
+        <p><strong>MIME Type:</strong> image/jpeg</p>
+    </div>
+
+    <script>
+        function showSuccess(testId, message) {
+            const statusEl = document.getElementById(testId + '-status');
+            statusEl.textContent = message;
+            statusEl.className = 'status success';
+        }
+
+        function showError(testId, message) {
+            const statusEl = document.getElementById(testId + '-status');
+            statusEl.textContent = message;
+            statusEl.className = 'status error';
+        }
+
+        // Test Vue-style implementation
+        function testVueStyle() {
+            const profilePicturePath = 'uploads/profile_pictures/profile_23_1756393498.jpg';
+
+            if (profilePicturePath) {
+                const timestamp = Date.now();
+                const imageUrl = `/${profilePicturePath}?t=${timestamp}`;
+
+                const container = document.getElementById('vue-test');
+                const img = document.createElement('img');
+                img.src = imageUrl;
+                img.alt = 'Profile Picture';
+                img.className = 'profile-picture';
+                img.onload = () => showSuccess('vue', 'Vue-style implementation working');
+                img.onerror = () => showError('vue', 'Vue-style implementation failed');
+
+                container.appendChild(img);
+            } else {
+                const container = document.getElementById('vue-test');
+                const fallback = document.createElement('div');
+                fallback.className = 'fallback';
+                fallback.innerHTML = '<span>👤</span>';
+                container.appendChild(fallback);
+                showSuccess('vue', 'Fallback working correctly');
+            }
+        }
+
+        // Run tests when page loads
+        window.onload = function() {
+            testVueStyle();
+
+            // Set timeout for loading status
+            setTimeout(() => {
+                const loadingElements = document.querySelectorAll('.status.info');
+                loadingElements.forEach(el => {
+                    if (el.textContent === 'Loading...') {
+                        el.textContent = 'Test completed - check results above';
+                        el.className = 'status info';
+                    }
+                });
+            }, 3000);
+        };
+    </script>
+</body>
+</html>

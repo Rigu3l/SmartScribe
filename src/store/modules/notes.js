@@ -23,7 +23,7 @@ const actions = {
   async fetchNotes({ commit }) {
     try {
       commit('SET_LOADING', true);
-      const response = await api.notes.getAll();
+      const response = await api.getNotes();
       commit('SET_NOTES', response.data);
       return response.data;
     } catch (error) {
@@ -38,7 +38,7 @@ const actions = {
   async fetchNote({ commit }, noteId) {
     try {
       commit('SET_LOADING', true);
-      const response = await api.notes.get(noteId);
+      const response = await api.getNote(noteId);
       commit('SET_CURRENT_NOTE', response.data);
       return response.data;
     } catch (error) {
@@ -53,7 +53,7 @@ const actions = {
   async createNote({ commit }, noteData) {
     try {
       commit('SET_LOADING', true);
-      const response = await api.notes.create(noteData);
+      const response = await api.createNote(noteData);
       commit('ADD_NOTE', response.data);
       return response.data;
     } catch (error) {
@@ -68,7 +68,7 @@ const actions = {
   async updateNote({ commit }, { id, noteData }) {
     try {
       commit('SET_LOADING', true);
-      const response = await api.notes.update(id, noteData);
+      const response = await api.updateNote(id, noteData);
       commit('UPDATE_NOTE', response.data);
       return response.data;
     } catch (error) {
@@ -83,7 +83,7 @@ const actions = {
   async deleteNote({ commit }, noteId) {
     try {
       commit('SET_LOADING', true);
-      await api.notes.delete(noteId);
+      await api.deleteNote(noteId);
       commit('REMOVE_NOTE', noteId);
     } catch (error) {
       console.error('Delete note error:', error);

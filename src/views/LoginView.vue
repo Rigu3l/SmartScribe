@@ -101,7 +101,7 @@ import logo from '@/assets/image/logo.jpg'
 import { ref } from 'vue';
 // import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import api from '@/services/api';
 
 export default {
   name: 'LoginView',
@@ -120,23 +120,27 @@ export default {
       try {
         isLoading.value = true;
         errorMessage.value = '';
-        
-        // await store.dispatch('auth/login', {
-        //   email: email.value,
-        //   password: password.value
-        // });
-        let data = await axios.post('http://localhost:3000/api/auth/login', {
+
+        // Use the centralized API service
+        const response = await api.login({
           email: email.value,
           password: password.value
         });
 
-        if (data) {
-          localStorage.setItem("user", JSON.stringify(data.data.user));
+        if (response.data && response.data.user) {
+          // Store user data in localStorage
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+          localStorage.setItem("token", response.data.token || '');
+
+          console.log('Login successful, user data stored:', response.data.user);
           router.push('/dashboard');
+        } else {
+          throw new Error('Invalid response from server');
         }
-        
+
       } catch (error) {
-        errorMessage.value = error.message || 'Failed to login. Please try again.';
+        console.error('Login error:', error);
+        errorMessage.value = error.response?.data?.error || error.message || 'Failed to login. Please try again.';
       } finally {
         isLoading.value = false;
       }

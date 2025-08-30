@@ -47,26 +47,41 @@
 
       <!-- Note Editor Main Content -->
       <main class="flex-grow p-6">
-        <div class="flex justify-between items-center mb-6">
-          <div>
-            <h1 class="text-2xl font-bold">
-              <input
-                v-model="note.title"
-                class="bg-transparent border-b border-gray-700 focus:border-blue-500 focus:outline-none pb-1 w-full"
-                placeholder="Note Title"
-              />
-            </h1>
-            <p class="text-gray-400 text-sm">Last edited: {{ note.lastEdited }}</p>
-          </div>
-          <div class="flex space-x-3">
-            <button @click="saveNote" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
-              <font-awesome-icon :icon="['fas', 'save']" class="mr-2" /> Save
-            </button>
-            <button class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
-              <font-awesome-icon :icon="['fas', 'file-export']" class="mr-2" /> Export
-            </button>
-          </div>
+        <div v-if="isLoading" class="flex justify-center items-center h-full">
+          <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-4xl text-blue-500" />
         </div>
+
+        <div v-else-if="error" class="flex flex-col items-center justify-center h-full">
+          <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="text-4xl text-red-400 mb-4" />
+          <h2 class="text-xl font-medium mb-2">Error Loading Note</h2>
+          <p class="text-gray-400 mb-4">{{ error }}</p>
+          <router-link to="/notes" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
+            Back to Notes
+          </router-link>
+        </div>
+
+        <div v-else>
+          <div class="flex justify-between items-center mb-6">
+            <div>
+              <h1 class="text-2xl font-bold">
+                <input
+                  v-model="note.title"
+                  class="bg-transparent border-b border-gray-700 focus:border-blue-500 focus:outline-none pb-1 w-full"
+                  placeholder="Note Title"
+                />
+              </h1>
+              <p class="text-gray-400 text-sm">Last edited: {{ note.lastEdited }}</p>
+            </div>
+            <div class="flex space-x-3">
+              <button @click="saveNote" :disabled="isSaving" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <font-awesome-icon :icon="isSaving ? ['fas', 'spinner'] : ['fas', 'save']" :spin="isSaving" class="mr-2" />
+                {{ isSaving ? 'Saving...' : 'Save' }}
+              </button>
+              <button class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
+                <font-awesome-icon :icon="['fas', 'file-export']" class="mr-2" /> Export
+              </button>
+            </div>
+          </div>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-6">
           <!-- Original Text (OCR Result) -->
@@ -202,6 +217,7 @@
             </div>
           </div>
         </div>
+        </div>
       </main>
     </div>
   </div>
@@ -211,6 +227,7 @@
 import { ref, onMounted } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
+import api from '@/services/api';
 
 export default {
   name: 'NoteEditorView',
@@ -220,39 +237,45 @@ export default {
     const route = useRoute();
 
     const note = ref({
-      title: '',
-      lastEdited: new Date().toLocaleString(),
-      originalText: '',
-      summary: '',
-      keywords: []
-    });
+       title: '',
+       lastEdited: new Date().toLocaleString(),
+       originalText: '',
+       summary: '',
+       keywords: []
+     });
 
-    const summaryLength = ref('medium');
-    const newKeyword = ref('');
-    const quizDifficulty = ref('medium');
-    const quizQuestionCount = ref('5');
-    const quizQuestions = ref([]);
+     const summaryLength = ref('medium');
+     const newKeyword = ref('');
+     const quizDifficulty = ref('medium');
+     const quizQuestionCount = ref('5');
+     const quizQuestions = ref([]);
+     const isLoading = ref(false);
+     const error = ref(null);
+     const isSaving = ref(false);
 
     onMounted(async () => {
       try {
         const noteId = route.query.id;
 
         if (noteId) {
-          // In a real app, we would fetch the note from the store
-          // await store.dispatch('notes/fetchNote', noteId);
-          // note.value = { ...store.getters['notes/getCurrentNote'] };
+          // Fetch the actual note data from API
+          isLoading.value = true;
+          const response = await api.getNote(noteId);
 
-          // For now, we'll use mock data
-          setTimeout(() => {
+          if (response.data.success && response.data.data) {
+            const noteData = response.data.data;
+
             note.value = {
-              id: parseInt(noteId),
-              title: 'Biology Notes - Chapter 5',
-              lastEdited: new Date().toLocaleString(),
-              originalText: 'The cell is the basic structural, functional, and biological unit of all known organisms. Cells are the smallest units of life, and hence are often referred to as the "building blocks of life". The study of cells is called cell biology, cellular biology, or cytology.\n\nCells consist of cytoplasm enclosed within a membrane, which contains many biomolecules such as proteins and nucleic acids. Most plant and animal cells are only visible under a light microscope, with dimensions between 1 and 100 micrometres. Cells were discovered by Robert Hooke in 1665, who named them for their resemblance to cells inhabited by Christian monks in a monastery.',
-              summary: 'Cells are the fundamental units of life, discovered by Robert Hooke in 1665. They are microscopic structures containing cytoplasm, proteins, and nucleic acids enclosed within a membrane. Cell biology (cytology) is the scientific study of cells. Cells range from 1-100 micrometers in size and are only visible under microscopes.',
-              keywords: ['Cell', 'Biology', 'Cytology', 'Robert Hooke', 'Microscopic']
+              id: noteData.id,
+              title: noteData.title || '',
+              lastEdited: noteData.last_edited || new Date().toLocaleString(),
+              originalText: noteData.original_text || '',
+              summary: noteData.summary || '',
+              keywords: noteData.keywords ? noteData.keywords.split(',').map(k => k.trim()) : []
             };
-          }, 500);
+          } else {
+            error.value = response.data?.error || 'Note not found';
+          }
         } else {
           // Check if we have temp image data from OCR
           const tempImageData = store.getters['notes/getTempImageData'];
@@ -264,11 +287,40 @@ export default {
         }
       } catch (error) {
         console.error('Error loading note:', error);
+        error.value = 'Failed to load note. Please try again.';
+      } finally {
+        isLoading.value = false;
       }
     });
 
     const saveNote = async () => {
       try {
+        // Check if user is authenticated
+        const userData = localStorage.getItem('user');
+        if (!userData) {
+          alert('You must be logged in to save notes. Please log in and try again.');
+          router.push('/login');
+          return;
+        }
+
+        let user;
+        try {
+          user = JSON.parse(userData);
+        } catch (e) {
+          console.error('Invalid user data in localStorage:', e);
+          alert('Authentication data is corrupted. Please log in again.');
+          localStorage.removeItem('user');
+          localStorage.removeItem('token');
+          router.push('/login');
+          return;
+        }
+
+        if (!user || !user.id) {
+          alert('Invalid user session. Please log in again.');
+          router.push('/login');
+          return;
+        }
+
         if (!note.value.title.trim()) {
           alert('Please enter a title for your note.');
           return;
@@ -279,26 +331,81 @@ export default {
           return;
         }
 
+        // Set saving state
+        isSaving.value = true;
+
         // Update last edited timestamp
         note.value.lastEdited = new Date().toLocaleString();
 
+        // Prepare note data for API
+        const noteData = {
+          title: note.value.title,
+          text: note.value.originalText,
+          summary: note.value.summary,
+          keywords: note.value.keywords.join(',')
+        };
+
+        console.log('Saving note:', {
+          hasId: !!note.value.id,
+          noteId: note.value.id,
+          noteData: noteData,
+          userId: user.id
+        });
+
+        // Log current localStorage state for debugging
+        console.log('Current localStorage state:', {
+          token: !!localStorage.getItem('token'),
+          user: localStorage.getItem('user')
+        });
+
         if (note.value.id) {
           // Update existing note
-          await store.dispatch('notes/updateNote', {
-            id: note.value.id,
-            noteData: note.value
-          });
+          console.log('Updating existing note with ID:', note.value.id);
+          const response = await api.updateNote(note.value.id, noteData);
+          console.log('Update response:', response.data);
+
+          if (response.data.success) {
+            alert('Note updated successfully!');
+            router.push('/notes?refresh=true');
+          } else {
+            throw new Error(response.data.error || 'Failed to update note');
+          }
         } else {
           // Create new note
-          const newNote = await store.dispatch('notes/createNote', note.value);
-          note.value.id = newNote.id;
-        }
+          console.log('Creating new note');
+          const response = await api.createNote(noteData);
+          console.log('Create response:', response.data);
 
-        alert('Note saved successfully!');
-        router.push('/notes');
+          if (response.data.success) {
+            note.value.id = response.data.note_id;
+            alert('Note saved successfully!');
+            router.push('/notes?refresh=true');
+          } else {
+            throw new Error(response.data.error || 'Failed to save note');
+          }
+        }
       } catch (error) {
         console.error('Error saving note:', error);
-        alert('Failed to save note. Please try again.');
+
+        // Provide more specific error messages
+        let errorMessage = 'Failed to save note. Please try again.';
+
+        if (error.response) {
+          if (error.response.status === 401) {
+            errorMessage = 'Authentication failed. Please log in again.';
+          } else if (error.response.status === 403) {
+            errorMessage = 'You do not have permission to perform this action.';
+          } else if (error.response.data?.error) {
+            errorMessage = error.response.data.error;
+          }
+        } else if (error.message) {
+          errorMessage = error.message;
+        }
+
+        alert(errorMessage);
+      } finally {
+        // Reset saving state
+        isSaving.value = false;
       }
     };
 
@@ -412,6 +519,9 @@ export default {
       quizDifficulty,
       quizQuestionCount,
       quizQuestions,
+      isLoading,
+      error,
+      isSaving,
       saveNote,
       generateSummary,
       addKeyword,

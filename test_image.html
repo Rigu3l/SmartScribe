@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Profile Picture Display</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+        .test-section {
+            margin: 20px 0;
+            padding: 20px;
+            border: 1px solid #ccc;
+            border-radius: 8px;
+        }
+        .profile-image {
+            width: 100px;
+            height: 100px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #ccc;
+        }
+        .error {
+            color: red;
+        }
+        .success {
+            color: green;
+        }
+    </style>
+</head>
+<body>
+    <h1>Profile Picture Display Test</h1>
+
+    <div class="test-section">
+        <h2>Test Image Loading</h2>
+        <p>This page tests if profile pictures can be loaded from the server.</p>
+
+        <div id="test-results"></div>
+
+        <button onclick="testImageLoading()">Test Image Loading</button>
+        <button onclick="clearCache()">Clear Cache & Reload</button>
+    </div>
+
+    <div class="test-section">
+        <h2>Direct Image Test</h2>
+        <p>If you have uploaded a profile picture, enter the filename below:</p>
+        <input type="text" id="imagePath" placeholder="e.g., uploads/profile_pictures/profile_25_1234567890.jpg" style="width: 100%; padding: 8px; margin: 10px 0;">
+        <button onclick="testDirectImage()">Test Direct Image</button>
+        <div id="direct-image-result"></div>
+    </div>
+
+    <script>
+        function testImageLoading() {
+            const resultsDiv = document.getElementById('test-results');
+            resultsDiv.innerHTML = '<p>Testing image loading...</p>';
+
+            // Test a known profile picture path
+            const testImage = new Image();
+            const imageUrl = 'http://localhost/SmartScribe-main/public/uploads/profile_pictures/profile_17_1756308864.jpg?' + Date.now();
+
+            testImage.onload = function() {
+                resultsDiv.innerHTML = `
+                    <div class="success">
+                        <p>✅ Image loaded successfully!</p>
+                        <p>URL: ${imageUrl}</p>
+                        <p>Dimensions: ${testImage.naturalWidth} x ${testImage.naturalHeight}</p>
+                        <img src="${imageUrl}" style="max-width: 200px; max-height: 200px; border: 1px solid #ccc;">
+                    </div>
+                `;
+            };
+
+            testImage.onerror = function() {
+                resultsDiv.innerHTML = `
+                    <div class="error">
+                        <p>❌ Image failed to load</p>
+                        <p>URL: ${imageUrl}</p>
+                        <p>Possible causes:</p>
+                        <ul>
+                            <li>File doesn't exist on server</li>
+                            <li>Web server not configured correctly</li>
+                            <li>CORS issues</li>
+                            <li>Wrong URL path</li>
+                        </ul>
+                    </div>
+                `;
+
+                // Try to fetch the URL to get more details
+                fetch(imageUrl)
+                    .then(response => {
+                        resultsDiv.innerHTML += `<p>HTTP Status: ${response.status} ${response.statusText}</p>`;
+                    })
+                    .catch(error => {
+                        resultsDiv.innerHTML += `<p>Network Error: ${error.message}</p>`;
+                    });
+            };
+
+            testImage.src = imageUrl;
+        }
+
+        function testDirectImage() {
+            const imagePath = document.getElementById('imagePath').value;
+            const resultDiv = document.getElementById('direct-image-result');
+
+            if (!imagePath) {
+                resultDiv.innerHTML = '<p class="error">Please enter an image path</p>';
+                return;
+            }
+
+            const fullUrl = `http://localhost/SmartScribe-main/public/${imagePath}?${Date.now()}`;
+
+            resultDiv.innerHTML = '<p>Testing...</p>';
+
+            const testImage = new Image();
+            testImage.onload = function() {
+                resultDiv.innerHTML = `
+                    <div class="success">
+                        <p>✅ Image loaded successfully!</p>
+                        <img src="${fullUrl}" class="profile-image">
+                    </div>
+                `;
+            };
+
+            testImage.onerror = function() {
+                resultDiv.innerHTML = `
+                    <div class="error">
+                        <p>❌ Image failed to load: ${fullUrl}</p>
+                    </div>
+                `;
+            };
+
+            testImage.src = fullUrl;
+        }
+
+        function clearCache() {
+            // Clear browser cache by adding a cache-busting parameter
+            window.location.reload(true);
+        }
+
+        // Auto-test on page load
+        window.onload = function() {
+            setTimeout(testImageLoading, 1000);
+        };
+    </script>
+</body>
+</html>

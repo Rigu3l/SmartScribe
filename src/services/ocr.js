@@ -59,12 +59,13 @@ class OCRService {
    * @returns {Promise<Blob>} - The image blob
    */
   async takePhoto() {
-    return new Promise(async (resolve, reject) => {
-      try {
-        // Check if camera is available
-        if (!await this.hasCamera()) {
-          throw new Error('No camera detected on this device.');
-        }
+    return new Promise((resolve, reject) => {
+      (async () => {
+        try {
+          // Check if camera is available
+          if (!(await this.hasCamera())) {
+            throw new Error('No camera detected on this device.');
+          }
         
         // Create video element
         const video = document.createElement('video');
@@ -104,6 +105,7 @@ class OCRService {
         console.error('Camera access error:', error);
         reject(new Error('Failed to access camera. Please check permissions.'));
       }
+      })();
     });
   }
 }

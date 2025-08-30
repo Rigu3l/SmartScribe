@@ -4,10 +4,117 @@
     <header class="p-4 bg-gray-800 flex justify-between items-center">
       <div class="text-xl font-bold">SmartScribe</div>
       <div class="flex items-center space-x-4">
-        <button class="text-gray-400 hover:text-white">
-          <font-awesome-icon :icon="['fas', 'bell']" />
-        </button>
-        <div class="w-8 h-8 bg-gray-600 rounded-full"></div>
+        <div class="relative">
+          <button @click="toggleNotifications" class="text-gray-400 hover:text-white relative">
+            <font-awesome-icon :icon="['fas', 'bell']" />
+            <span v-if="unreadNotifications > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {{ unreadNotifications }}
+            </span>
+          </button>
+          <div v-if="showNotifications" class="absolute right-0 mt-2 w-80 bg-gray-800 rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
+            <div class="p-4 border-b border-gray-700">
+              <h3 class="text-lg font-semibold">Notifications</h3>
+            </div>
+            <div v-if="notifications.length > 0">
+              <div v-for="(notification, index) in notifications" :key="notification.id || index"
+                   class="p-4 border-b border-gray-700 hover:bg-gray-700 transition-colors"
+                   :class="{
+                     'bg-gray-700': !notification.read,
+                     'cursor-pointer': !notification.read
+                   }"
+                   @click="markAsRead(notification)">
+                <div class="flex items-start space-x-3">
+                  <div class="flex-shrink-0 mt-1">
+                    <div :class="[
+                      'w-8 h-8 rounded-full flex items-center justify-center',
+                      notification.bgColor
+                    ]">
+                      <font-awesome-icon :icon="notification.icon" class="text-white text-sm" />
+                    </div>
+                  </div>
+                  <div class="flex-grow">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-grow">
+                        <p class="text-sm font-medium text-white">{{ notification.title }}</p>
+                        <p class="text-xs text-gray-300 mt-1">{{ notification.message }}</p>
+                        <p class="text-xs text-gray-500 mt-2">{{ notification.time }}</p>
+                      </div>
+                      <div class="flex items-center space-x-2 ml-2">
+                        <div v-if="!notification.read" class="flex-shrink-0">
+                          <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        </div>
+                        <button v-if="notification.persistent"
+                                @click.stop="removeNotification(notification.id)"
+                                class="text-gray-400 hover:text-red-400 text-xs">
+                          <font-awesome-icon :icon="['fas', 'times']" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Notification Actions -->
+                    <div v-if="notification.actions && notification.actions.length > 0" class="mt-3 flex space-x-2">
+                      <button v-for="(action, actionIndex) in notification.actions" :key="actionIndex"
+                              @click.stop="executeAction(notification, action)"
+                              class="px-2 py-1 text-xs rounded transition-colors"
+                              :class="{
+                                'bg-blue-600 text-white hover:bg-blue-700': action.action === 'navigate',
+                                'bg-gray-600 text-white hover:bg-gray-700': action.action === 'dismiss',
+                                'bg-green-600 text-white hover:bg-green-700': action.action === 'callback'
+                              }">
+                        {{ action.label }}
+                      </button>
+                    </div>
+
+                    <!-- Priority Indicator -->
+                    <div v-if="notification.priority === 'urgent'" class="mt-2 flex items-center">
+                      <div class="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                      <span class="text-xs text-red-400 font-medium">URGENT</span>
+                    </div>
+                    <div v-else-if="notification.priority === 'high'" class="mt-2 flex items-center">
+                      <div class="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                      <span class="text-xs text-orange-400 font-medium">HIGH PRIORITY</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="p-4 text-center text-gray-400">
+              <font-awesome-icon :icon="['fas', 'bell-slash']" class="text-2xl mb-2" />
+              <p>No notifications yet</p>
+            </div>
+            <div v-if="notifications.length > 0" class="p-3 border-t border-gray-700">
+              <button @click="markAllAsRead" class="text-sm text-blue-400 hover:text-blue-300">
+                Mark all as read
+              </button>
+            </div>
+          </div>
+          <!-- Backdrop to close notifications when clicking outside -->
+          <div v-if="showNotifications" class="fixed inset-0 z-0" @click="closeNotifications"></div>
+        </div>
+        <div class="relative">
+          <button @click="toggleUserMenu" class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-600">
+              <img
+                v-if="user && user.profilePicture"
+                :src="getProfilePictureUrl(user.profilePicture)"
+                alt="Profile"
+                class="w-full h-full object-cover"
+                @error="handleImageError"
+                @load="handleImageLoad"
+              />
+              <div v-else class="w-full h-full bg-gray-600 flex items-center justify-center">
+                <font-awesome-icon :icon="['fas', 'user']" class="text-white text-sm" />
+              </div>
+            </div>
+            <span class="text-sm text-gray-300">{{ user?.name || 'User' }}</span>
+            <font-awesome-icon :icon="['fas', 'chevron-down']" class="text-xs" />
+          </button>
+          <div v-if="showUserMenu" class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-10">
+            <button @click="openProfileModal" class="w-full text-left block px-4 py-2 hover:bg-gray-700">Profile</button>
+            <router-link to="/settings" @click="closeUserMenu" class="block px-4 py-2 hover:bg-gray-700">Settings</router-link>
+            <button @click="logout" class="w-full text-left block px-4 py-2 hover:bg-gray-700 text-red-400 hover:text-red-300">Logout</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -47,7 +154,48 @@
 
       <!-- Progress Tracker Main Content -->
       <main class="flex-grow p-6">
-        <h1 class="text-2xl font-bold mb-6">Study Progress</h1>
+        <div class="flex justify-between items-center mb-6">
+          <div class="flex items-center space-x-4">
+            <h1 class="text-2xl font-bold">Study Progress</h1>
+            <!-- Connection Status Indicator -->
+            <div class="flex items-center space-x-2">
+              <div
+                :class="[
+                  'w-2 h-2 rounded-full transition-colors duration-300',
+                  isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
+                ]"
+              ></div>
+              <span
+                :class="[
+                  'text-sm transition-colors duration-300',
+                  isConnected ? 'text-green-400' : 'text-red-400'
+                ]"
+              >
+                {{ isConnected ? 'Live' : 'Offline' }}
+              </span>
+            </div>
+          </div>
+          <div class="flex items-center space-x-2">
+            <button
+              @click="refreshProgress()"
+              :disabled="loadingProgress"
+              class="flex items-center space-x-1 px-3 py-1 bg-gray-700 rounded-md hover:bg-gray-600 transition disabled:opacity-50"
+            >
+              <font-awesome-icon
+                :icon="['fas', loadingProgress ? 'spinner' : 'sync-alt']"
+                :class="loadingProgress ? 'animate-spin' : ''"
+                class="text-sm"
+              />
+              <span class="text-sm">Refresh</span>
+            </button>
+            <button
+              @click="debugStats()"
+              class="px-3 py-1 bg-blue-600 rounded-md hover:bg-blue-700 transition text-sm"
+            >
+              Debug Stats
+            </button>
+          </div>
+        </div>
         
         <!-- Overview Cards -->
         <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
@@ -205,71 +353,151 @@
         </div>
       </main>
     </div>
+
+    <!-- Profile Modal -->
+    <div v-if="showProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-gray-800 rounded-lg p-6 w-96 max-w-90vw">
+        <div class="flex items-center mb-4">
+          <font-awesome-icon :icon="['fas', 'user']" class="text-blue-400 text-xl mr-3" />
+          <h3 class="text-lg font-medium">User Profile</h3>
+        </div>
+
+        <!-- Profile Picture Section -->
+        <div class="flex flex-col items-center mb-6">
+          <div class="w-24 h-24 rounded-full overflow-hidden bg-gray-600 mb-3">
+            <img
+              v-if="user && user.profilePicture"
+              :key="user.profilePicture"
+              :src="getProfilePictureUrl(user.profilePicture)"
+              alt="Profile"
+              class="w-full h-full object-cover"
+              @error="handleImageError"
+              @load="handleImageLoad"
+            />
+            <div v-else class="w-full h-full bg-gray-600 flex items-center justify-center">
+              <font-awesome-icon :icon="['fas', 'user']" class="text-white text-2xl" />
+            </div>
+          </div>
+          <p class="text-sm text-gray-400 mb-2">Profile picture can be changed in Settings</p>
+        </div>
+
+        <div class="space-y-4">
+          <div>
+            <label class="block text-sm font-medium mb-2">Full Name</label>
+            <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+              {{ user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || 'User') }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Email</label>
+            <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+              {{ user?.email || 'user@example.com' }}
+            </div>
+          </div>
+          <div>
+            <label class="block text-sm font-medium mb-2">Member Since</label>
+            <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+              {{ user?.memberSince || new Date().toLocaleDateString() }}
+            </div>
+          </div>
+        </div>
+        <div class="flex justify-end space-x-3 mt-6">
+          <button @click="closeProfileModal" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
+            Close
+          </button>
+        </div>
+      </div>
+    </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
-// import { useStore } from 'vuex'; //
+import { ref, onMounted, computed } from 'vue';
+import { useRouter } from 'vue-router';
+import { useNotifications } from '@/composables/useNotifications';
+import { useUserProfile } from '@/composables/useUserProfile';
+import api from '@/services/api';
 
 export default {
   name: 'ProgressView',
   setup() {
-    // const store = useStore(); //
-    
-    const stats = ref({
-      totalNotes: 15,
-      notesThisWeek: 3,
-      studyHours: 24,
-      studyHoursThisWeek: 6,
-      quizAverage: 85,
-      quizzesCompleted: 8
+    const router = useRouter();
+
+    // Use the shared notifications composable
+    const {
+      showNotifications,
+      notifications,
+      unreadNotifications,
+      toggleNotifications,
+      closeNotifications,
+      markAsRead,
+      markAllAsRead
+    } = useNotifications();
+
+    // Use the user profile composable
+    const {
+      user: userProfile,
+      loading: loadingUser,
+      loadUserProfile
+    } = useUserProfile();
+
+    // =====================================
+    // SIMPLE DATA MANAGEMENT
+    // =====================================
+
+    // Simple reactive data
+    const progressResponse = ref(null);
+    const loadingProgress = ref(false);
+    const isConnected = ref(true);
+    const connectionStatus = ref('connected');
+    const lastSync = ref(new Date());
+
+    // =====================================
+    // COMPUTED PROPERTIES
+    // =====================================
+
+    // Process progress data
+    const stats = computed(() => {
+      if (!progressResponse.value?.data?.data) {
+        console.log('ProgressView: No progress data available');
+        return {
+          totalNotes: 0,
+          notesThisWeek: 0,
+          studyHours: 0,
+          studyHoursThisWeek: 0,
+          quizAverage: 0,
+          quizzesCompleted: 0
+        };
+      }
+
+      const progressData = progressResponse.value.data.data;
+      const result = {
+        totalNotes: progressData.totalNotes || 0,
+        notesThisWeek: progressData.notesThisWeek || 0,
+        studyHours: progressData.studyHours || 0,
+        studyHoursThisWeek: progressData.studyHoursThisWeek || 0,
+        quizAverage: progressData.quizAverage || 0,
+        quizzesCompleted: progressData.quizzesCompleted || 0
+      };
+
+      console.log('ProgressView stats:', result);
+      return result;
     });
 
-    const weeklyActivity = ref([
-      { name: 'Mon', activity: 0.3 },
-      { name: 'Tue', activity: 0.5 },
-      { name: 'Wed', activity: 0.2 },
-      { name: 'Thu', activity: 0.8 },
-      { name: 'Fri', activity: 0.6 },
-      { name: 'Sat', activity: 0.4 },
-      { name: 'Sun', activity: 0.1 }
-    ]);
+    const weeklyActivity = computed(() => {
+      return progressResponse.value?.data?.data?.weeklyActivity || [];
+    });
 
-    const subjects = ref([
-      { name: 'Biology', percentage: 35, color: 'bg-green-500' },
-      { name: 'History', percentage: 25, color: 'bg-blue-500' },
-      { name: 'Mathematics', percentage: 20, color: 'bg-yellow-500' },
-      { name: 'Physics', percentage: 15, color: 'bg-purple-500' },
-      { name: 'Literature', percentage: 5, color: 'bg-red-500' }
-    ]);
+    const subjects = computed(() => {
+      return progressResponse.value?.data?.data?.subjects || [];
+    });
 
-    const recentActivity = ref([
-      { 
-        title: 'Scanned Biology Notes', 
-        time: '2 hours ago', 
-        icon: ['fas', 'camera'], 
-        iconColor: 'bg-blue-600' 
-      },
-      { 
-        title: 'Completed History Quiz', 
-        time: 'Yesterday at 4:30 PM', 
-        icon: ['fas', 'check-circle'], 
-        iconColor: 'bg-green-600' 
-      },
-      { 
-        title: 'Generated Summary for Physics', 
-        time: 'Yesterday at 2:15 PM', 
-        icon: ['fas', 'file-alt'], 
-        iconColor: 'bg-yellow-600' 
-      },
-      { 
-        title: 'Created Study Goal', 
-        time: '3 days ago', 
-        icon: ['fas', 'bullseye'], 
-        iconColor: 'bg-purple-600' 
-      }
-    ]);
+    const recentActivity = computed(() => {
+      return progressResponse.value?.data?.data?.recentActivity || [];
+    });
+
+    // Use user from composable
+    const user = userProfile;
 
     const goals = ref([
       {
@@ -288,41 +516,107 @@ export default {
         progress: 90
       }
     ]);
-    
+
     const showAddGoalForm = ref(false);
     const newGoal = ref({
       title: '',
       dueDate: ''
     });
 
-    onMounted(async () => {
+    // User menu state
+    const showUserMenu = ref(false);
+    const showProfileModal = ref(false);
+
+    // =====================================
+    // SIMPLE API FUNCTIONS
+    // =====================================
+
+    // Fetch progress data from API
+    const fetchProgress = async () => {
       try {
-        // In a real app, we would fetch progress data from the store
-        // await store.dispatch('progress/fetchStats');
-        // await store.dispatch('progress/fetchActivity');
-        // stats.value = store.getters['progress/getStats'];
-        // weeklyActivity.value = store.getters['progress/getWeeklyActivity'];
-        // subjects.value = store.getters['progress/getSubjects'];
-        // recentActivity.value = store.getters['progress/getRecentActivity'];
-        // goals.value = store.getters['progress/getGoals'];
+        loadingProgress.value = true;
+        const response = await api.getDashboardStats();
+        progressResponse.value = response.data;
+        console.log('Progress data fetched successfully:', response.data);
       } catch (error) {
-        console.error('Error loading progress data:', error);
+        console.error('Error fetching progress data:', error);
+      } finally {
+        loadingProgress.value = false;
       }
+    };
+
+
+    // Refresh functions
+    const refreshProgress = async () => {
+      await fetchProgress();
+    };
+
+    const refreshUser = async () => {
+      await loadUserProfile();
+    };
+
+    // =====================================
+    // LIFECYCLE HOOKS
+    // =====================================
+
+    onMounted(async () => {
+      // Fetch initial data
+      await Promise.all([
+        fetchProgress(),
+        loadUserProfile()
+      ]);
+
+      console.log('ProgressView mounted and data loaded');
     });
     
+    // Get profile picture URL
+    const getProfilePictureUrl = (profilePicturePath) => {
+      if (!profilePicturePath) return null;
+      // Since the backend stores relative paths from public directory, construct the full URL
+      // Add timestamp to prevent caching issues
+      const timestamp = Date.now();
+      return `/${profilePicturePath}?t=${timestamp}`;
+    };
+
+    // Handle image loading errors
+    const handleImageError = (event) => {
+      const imgSrc = event.target.src;
+      console.error('Profile picture failed to load:', imgSrc);
+      console.error('Image naturalWidth:', event.target.naturalWidth);
+      console.error('Image naturalHeight:', event.target.naturalHeight);
+      const userData = user.value || {};
+      console.error('User profile picture path:', userData.profilePicture || 'null');
+    };
+
+    // Handle successful image loading
+    const handleImageLoad = (event) => {
+      const imgSrc = event.target.src;
+      console.log('Profile picture loaded successfully:', imgSrc);
+      console.log('Image dimensions:', event.target.naturalWidth, 'x', event.target.naturalHeight);
+    };
+
+    const debugStats = () => {
+      console.log('=== DEBUG STATS ===');
+      console.log('Raw progress response:', progressResponse.value);
+      console.log('Computed stats:', stats.value);
+      console.log('Loading state:', loadingProgress.value);
+      console.log('Connection status:', isConnected.value);
+      console.log('===================');
+    };
+
     const addGoal = async () => {
       try {
         if (!newGoal.value.title.trim() || !newGoal.value.dueDate) {
           alert('Please fill in all fields');
           return;
         }
-        
+
         // Format the due date
         const dueDate = new Date(newGoal.value.dueDate);
         const now = new Date();
         const diffTime = dueDate - now;
         const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-        
+
         let dueDateText;
         if (diffDays === 0) {
           dueDateText = 'Due today';
@@ -335,21 +629,21 @@ export default {
         } else {
           dueDateText = `Due in ${Math.floor(diffDays / 7)} weeks`;
         }
-        
+
         // In a real app, we would dispatch to the store
         // await store.dispatch('progress/addGoal', {
         //   title: newGoal.value.title,
         //   dueDate: dueDateText,
         //   progress: 0
         // });
-        
+
         // For now, we'll just add it to our local array
         goals.value.push({
           title: newGoal.value.title,
           dueDate: dueDateText,
           progress: 0
         });
-        
+
         // Reset form
         newGoal.value = {
           title: '',
@@ -362,15 +656,96 @@ export default {
       }
     };
 
+    // =====================================
+    // USER MENU FUNCTIONS
+    // =====================================
+
+    /**
+     * Toggle user menu dropdown
+     */
+    const toggleUserMenu = () => {
+      showUserMenu.value = !showUserMenu.value;
+    };
+
+    /**
+     * Close user menu dropdown
+     */
+    const closeUserMenu = () => {
+      showUserMenu.value = false;
+    };
+
+    /**
+     * Open user profile modal
+     */
+    const openProfileModal = () => {
+      showProfileModal.value = true;
+      showUserMenu.value = false; // Close the dropdown menu
+    };
+
+    /**
+     * Close user profile modal
+     */
+    const closeProfileModal = () => {
+      showProfileModal.value = false;
+    };
+
+    /**
+     * Logout user and redirect to login
+     */
+    const logout = async () => {
+      try {
+        router.push('/login');
+      } catch (error) {
+        console.error('Error logging out:', error);
+      }
+    };
+
     return {
+      // Data
       stats,
       weeklyActivity,
       subjects,
       recentActivity,
       goals,
+      user,
+
+      // UI State
       showAddGoalForm,
       newGoal,
-      addGoal
+
+      // Loading states
+      loadingProgress,
+      loadingUser,
+
+      // Connection status
+      isConnected,
+      connectionStatus,
+      lastSync,
+
+      // Functions
+      addGoal,
+      debugStats,
+      refreshProgress,
+      refreshUser,
+      getProfilePictureUrl,
+      handleImageError,
+      handleImageLoad,
+
+      // User menu functions
+      toggleUserMenu,
+      closeUserMenu,
+      openProfileModal,
+      closeProfileModal,
+      logout,
+
+      // Notification functions
+      showNotifications,
+      notifications,
+      unreadNotifications,
+      toggleNotifications,
+      closeNotifications,
+      markAsRead,
+      markAllAsRead
     };
   }
 }

@@ -21,11 +21,21 @@ class Note {
         $stmt->bindParam(':original_text', $this->original_text);
         $stmt->bindParam(':image_path', $this->image_path);
 
-        if ($stmt->execute()) {
-            return $this->conn->lastInsertId();
-        }
+        // Debug logging
+        error_log("Note::create() - User ID: $this->user_id");
+        error_log("Note::create() - Title: $this->title");
+        error_log("Note::create() - Text: " . substr($this->original_text, 0, 100));
+        error_log("Note::create() - Image path: $this->image_path");
 
-        return false;
+        if ($stmt->execute()) {
+            $lastInsertId = $this->conn->lastInsertId();
+            error_log("Note::create() - Successfully created note with ID: $lastInsertId");
+            return $lastInsertId;
+        } else {
+            $error = $stmt->errorInfo();
+            error_log("Note::create() - Failed to create note: " . json_encode($error));
+            return false;
+        }
     }
 
     public function readAllByUser() {

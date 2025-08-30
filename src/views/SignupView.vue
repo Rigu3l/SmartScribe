@@ -22,14 +22,25 @@
         <p class="text-sm text-center text-gray-400 mb-6">Sign up for SmartScribe to start digitizing your notes</p>
         
         <form @submit.prevent="handleSignup">
-          <div class="mb-4">
-            <input 
-              type='text' 
-              v-model="name" 
-              placeholder="Full Name" 
-              class="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"
-              required
-            />
+          <div class="mb-4 grid grid-cols-2 gap-3">
+            <div>
+              <input
+                type='text'
+                v-model="firstName"
+                placeholder="First Name"
+                class="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"
+                required
+              />
+            </div>
+            <div>
+              <input
+                type='text'
+                v-model="lastName"
+                placeholder="Last Name"
+                class="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"
+                required
+              />
+            </div>
           </div>
           
           <div class="mb-4">
@@ -54,10 +65,9 @@
             <button
               type="button"
               @click="togglePasswordField('passwordInput')"
-              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+              class="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-white"
             >
               <font-awesome-icon :icon="['fas', 'eye']" class="password-visible-icon hidden" />
-              <font-awesome-icon :icon="['fas', 'eye-slash']" class="password-hidden-icon" />
             </button>
           </div>
           
@@ -73,10 +83,9 @@
             <button
               type="button"
               @click="togglePasswordField('confirmPasswordInput')"
-              class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-white"
+              class="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-white"
             >
               <font-awesome-icon :icon="['fas', 'eye']" class="password-visible-icon hidden" />
-              <font-awesome-icon :icon="['fas', 'eye-slash']" class="password-hidden-icon" />
             </button>
           </div>
           
@@ -146,7 +155,7 @@ import logo from '@/assets/image/logo.jpg'
 import { ref } from 'vue';
 // import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
-import axios from 'axios';
+import api from '@/services/api';
 // import { icon } from '@fortawesome/fontawesome-svg-core';
 
 export default {
@@ -155,7 +164,8 @@ export default {
     // const store = useStore();
     const router = useRouter();
     
-    const name = ref('');
+    const firstName = ref('');
+    const lastName = ref('');
     const email = ref('');
     const password = ref('');
     const confirmPassword = ref('');
@@ -173,18 +183,16 @@ export default {
 
     const togglePasswordField = (inputRef) => {
       const inputElement = inputRef === 'passwordInput' ? passwordInput.value : confirmPasswordInput.value;
-      const button = inputElement.nextElementSibling;
-      const visibleIcon = button.querySelector('.password-visible-icon');
-      const hiddenIcon = button.querySelector('.password-hidden-icon');
-      
+      const inputContainer = inputElement.parentElement;
+      const button = inputContainer.querySelector('button');
+      const eyeIcon = button.querySelector('.password-visible-icon');
+
       if (inputElement.type === 'password') {
         inputElement.type = 'text';
-        visibleIcon.classList.remove('hidden');
-        hiddenIcon.classList.add('hidden');
+        eyeIcon.classList.remove('hidden');
       } else {
         inputElement.type = 'password';
-        visibleIcon.classList.add('hidden');
-        hiddenIcon.classList.remove('hidden');
+        eyeIcon.classList.add('hidden');
       }
     };
 
@@ -199,36 +207,42 @@ export default {
         isLoading.value = true;
         errorMessage.value = '';
         
-        // await store.dispatch('auth/register', {
-        //  name: name.value,
-        //  email: email.value,
-        //  password: password.value
-        //});
-        let data = await axios.post('http://localhost:3000/api/auth/register', {
-          name: name.value,
+        // Use the centralized API service
+        const response = await api.register({
+          first_name: firstName.value,
+          last_name: lastName.value,
+          name: `${firstName.value} ${lastName.value}`,
           email: email.value,
           password: password.value
         });
 
-        if (data) {
-          localStorage.setItem("user", JSON.stringify(data.data.user));
+        if (response.data && response.data.user) {
+          // Store user data in localStorage
+          localStorage.setItem("user", JSON.stringify(response.data.user));
+          localStorage.setItem("token", response.data.token || '');
+
+          console.log('Registration successful, user data stored:', response.data.user);
           showSuccessModal.value = true;
 
           // Auto-close modal and redirect after 2.5 seconds
           setTimeout(() => {
             redirectToLogin()
           }, 2500)
+        } else {
+          throw new Error('Invalid response from server');
         }
         
       } catch (error) {
-        errorMessage.value = error.message || 'Failed to create account. Please try again.';
+        console.error('Signup error:', error);
+        errorMessage.value = error.response?.data?.error || error.message || 'Failed to create account. Please try again.';
       } finally {
         isLoading.value = false;
       }
     };
 
     return {
-      name,
+      firstName,
+      lastName,
       email,
       password,
       confirmPassword,
