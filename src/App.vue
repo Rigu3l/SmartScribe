@@ -19,14 +19,12 @@ export default {
       try {
         // Check if store and getters are available
         if (!store || !store.getters) {
-          console.warn('Store not available, using default theme');
           return 'bg-gray-900 text-white';
         }
 
         const themeClasses = store.getters['app/getThemeClasses'];
         return themeClasses?.main || 'bg-gray-900 text-white';
       } catch (error) {
-        console.error('Error getting global theme classes:', error);
         return 'bg-gray-900 text-white';
       }
     });

@@ -154,7 +154,7 @@
           'mb-6 p-4 rounded-lg',
           messageType === 'success' ? 'bg-green-800 text-green-200' : 'bg-red-800 text-red-200'
         ]">
-          <font-awesome-icon :icon="messageType === 'success' ? ['fas', 'check-circle'] : ['fas', 'exclamation-triangle']" class="mr-2" />
+          <font-awesome-icon :icon="messageType === 'success' ? ['fas', 'check-circle'] : ['fas', 'triangle-exclamation']" class="mr-2" />
           {{ message }}
         </div>
         
@@ -310,7 +310,7 @@
             <h2 class="font-semibold mb-4" :class="[themeClasses.text, fontSizeClasses.body]">Danger Zone</h2>
             <p class="mb-4" :class="themeClasses.secondaryText">Once you delete your account, there is no going back. Please be certain.</p>
             <button @click="deleteAccount" class="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 transition">
-              <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="mr-2" />
+              <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="mr-2" />
               Delete Account
             </button>
           </div>
@@ -556,7 +556,6 @@
 </template>
 
 <script>
-// import { theme } from 'tailwind.config';
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';
 import { useNotifications } from '@/composables/useNotifications';
@@ -643,12 +642,10 @@ export default {
     const loadSettings = async () => {
       try {
         const response = await api.getSettings();
-        console.log('Settings API response:', response.data);
         if (response.data.success) {
           Object.assign(settings, response.data.data);
         }
       } catch (error) {
-        console.error('Error loading settings:', error);
         // Fallback to localStorage
         const savedSettings = localStorage.getItem('smartscribe_settings');
         if (savedSettings) {
@@ -663,10 +660,10 @@ export default {
       try {
         const response = await api.updateSettings(settings);
         if (response.data.success) {
-          console.log('Settings saved to backend successfully');
+          // Settings saved successfully
         }
       } catch (error) {
-        console.error('Error saving settings to backend:', error);
+        // Error saving settings to backend
       }
 
       // Always save to localStorage as fallback
@@ -694,31 +691,13 @@ export default {
     };
 
     // Handle image loading errors
-    const handleImageError = (event) => {
-      const imgSrc = event.target.src;
-      console.error('Profile picture failed to load:', imgSrc);
-      console.error('Image naturalWidth:', event.target.naturalWidth);
-      console.error('Image naturalHeight:', event.target.naturalHeight);
-      console.error('User profile picture path:', user.value.profilePicture);
-
-      // Try to fetch the image URL to see what happens
-      fetch(imgSrc)
-        .then(response => {
-          console.log('Image fetch response:', response.status, response.statusText);
-          if (!response.ok) {
-            console.error('Image fetch failed with status:', response.status);
-          }
-        })
-        .catch(error => {
-          console.error('Image fetch error:', error);
-        });
+    const handleImageError = () => {
+      // Profile picture failed to load
     };
 
     // Handle successful image loading
-    const handleImageLoad = (event) => {
-      const imgSrc = event.target.src;
-      console.log('Profile picture loaded successfully:', imgSrc);
-      console.log('Image dimensions:', event.target.naturalWidth, 'x', event.target.naturalHeight);
+    const handleImageLoad = () => {
+      // Profile picture loaded successfully
     };
 
     // Save profile changes
@@ -744,7 +723,6 @@ export default {
           showMessage('Failed to update profile: ' + (response.data.error || 'Unknown error'), 'error');
         }
       } catch (error) {
-        console.error('Error updating profile:', error);
         showMessage('Failed to update profile', 'error');
       } finally {
         isLoading.value = false;
@@ -811,7 +789,6 @@ export default {
     const fetchUserProfile = async () => {
       try {
         const response = await api.getUser();
-        console.log('Profile API response:', response.data); // Debug log
         if (response.data.success) {
           user.value = {
             id: response.data.user.id,
@@ -819,10 +796,9 @@ export default {
             email: response.data.user.email || 'user@example.com',
             profilePicture: response.data.user.profile_picture || null
           };
-          console.log('Updated user object:', user.value); // Debug log
         }
       } catch (error) {
-        console.error('Error fetching user profile:', error);
+        // Error fetching user profile
       }
     };
 
@@ -843,7 +819,6 @@ export default {
           return { success: false, message: response.data.error };
         }
       } catch (error) {
-        console.error('Error uploading profile picture:', error);
         return { success: false, message: 'Network error' };
       }
     };
@@ -852,8 +827,6 @@ export default {
     const handleProfilePictureUpload = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
-
-      console.log('Selected file:', file); // Debug log
 
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -871,7 +844,6 @@ export default {
 
       try {
         const result = await uploadProfilePicture(file);
-        console.log('Upload result:', result); // Debug log
 
         if (result.success) {
           showMessage(result.message);
@@ -881,7 +853,6 @@ export default {
           showMessage('Upload failed: ' + result.message, 'error');
         }
       } catch (error) {
-        console.error('Upload error:', error); // Debug log
         showMessage('Upload failed: Network error', 'error');
       }
 

@@ -2,8 +2,8 @@
   <div :class="themeClasses.main" class="min-h-screen flex flex-col">
     <!-- Header -->
     <header :class="themeClasses.header" class="p-4 flex justify-between items-center">
-      <div class="text-xl font-bold">SmartScribe</div>
-      <div class="flex items-center space-x-4">
+      <div class="text-lg md:text-xl font-bold">SmartScribe</div>
+      <div class="flex items-center space-x-2 md:space-x-4">
         <div class="relative">
           <button @click="toggleNotifications" class="text-gray-400 hover:text-white relative">
             <font-awesome-icon :icon="['fas', 'bell']" />
@@ -122,11 +122,11 @@
     <!-- Main Content -->
     <div class="flex flex-grow">
       <!-- Sidebar -->
-      <aside :class="themeClasses.sidebar" class="w-64 p-4">
+      <aside :class="themeClasses.sidebar" class="w-64 md:w-64 p-4">
         <nav>
           <ul class="space-y-2">
             <li>
-              <router-link to="/dashboard" :class="store?.getters?.['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200'" class="flex items-center space-x-2 p-2 rounded-md">
+              <router-link to="/dashboard" :class="themeClasses.button" class="flex items-center space-x-2 p-2 rounded-md">
                 <font-awesome-icon :icon="['fas', 'home']" />
                 <span>Dashboard</span>
               </router-link>
@@ -162,7 +162,7 @@
 
       <!-- Added title input modal -->
       <div v-if="showTitleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-lg p-6 w-96 max-w-md mx-4">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
           <h3 class="text-xl font-semibold mb-4">Add Note Title</h3>
           <div class="mb-4">
             <label class="block text-sm font-medium mb-2">Title</label>
@@ -200,9 +200,9 @@
 
       <!-- Delete Confirmation Modal -->
       <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-lg p-6 w-96 max-w-90vw">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4">
           <div class="flex items-center mb-4">
-            <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="text-red-400 text-xl mr-3" />
+            <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-red-400 text-xl mr-3" />
             <h3 class="text-lg font-medium">Delete Note</h3>
           </div>
           <p class="text-gray-300 mb-6">
@@ -221,7 +221,7 @@
 
       <!-- Profile Modal -->
       <div v-if="showProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-lg p-6 w-96 max-w-90vw">
+        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4">
           <div class="flex items-center mb-4">
             <font-awesome-icon :icon="['fas', 'user']" class="text-blue-400 text-xl mr-3" />
             <h3 class="text-lg font-medium">User Profile</h3>
@@ -275,7 +275,7 @@
       </div>
 
       <!-- Main Dashboard -->
-      <main :class="themeClasses.mainContent" class="flex-grow p-6">
+      <main :class="themeClasses.mainContent" class="flex-grow p-4 md:p-6">
         <div class="flex justify-between items-center mb-6">
           <h1 class="text-2xl font-bold">Dashboard</h1>
           <div class="flex items-center space-x-4">
@@ -317,7 +317,7 @@
         </div>
 
         <!-- Dashboard Statistics -->
-        <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
           <div :class="themeClasses.card" class="rounded-lg p-6">
             <div class="flex justify-between items-center mb-2">
               <h3 class="text-lg font-semibold">Total Notes</h3>
@@ -339,8 +339,8 @@
               <font-awesome-icon :icon="['fas', 'clock']" class="text-green-500 text-xl" />
             </div>
             <div v-if="loadingDashboard" class="animate-pulse">
-              <div :class="store?.getters?.['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-300'" class="h-8 rounded mb-2"></div>
-              <div :class="store?.getters?.['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-300'" class="h-4 rounded w-3/4"></div>
+              <div :class="themeClasses.card" class="h-8 rounded mb-2"></div>
+              <div :class="themeClasses.card" class="h-4 rounded w-3/4"></div>
             </div>
             <div v-else>
               <p class="text-3xl font-bold">{{ stats.studyHours }}h</p>
@@ -382,7 +382,7 @@
         <!-- Quick Actions -->
         <div :class="themeClasses.card" class="rounded-lg p-6 mb-6">
           <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
-          <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
             <button @click="openCamera" :class="themeClasses.button" class="flex flex-col items-center p-4 rounded-lg transition">
               <font-awesome-icon :icon="['fas', 'camera']" class="text-2xl text-blue-500 mb-2" />
               <span class="text-sm font-medium">Scan Note</span>
@@ -650,7 +650,6 @@ export default {
     // Process stats data
     const stats = computed(() => {
       if (!statsResponse.value?.data) {
-        console.log('DashboardView: No stats data available');
         return {
           totalNotes: 0,
           notesThisWeek: 0,
@@ -675,7 +674,6 @@ export default {
         completedGoals: 0
       };
 
-      console.log('DashboardView stats:', result);
       return result;
     });
 
@@ -687,7 +685,6 @@ export default {
       try {
         // Check if store and getters are available
         if (!store || !store.getters) {
-          console.warn('Store not available for theme classes');
           return {
             main: 'bg-gray-900 text-white',
             header: 'bg-gray-800',
@@ -714,7 +711,6 @@ export default {
           button: 'bg-gray-700 hover:bg-gray-600'
         };
       } catch (error) {
-        console.error('Error getting theme classes:', error);
         return {
           main: 'bg-gray-900 text-white',
           header: 'bg-gray-800',
@@ -771,7 +767,6 @@ export default {
           return { success: false, message: response.data.error };
         }
       } catch (error) {
-        console.error('Error uploading profile picture:', error);
         return { success: false, message: 'Network error' };
       }
     };
@@ -782,8 +777,6 @@ export default {
     const handleProfilePictureUpload = async (event) => {
       const file = event.target.files[0];
       if (!file) return;
-
-      console.log('Selected file:', file);
 
       // Validate file type
       const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
@@ -842,9 +835,8 @@ export default {
         loadingNotes.value = true;
         const response = await api.getNotes();
         notesResponse.value = response.data;
-        console.log('Notes fetched successfully:', response.data);
       } catch (error) {
-        console.error('Error fetching notes:', error);
+        // Error fetching notes
       } finally {
         loadingNotes.value = false;
       }
@@ -856,9 +848,8 @@ export default {
         loadingDashboard.value = true;
         const response = await api.getDashboardStats();
         statsResponse.value = response.data;
-        console.log('Dashboard stats fetched successfully:', response.data);
       } catch (error) {
-        console.error('Error fetching dashboard stats:', error);
+        // Error fetching dashboard stats
       } finally {
         loadingDashboard.value = false;
       }
@@ -889,20 +880,13 @@ export default {
     };
 
     // Handle image loading errors
-    const handleImageError = (event) => {
-      const imgSrc = event.target.src;
-      console.error('Profile picture failed to load:', imgSrc);
-      console.error('Image naturalWidth:', event.target.naturalWidth);
-      console.error('Image naturalHeight:', event.target.naturalHeight);
-      const userData = user.value || {};
-      console.error('User profile picture path:', userData.profilePicture || 'null');
+    const handleImageError = () => {
+      // Profile picture failed to load
     };
 
     // Handle successful image loading
-    const handleImageLoad = (event) => {
-      const imgSrc = event.target.src;
-      console.log('Profile picture loaded successfully:', imgSrc);
-      console.log('Image dimensions:', event.target.naturalWidth, 'x', event.target.naturalHeight);
+    const handleImageLoad = () => {
+      // Profile picture loaded successfully
     };
 
     // Format date as "time ago" for recent notes
@@ -924,7 +908,6 @@ export default {
 
         return dateObj.toLocaleDateString();
       } catch (error) {
-        console.error('Error in getTimeAgo:', error);
         return 'Date error';
       }
     };
@@ -1000,7 +983,7 @@ export default {
       try {
         router.push('/login');
       } catch (error) {
-        console.error('Error logging out:', error);
+        // Error logging out
       }
     };
 
@@ -1020,11 +1003,9 @@ export default {
         const stream = await navigator.mediaDevices.getUserMedia({ video: true });
         if (video.value) {
           video.value.srcObject = stream;
-        } else {
-          console.error('Video element not found');
         }
       } catch (err) {
-        console.error('Camera access denied or error:', err);
+        // Camera access denied or error
       }
     };
 
@@ -1052,7 +1033,7 @@ export default {
       canvas.toBlob(async (blob) => {
         try {
           const { data: { text } } = await Tesseract.recognize(blob, 'eng', {
-            logger: m => console.log(m)
+            logger: () => {} // Disable logging
           });
 
           ocrText.value = text;
@@ -1063,7 +1044,7 @@ export default {
           noteTitle.value = ''; // Reset title input
 
         } catch (error) {
-          console.error('OCR error:', error);
+          // OCR error
         }
       }, 'image/jpeg');
     };
@@ -1074,7 +1055,6 @@ export default {
     const handleFileUpload = async (event) => {
       const file = event.target.files[0];
       if (!file) {
-        console.warn('No file selected');
         return;
       }
 
@@ -1090,23 +1070,19 @@ export default {
         return;
       }
 
-      console.log('Uploading', file.name);
-
       try {
         const { data: { text } } = await Tesseract.recognize(file, 'eng', {
-          logger: m => console.log(m)
+          logger: () => {} // Disable logging
         });
 
         ocrText.value = text;
-        console.log('OCR Result:', text);
-
         pendingImageData.value = { type: 'upload', file: file, text: text };
 
         showTitleModal.value = true;
         noteTitle.value = ''; // Reset title input
 
       } catch (error) {
-        console.error('Error processing image:', error);
+        // Error processing image
       }
 
       event.target.value = '';
@@ -1125,35 +1101,22 @@ export default {
       }
 
       try {
-        console.log('Saving note...');
         const noteData = {
           title: noteTitle.value.trim(),
           text: pendingImageData.value.type === 'upload' ? pendingImageData.value.text : pendingImageData.value.data,
           ...(pendingImageData.value.type === 'upload' && pendingImageData.value.file && { image: pendingImageData.value.file })
         };
 
-        console.log('Note data:', {
-          title: noteData.title,
-          text: noteData.text.substring(0, 100) + '...',
-          hasImage: !!noteData.image,
-          imageType: noteData.image ? noteData.image.constructor.name : 'no image',
-          imageSize: noteData.image ? noteData.image.size : 'no image'
-        });
-
         // Check if file is valid
         if (noteData.image && !(noteData.image instanceof File)) {
-          console.error('Image is not a File object:', noteData.image);
           alert('File upload error: Invalid file object');
           return;
         }
 
         try {
-          console.log('Dashboard: Creating note...');
-
           // Create note using simple API call
           await api.createNote(noteData);
 
-          console.log('Dashboard: Note saved successfully');
           showSuccess('Note saved', 'Your note has been created successfully.');
 
           // Refresh notes and stats after successful creation
@@ -1162,7 +1125,6 @@ export default {
             refreshStats()
           ]);
         } catch (error) {
-          console.error('Dashboard: Note creation failed:', error);
           showWarning('Save failed', 'Failed to save the note. Please try again.');
         }
 
@@ -1172,7 +1134,7 @@ export default {
         ocrText.value = '';
 
       } catch (error) {
-        console.error('Error saving note:', error);
+        // Error saving note
       }
     };
 
@@ -1239,7 +1201,7 @@ export default {
         // Refresh the notes list
         await refreshNotes();
       } catch (error) {
-        console.error('Error deleting note:', error);
+        // Error deleting note
       }
 
       closeDeleteModal();
@@ -1337,17 +1299,3 @@ export default {
 }
 </script>
 
-<style>
-.line-clamp-2 {
-  display: -webkit-box;
-  display: box;
-  display: -moz-box;
-  display: -ms-box;
-  display: -o-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2; /* Standard property */
-  -webkit-box-orient: vertical;
-  box-orient: vertical;
-  overflow: hidden;
-}
-</style>

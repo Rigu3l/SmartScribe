@@ -2,21 +2,18 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: process.env.NODE_ENV === 'production'
-    ? 'http://localhost/SmartScribe-main/public'
-    : 'http://localhost/SmartScribe-main/public'
+  baseURL: 'http://localhost/SmartScribe-main/public/index.php/',
+  timeout: 10000,
+  headers: {
+    'Content-Type': 'application/json'
+  }
 })
 
 // Add auth token to requests
 api.interceptors.request.use(config => {
-  console.log('🚀 API Request:', config.method?.toUpperCase(), config.url)
-
   const token = localStorage.getItem('token')
   if (token) {
     config.headers.Authorization = `Bearer ${token}`
-    console.log('🔑 Added auth token to request')
-  } else {
-    console.log('⚠️  No auth token found')
   }
 
   // Add user ID from localStorage for authentication
@@ -26,43 +23,49 @@ api.interceptors.request.use(config => {
       const user = JSON.parse(userData)
       if (user && user.id) {
         config.headers['X-User-ID'] = user.id
-        console.log('👤 Added user ID to request:', user.id, '- Full user object:', user)
-      } else {
-        console.log('⚠️  User data found but no ID:', user)
       }
     } catch (error) {
-      console.error('❌ Error parsing user data:', error, '- Raw data:', userData)
+      // Error parsing user data
     }
-  } else {
-    console.log('⚠️  No user data found in localStorage')
   }
-
-  console.log('📋 Final request headers:', config.headers)
 
   // Don't set Content-Type for FormData - let axios handle it
   if (config.data instanceof FormData) {
     delete config.headers['Content-Type']
-    console.log('API: Sending FormData (Content-Type auto-managed)')
   } else if (config.data && typeof config.data === 'object') {
     // Ensure JSON requests have proper Content-Type
     config.headers['Content-Type'] = 'application/json'
-    console.log('API: Sending JSON data with Content-Type: application/json')
   }
+
+  // Debug logging
+  console.log('API Request URL:', config.baseURL + config.url)
+  console.log('API Request Method:', config.method)
+  console.log('API Request Headers:', config.headers)
 
   return config
 })
 
-// Add response interceptor for debugging
+// Add response interceptor
 api.interceptors.response.use(
   response => {
-    console.log('API Response:', response.status, response.config.method?.toUpperCase(), response.config.url)
+    console.log('✅ API Response:', response.config.method?.toUpperCase(), response.config.url, '- Status:', response.status);
     return response
   },
   error => {
-    console.error('API Error:', error.response?.status, error.response?.statusText, error.config?.method?.toUpperCase(), error.config?.url)
-    if (error.response?.data) {
-      console.error('API Error Data:', error.response.data)
+    console.error('❌ API Error:', error.config?.method?.toUpperCase(), error.config?.url);
+
+    if (error.response) {
+      // Server responded with error status
+      console.error('❌ Response status:', error.response.status);
+      console.error('❌ Response data:', error.response.data);
+    } else if (error.request) {
+      // Request was made but no response received
+      console.error('❌ No response received:', error.request);
+    } else {
+      // Something else happened
+      console.error('❌ Request setup error:', error.message);
     }
+
     return Promise.reject(error)
   }
 )
@@ -70,70 +73,56 @@ api.interceptors.response.use(
 export default {
   // Auth
   login(credentials) {
-    // Explicitly stringify the data to ensure proper JSON format
-    return api.post('/index.php?resource=auth&action=login', JSON.stringify(credentials), {
+    return api.post('?resource=auth&action=login', JSON.stringify(credentials), {
       headers: {
         'Content-Type': 'application/json'
       }
     })
   },
   register(userData) {
-    // Explicitly stringify the data to ensure proper JSON format
-    return api.post('/index.php?resource=auth&action=register', JSON.stringify(userData), {
+    return api.post('?resource=auth&action=register', JSON.stringify(userData), {
       headers: {
         'Content-Type': 'application/json'
       }
     })
   },
   logout() {
-    return api.post('/index.php?resource=auth&action=logout')
+    return api.post('?resource=auth&action=logout')
   },
   getUser() {
-    return api.get('/index.php?resource=auth&action=profile')
+    return api.get('?resource=auth&action=profile')
   },
   updateProfile(profileData) {
-    // Explicitly stringify the data to ensure proper JSON format
-    return api.put('/index.php?resource=auth&action=profile', JSON.stringify(profileData), {
+    return api.put('?resource=auth&action=profile', JSON.stringify(profileData), {
       headers: {
         'Content-Type': 'application/json'
       }
     })
   },
   uploadProfilePicture(formData) {
-    return api.post('/index.php?resource=auth&action=upload-profile-picture', formData)
+    return api.post('?resource=auth&action=upload-profile-picture', formData)
   },
   
   // Notes
   getNotes() {
-    return api.get('/index.php?resource=notes')
+    return api.get('?resource=notes')
   },
   getNote(id) {
-    return api.get(`/index.php?resource=notes&id=${id}`)
+    return api.get(`?resource=notes&id=${id}`)
   },
   createNote(noteData) {
     // If there's an image file, we need to send FormData
     if (noteData.image && noteData.image instanceof File) {
-      console.log('API: Creating FormData for file upload');
       const formData = new FormData()
       formData.append('title', noteData.title)
       formData.append('text', noteData.text)
       formData.append('image', noteData.image)
 
-      console.log('API: FormData contents:');
-      for (let [key, value] of formData.entries()) {
-        if (value instanceof File) {
-          console.log(`${key}: File(${value.name}, ${value.size} bytes, ${value.type})`);
-        } else {
-          console.log(`${key}: ${value}`);
-        }
-      }
-
       // Don't manually set Content-Type for FormData - let axios handle it
-      return api.post('/index.php?resource=notes', formData)
+      return api.post('?resource=notes', formData)
     } else {
-      console.log('API: Creating JSON note (no file)');
       // For text-only notes, send as JSON
-      return api.post('/index.php?resource=notes', {
+      return api.post('?resource=notes', {
         title: noteData.title,
         text: noteData.text
       })
@@ -151,15 +140,15 @@ export default {
       formData.append('keywords', noteData.keywords)
     }
 
-    return api.post(`/index.php?resource=notes&id=${id}`, formData)
+    return api.post(`?resource=notes&id=${id}`, formData)
   },
   deleteNote(id) {
-    return api.delete(`/index.php?resource=notes&id=${id}`)
+    return api.delete(`?resource=notes&id=${id}`)
   },
   
   // OCR
   scanImage(formData) {
-    return api.post('/ocr', formData, {
+    return api.post('?resource=ocr', formData, {
       headers: {
         'Content-Type': 'multipart/form-data'
       }
@@ -168,57 +157,77 @@ export default {
   
   // Summaries
   generateSummary(noteId, options) {
-    return api.post(`/notes/${noteId}/summaries`, options)
+    return api.post(`?resource=summaries&action=generate&note_id=${noteId}`, options)
   },
-  
+
   // Summaries
   getSummaries() {
-    return api.get('/summaries')
+    return api.get('?resource=summaries')
   },
   getSummary(id) {
-    return api.get(`/summaries/${id}`)
+    return api.get(`?resource=summaries&id=${id}`)
   },
   createSummary(noteId, options) {
-    return api.post(`/summaries`, { note_id: noteId, ...options })
+    return api.post('?resource=summaries', { note_id: noteId, ...options })
   },
 
   // Progress
   getProgressStats() {
-    return api.get('/progress/stats')
+    return api.get('?resource=progress&action=stats')
   },
 
   // Dashboard
   getDashboardStats() {
-    return api.get('/index.php?resource=dashboard&action=stats')
+    return api.get('?resource=dashboard&action=stats')
   },
 
   // Settings
   getSettings() {
-    return api.get('/settings')
+    return api.get('?resource=settings')
   },
   updateSettings(settings) {
     // Explicitly stringify the data to ensure proper JSON format
-    return api.put('/settings', JSON.stringify(settings), {
+    return api.put('?resource=settings', JSON.stringify(settings), {
       headers: {
         'Content-Type': 'application/json'
       }
     })
   },
 
+  // GPT AI Services
+  gpt: {
+    generateSummary(text, options = { length: 'medium' }) {
+      return api.post('?resource=gpt&action=generateSummary', { text, ...options })
+    },
+    generateQuiz(text, options = { difficulty: 'medium', questionCount: 5 }) {
+      return api.post('?resource=gpt&action=generateQuiz', { text, ...options })
+    },
+    extractKeywords(text, count = 5) {
+      return api.post('?resource=gpt&action=extractKeywords', { text, count })
+    }
+  },
+
   // Quizzes
   getQuizzes() {
-    return api.get('/quizzes')
+    return api.get('?resource=quizzes')
   },
   getQuiz(id) {
-    return api.get(`/quizzes/${id}`)
+    return api.get(`?resource=quizzes&id=${id}`)
   },
   createQuiz(noteId, options) {
-    return api.post(`/quizzes`, { note_id: noteId, ...options })
+    return api.post('?resource=quizzes', { note_id: noteId, ...options })
   },
   updateQuiz(id, data) {
-    return api.put(`/quizzes/${id}`, data)
+    return api.put(`?resource=quizzes&id=${id}`, data)
   },
   generateQuiz(noteId, options) {
-    return api.post(`/notes/${noteId}/quizzes`, options)
+    return api.post(`?resource=quizzes&action=generate&note_id=${noteId}`, options)
+  },
+
+  // Export
+  exportNote(noteId, format) {
+    return api.get(`?resource=export&id=${noteId}&format=${format}`, {
+      responseType: 'blob' // Important for file downloads
+    })
   }
 }

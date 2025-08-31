@@ -6,10 +6,10 @@ module.exports = defineConfig({
   devServer: {
     proxy: {
       '/api': {
-        target: 'http://localhost/SmartScribe-main/public',
+        target: 'http://localhost',
         changeOrigin: true,
         pathRewrite: {
-          '^/api': ''
+          '^/api': '/SmartScribe-main/public'
         }
       }
     }

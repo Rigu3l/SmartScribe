@@ -153,15 +153,12 @@
 <script>
 import logo from '@/assets/image/logo.jpg'
 import { ref } from 'vue';
-// import { useStore } from 'vuex';
 import { useRouter } from 'vue-router';
 import api from '@/services/api';
-// import { icon } from '@fortawesome/fontawesome-svg-core';
 
 export default {
   name: 'SignupView',
   setup() {
-    // const store = useStore();
     const router = useRouter();
     
     const firstName = ref('');
@@ -221,7 +218,6 @@ export default {
           localStorage.setItem("user", JSON.stringify(response.data.user));
           localStorage.setItem("token", response.data.token || '');
 
-          console.log('Registration successful, user data stored:', response.data.user);
           showSuccessModal.value = true;
 
           // Auto-close modal and redirect after 2.5 seconds
@@ -231,9 +227,8 @@ export default {
         } else {
           throw new Error('Invalid response from server');
         }
-        
+
       } catch (error) {
-        console.error('Signup error:', error);
         errorMessage.value = error.response?.data?.error || error.message || 'Failed to create account. Please try again.';
       } finally {
         isLoading.value = false;

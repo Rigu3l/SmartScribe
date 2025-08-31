@@ -18,6 +18,9 @@ class NoteController {
         // Debug logging
         error_log("NoteController::index() - User ID: $userId");
         error_log("NoteController::index() - All headers: " . json_encode(getallheaders()));
+        error_log("NoteController::index() - REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
+        error_log("NoteController::index() - REQUEST_URI: " . $_SERVER['REQUEST_URI']);
+        error_log("NoteController::index() - QUERY_STRING: " . $_SERVER['QUERY_STRING']);
 
         if (!$userId) {
             error_log("NoteController::index() - No valid authentication found");
@@ -135,9 +138,14 @@ class NoteController {
             return;
         }
 
-        $query = "SELECT n.*, DATE_FORMAT(n.created_at, '%M %e, %Y at %l:%i %p') as last_edited
+        $query = "SELECT n.*,
+                         DATE_FORMAT(n.created_at, '%M %e, %Y at %l:%i %p') as last_edited,
+                         s.content as summary
                   FROM notes n
-                  WHERE n.id = :id AND n.user_id = :user_id";
+                  LEFT JOIN summaries s ON n.id = s.note_id
+                  WHERE n.id = :id AND n.user_id = :user_id
+                  ORDER BY s.created_at DESC
+                  LIMIT 1";
 
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':id', $id);
@@ -202,24 +210,29 @@ class NoteController {
             return;
         }
 
-        // Update the note
+        // Update the note (only columns that exist in the table)
         $query = "UPDATE notes SET
                   title = :title,
                   original_text = :text,
-                  summary = :summary,
-                  keywords = :keywords,
                   updated_at = NOW()
                   WHERE id = :id AND user_id = :user_id";
 
         $stmt = $this->db->prepare($query);
         $stmt->bindParam(':title', $title);
         $stmt->bindParam(':text', $text);
-        $stmt->bindParam(':summary', $summary);
-        $stmt->bindParam(':keywords', $keywords);
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':user_id', $userId);
 
         if ($stmt->execute()) {
+            // If summary or keywords were provided, we could store them separately
+            // For now, we'll just log them since the table doesn't support them
+            if ($summary) {
+                error_log("Note update: Summary provided but not stored (table doesn't have summary column): " . substr($summary, 0, 100));
+            }
+            if ($keywords) {
+                error_log("Note update: Keywords provided but not stored (table doesn't have keywords column): " . $keywords);
+            }
+
             echo json_encode([
                 "success" => true,
                 "message" => "Note updated successfully"

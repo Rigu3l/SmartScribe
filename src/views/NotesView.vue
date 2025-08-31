@@ -2,8 +2,8 @@
   <div class="min-h-screen flex flex-col bg-gray-900 text-white">
     <!-- Header (same as other pages) -->
     <header class="p-4 bg-gray-800 flex justify-between items-center">
-      <div class="text-xl font-bold">SmartScribe</div>
-      <div class="flex items-center space-x-4">
+      <div class="text-lg md:text-xl font-bold">SmartScribe</div>
+      <div class="flex items-center space-x-2 md:space-x-4">
         <div class="relative">
           <button @click="toggleNotifications" class="text-gray-400 hover:text-white relative">
             <font-awesome-icon :icon="['fas', 'bell']" />
@@ -154,7 +154,7 @@
       </aside>
 
       <!-- Notes Main Content -->
-      <main class="flex-grow p-6">
+      <main class="flex-grow p-4 md:p-6">
         <div class="flex justify-between items-center mb-6">
           <div class="flex items-center space-x-4">
             <h1 class="text-2xl font-bold">My Notes</h1>
@@ -238,10 +238,10 @@
         <!-- Error State -->
         <div v-if="notesError" class="bg-red-800 rounded-lg p-6 text-center">
           <div class="mb-4">
-            <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="text-4xl text-red-400" />
+            <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-4xl text-red-400" />
           </div>
           <h3 class="text-xl font-medium mb-2">Unable to Load Notes</h3>
-          <p class="text-red-300 mb-4">{{ notesError.message || 'An error occurred while loading your notes.' }}</p>
+          <p class="text-red-300 mb-4">{{ notesError || 'An error occurred while loading your notes.' }}</p>
           <div class="flex justify-center space-x-3">
             <button @click="refreshNotes()" class="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 transition">
               <font-awesome-icon :icon="['fas', 'redo']" class="mr-2" />
@@ -260,7 +260,7 @@
         </div>
 
         <!-- Notes Grid -->
-        <div v-else-if="notes.length > 0" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+        <div v-else-if="notes.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <div
             v-for="(note, index) in filteredNotes"
             :key="index"
@@ -353,11 +353,11 @@
       @click="closeDeleteModal"
     >
       <div
-        class="bg-gray-800 rounded-lg p-6 w-96 max-w-90vw"
+        class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4"
         @click.stop
       >
         <div class="flex items-center mb-4">
-          <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="text-red-400 text-xl mr-3" />
+          <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-red-400 text-xl mr-3" />
           <h3 class="text-lg font-medium">Delete Note</h3>
         </div>
         <p class="text-gray-300 mb-6">
@@ -382,7 +382,7 @@
 
     <!-- Profile Modal -->
     <div v-if="showProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-gray-800 rounded-lg p-6 w-96 max-w-90vw">
+      <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4">
         <div class="flex items-center mb-4">
           <font-awesome-icon :icon="['fas', 'user']" class="text-blue-400 text-xl mr-3" />
           <h3 class="text-lg font-medium">User Profile</h3>
@@ -622,14 +622,34 @@ export default {
         if (response.data && response.data.success) {
           notesResponse.value = response.data;
           notesError.value = ''; // Clear any previous errors
-          console.log('Notes loaded successfully:', response.data.data?.length || 0, 'notes');
+          console.log('✅ Notes loaded successfully:', response.data.data?.length || 0, 'notes');
         } else {
-          notesError.value = response.data?.error || 'Failed to load notes.';
-          console.error('Notes API error:', response.data?.error);
+          const errorMessage = response.data?.error || response.data?.message || 'Failed to load notes.';
+          notesError.value = errorMessage;
+          console.error('❌ Notes API error:', errorMessage);
+          console.error('❌ Full response:', response.data);
         }
       } catch (error) {
-        console.error('Error fetching notes:', error);
-        notesError.value = 'Failed to load notes. Please check your connection and try again.';
+        console.error('❌ Error fetching notes:', error);
+
+        // Provide more specific error messages based on error type
+        let errorMessage = 'Failed to load notes. Please check your connection and try again.';
+
+        if (error.code === 'NETWORK_ERROR' || error.message?.includes('Network Error')) {
+          errorMessage = 'Network connection error. Please check your internet connection.';
+        } else if (error.code === 'TIMEOUT' || error.message?.includes('timeout')) {
+          errorMessage = 'Request timed out. Please try again.';
+        } else if (error.response?.status === 401) {
+          errorMessage = 'Authentication failed. Please log in again.';
+        } else if (error.response?.status === 403) {
+          errorMessage = 'Access denied. You may not have permission to view these notes.';
+        } else if (error.response?.status === 404) {
+          errorMessage = 'Notes service not found. Please contact support.';
+        } else if (error.response?.status >= 500) {
+          errorMessage = 'Server error. Please try again later.';
+        }
+
+        notesError.value = errorMessage;
       } finally {
         loadingNotes.value = false;
       }
@@ -839,6 +859,8 @@ export default {
       activeMenu,
       showDeleteModal,
       noteToDelete,
+      showUserMenu,
+      showProfileModal,
       filteredNotes,
       notesError,
 
@@ -898,18 +920,3 @@ export default {
   }
 }
 </script>
-
-<style>
-.line-clamp-2 {
-  display: -webkit-box;
-  display: box;
-  display: -moz-box;
-  display: -ms-box;
-  display: -o-box;
-  -webkit-line-clamp: 2;
-  line-clamp: 2; /* Standard property */
-  -webkit-box-orient: vertical;
-  box-orient: vertical;
-  overflow: hidden;
-}
-</style>

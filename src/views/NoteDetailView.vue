@@ -1,42 +1,83 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-900 text-white">
+  <div class="min-h-screen flex flex-col bg-gray-900 text-white overflow-x-hidden">
     <!-- Header (same as other pages) -->
-    <header class="p-4 bg-gray-800 flex justify-between items-center">
-      <div class="text-xl font-bold">SmartScribe</div>
-      <div class="flex items-center space-x-4">
-        <button class="text-gray-400 hover:text-white">
-          <font-awesome-icon :icon="['fas', 'bell']" />
+    <header class="p-3 sm:p-4 bg-gray-800 flex justify-between items-center">
+      <div class="text-lg sm:text-xl font-bold">SmartScribe</div>
+      <div class="flex items-center space-x-2 sm:space-x-4">
+        <button class="text-gray-400 hover:text-white p-2">
+          <font-awesome-icon :icon="['fas', 'bell']" class="text-sm sm:text-base" />
         </button>
-        <div class="w-8 h-8 bg-gray-600 rounded-full"></div>
+        <div class="w-6 h-6 sm:w-8 sm:h-8 bg-gray-600 rounded-full"></div>
       </div>
     </header>
 
     <!-- Main Content -->
     <div class="flex flex-grow">
-      <!-- Sidebar (same as other pages) -->
-      <aside class="w-64 bg-gray-800 p-4">
-        <nav>
+      <!-- Mobile Menu Button -->
+      <button
+        @click="sidebarOpen = !sidebarOpen"
+        class="md:hidden fixed top-20 left-4 z-50 bg-gray-800 p-2 rounded-md shadow-lg"
+      >
+        <font-awesome-icon :icon="['fas', sidebarOpen ? 'times' : 'bars']" />
+      </button>
+
+      <!-- Sidebar Overlay for Mobile -->
+      <div
+        v-if="sidebarOpen"
+        @click="sidebarOpen = false"
+        class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+      ></div>
+
+      <!-- Sidebar -->
+      <aside
+        :class="[
+          'bg-gray-800 p-4 transition-all duration-300 ease-in-out',
+          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
+          'fixed md:relative z-50 md:z-auto',
+          'w-64 md:w-64 max-w-full',
+          'min-h-screen md:min-h-0',
+          'top-0 left-0 md:top-auto md:left-auto',
+          'overflow-hidden'
+        ]"
+      >
+        <nav class="mt-16 md:mt-0">
           <ul class="space-y-2">
             <li>
-              <router-link to="/dashboard" class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
+              <router-link
+                to="/dashboard"
+                @click="sidebarOpen = false"
+                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
+              >
                 <font-awesome-icon :icon="['fas', 'home']" />
                 <span>Dashboard</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/notes" class="flex items-center space-x-2 p-2 rounded-md bg-gray-700">
+              <router-link
+                to="/notes"
+                @click="sidebarOpen = false"
+                class="flex items-center space-x-2 p-2 rounded-md bg-gray-700"
+              >
                 <font-awesome-icon :icon="['fas', 'book']" />
                 <span>My Notes</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
+              <router-link
+                to="/progress"
+                @click="sidebarOpen = false"
+                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
+              >
                 <font-awesome-icon :icon="['fas', 'chart-line']" />
                 <span>Progress</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/settings" class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
+              <router-link
+                to="/settings"
+                @click="sidebarOpen = false"
+                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
+              >
                 <font-awesome-icon :icon="['fas', 'cog']" />
                 <span>Settings</span>
               </router-link>
@@ -46,66 +87,71 @@
       </aside>
 
       <!-- Note Detail Main Content -->
-      <main class="flex-grow p-6">
+      <main class="flex-grow p-4 sm:p-6 ml-0 md:ml-0" style="width: 100vw; max-width: 100vw;">
         <div v-if="isLoading" class="flex justify-center items-center h-full">
-          <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-4xl text-blue-500" />
+          <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-3xl sm:text-4xl text-blue-500" />
         </div>
         
         <div v-else-if="note && !error">
-          <div class="flex justify-between items-center mb-6">
+          <div class="flex flex-col justify-between items-start mb-6 space-y-4" style="flex-direction: column !important;">
             <div>
-              <h1 class="text-2xl font-bold">{{ note.title }}</h1>
-              <p class="text-gray-400 text-sm">Last edited: {{ note.lastEdited }}</p>
+              <h1 class="text-xl sm:text-2xl font-bold">{{ note.title }}</h1>
+              <p class="text-gray-400 text-xs sm:text-sm">Last edited: {{ note.lastEdited }}</p>
             </div>
-            <div class="flex space-x-3">
-              <button @click="editNote" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
+            <div class="flex space-x-2 sm:space-x-3 w-full sm:w-auto">
+              <button @click="editNote" class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base bg-blue-600 rounded-md hover:bg-blue-700 transition">
                 <font-awesome-icon :icon="['fas', 'edit']" class="mr-2" /> Edit
               </button>
-              <button @click="showExportOptions = !showExportOptions" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition relative">
+              <button @click="showExportOptions = !showExportOptions" class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base bg-gray-700 rounded-md hover:bg-gray-600 transition relative">
                 <font-awesome-icon :icon="['fas', 'file-export']" class="mr-2" /> Export
                 
                 <!-- Export Options Dropdown -->
-                <div v-if="showExportOptions" class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-10">
+                <div v-if="showExportOptions" class="absolute right-0 mt-2 w-48 sm:w-56 bg-gray-800 rounded-md shadow-lg py-1 z-10 max-w-full">
                   <button @click="exportNote('pdf')" class="block w-full text-left px-4 py-2 hover:bg-gray-700">
-                    <font-awesome-icon :icon="['fas', 'file-pdf']" class="mr-2" /> Export as PDF
+                    <font-awesome-icon :icon="['fas', 'file-code']" class="mr-2" /> HTML for PDF conversion
                   </button>
                   <button @click="exportNote('word')" class="block w-full text-left px-4 py-2 hover:bg-gray-700">
-                    <font-awesome-icon :icon="['fas', 'file-word']" class="mr-2" /> Export as Word
+                    <font-awesome-icon :icon="['fas', 'file-word']" class="mr-2" /> Word Document (.doc)
                   </button>
                   <button @click="exportNote('text')" class="block w-full text-left px-4 py-2 hover:bg-gray-700">
-                    <font-awesome-icon :icon="['fas', 'file-alt']" class="mr-2" /> Export as Text
+                    <font-awesome-icon :icon="['fas', 'file-alt']" class="mr-2" /> Plain Text (.txt)
                   </button>
                 </div>
               </button>
             </div>
           </div>
 
-          <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+          <div class="grid grid-cols-1 gap-4 sm:gap-6 mb-6" style="grid-template-columns: 1fr;">
             <!-- Original Text -->
-            <div class="bg-gray-800 rounded-lg p-6">
-              <h2 class="text-lg font-semibold mb-4">Original Text</h2>
-              <div class="bg-gray-700 rounded-lg p-4 text-gray-200 h-96 overflow-y-auto">
+            <div class="bg-gray-800 rounded-lg p-4 sm:p-6">
+              <h2 class="text-base sm:text-lg font-semibold mb-4">Original Text</h2>
+              <div class="bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 h-64 sm:h-96 overflow-y-auto overflow-x-hidden text-sm sm:text-base break-words">
                 {{ note.originalText }}
               </div>
             </div>
 
             <!-- AI Summary -->
-            <div class="bg-gray-800 rounded-lg p-6">
-              <h2 class="text-lg font-semibold mb-4">AI Summary</h2>
-              <div class="bg-gray-700 rounded-lg p-4 text-gray-200 h-96 overflow-y-auto">
-                {{ note.summary }}
+            <div class="bg-gray-800 rounded-lg p-4 sm:p-6">
+              <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0">
+                <h2 class="text-base sm:text-lg font-semibold">AI Summary</h2>
+                <button @click="generateSummary" class="w-full sm:w-auto px-3 py-2 sm:px-3 sm:py-1 bg-blue-600 rounded text-sm hover:bg-blue-700 transition" :disabled="generatingSummary">
+                  <font-awesome-icon :icon="['fas', 'sync-alt']" class="mr-1" :spin="generatingSummary" /> {{ generatingSummary ? 'Generating...' : 'Generate Summary' }}
+                </button>
+              </div>
+              <div class="bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 h-64 sm:h-96 overflow-y-auto overflow-x-hidden text-sm sm:text-base break-words">
+                {{ note.summary || 'No summary available. Click "Generate Summary" to create one.' }}
               </div>
             </div>
           </div>
 
           <!-- Keywords and Tags -->
-          <div class="bg-gray-800 rounded-lg p-6 mb-6">
-            <h2 class="text-lg font-semibold mb-4">Keywords & Tags</h2>
+          <div class="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
+            <h2 class="text-base sm:text-lg font-semibold mb-4">Keywords & Tags</h2>
             <div class="flex flex-wrap gap-2">
-              <span 
-                v-for="(keyword, index) in note.keywords" 
+              <span
+                v-for="(keyword, index) in note.keywords"
                 :key="`keyword-${index}`"
-                class="px-3 py-1 bg-blue-600 rounded-full text-sm"
+                class="px-2 py-1 sm:px-3 sm:py-1 bg-blue-600 rounded-full text-xs sm:text-sm"
               >
                 {{ keyword }}
               </span>
@@ -113,10 +159,10 @@
           </div>
 
           <!-- Quiz Section -->
-          <div class="bg-gray-800 rounded-lg p-6">
-            <div class="flex justify-between items-center mb-4">
-              <h2 class="text-lg font-semibold">Study Quiz</h2>
-              <button @click="generateQuiz" class="px-3 py-1 bg-blue-600 rounded text-sm hover:bg-blue-700 transition">
+          <div class="bg-gray-800 rounded-lg p-4 sm:p-6">
+            <div class="flex flex-col justify-between items-start mb-4 space-y-2" style="flex-direction: column !important;">
+              <h2 class="text-base sm:text-lg font-semibold">Study Quiz</h2>
+              <button @click="generateQuiz" class="w-full sm:w-auto px-3 py-2 sm:px-3 sm:py-1 bg-blue-600 rounded text-sm hover:bg-blue-700 transition">
                 <font-awesome-icon :icon="['fas', 'sync-alt']" class="mr-1" /> Generate New Quiz
               </button>
             </div>
@@ -160,7 +206,7 @@
         </div>
         
         <div v-else-if="error" class="flex flex-col items-center justify-center h-full">
-           <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="text-4xl text-red-400 mb-4" />
+           <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-4xl text-red-400 mb-4" />
            <h2 class="text-xl font-medium mb-2">Error Loading Note</h2>
            <p class="text-gray-400 mb-4">{{ error }}</p>
            <router-link to="/notes" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
@@ -199,6 +245,8 @@ export default {
     const showExportOptions = ref(false);
     const quizQuestions = ref([]);
     const error = ref(null);
+    const generatingSummary = ref(false);
+    const sidebarOpen = ref(false);
 
     onMounted(async () => {
       try {
@@ -241,56 +289,111 @@ export default {
       }
     };
 
-    const exportNote = (format) => {
-      console.log(`Exporting note as ${format}...`);
-      showExportOptions.value = false;
-      
-      // In a real app, this would call the export API
-      // For now, we'll just show an alert
-      setTimeout(() => {
-        alert(`Note exported as ${format.toUpperCase()} successfully!`);
-      }, 1000);
+    const exportNote = async (format) => {
+      if (!note.value || !note.value.id) {
+        alert('No note to export');
+        return;
+      }
+
+      try {
+        console.log(`Exporting note ${note.value.id} as ${format}...`);
+        showExportOptions.value = false;
+
+        // Map frontend format names to backend format names
+        const backendFormat = format === 'word' ? 'docx' : format === 'text' ? 'txt' : format;
+        const fileExtension = format === 'pdf' ? 'html' : format === 'word' ? 'doc' : format === 'text' ? 'txt' : format;
+
+        console.log(`Making API call to export with backendFormat: ${backendFormat}`);
+        const response = await api.exportNote(note.value.id, backendFormat);
+        console.log('API response received:', response);
+        console.log('Response data type:', typeof response.data);
+        console.log('Response data length:', response.data ? response.data.length : 'N/A');
+
+        // Create blob and download
+        const mimeType = backendFormat === 'pdf' ? 'text/html' :
+                        backendFormat === 'docx' ? 'application/msword' :
+                        'text/plain';
+
+        console.log(`Creating blob with MIME type: ${mimeType}`);
+        const blob = new Blob([response.data], { type: mimeType });
+        console.log('Blob created:', blob);
+        console.log('Blob size:', blob.size);
+
+        const url = window.URL.createObjectURL(blob);
+        console.log('Blob URL created:', url);
+
+        const link = document.createElement('a');
+        link.href = url;
+        const baseFilename = note.value.title.replace(/[^a-z0-9]/gi, '_').toLowerCase();
+        const filename = format === 'pdf' ? `${baseFilename}_for_pdf.${fileExtension}` : `${baseFilename}_export.${fileExtension}`;
+        link.download = filename;
+        console.log('Download filename:', filename);
+
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+        window.URL.revokeObjectURL(url);
+
+        console.log(`Note exported as ${format} successfully`);
+        alert(`File exported successfully! Check your downloads folder for "${filename}"`);
+      } catch (error) {
+        console.error('Export error:', error);
+        console.error('Error details:', error.response || error.message);
+        alert(`Failed to export note as ${format.toUpperCase()}. Please try again. Error: ${error.message}`);
+      }
     };
 
-    const generateQuiz = () => {
-      console.log('Generating quiz...');
-      
-      // In a real app, this would call the GPT API
-      // For now, we'll use mock data
-      setTimeout(() => {
-        quizQuestions.value = [
-          {
-            text: 'Who discovered cells in 1665?',
-            options: ['Robert Hooke', 'Anton van Leeuwenhoek', 'Matthias Schleiden', 'Theodor Schwann'],
-            correctAnswer: 0,
-            selectedAnswer: null
-          },
-          {
-            text: 'What is the study of cells called?',
-            options: ['Microbiology', 'Histology', 'Cytology', 'Physiology'],
-            correctAnswer: 2,
-            selectedAnswer: null
-          },
-          {
-            text: 'What is the typical size range of most plant and animal cells?',
-            options: ['0.1-1 micrometers', '1-100 micrometers', '100-1000 micrometers', '1-10 millimeters'],
-            correctAnswer: 1,
-            selectedAnswer: null
-          },
-          {
-            text: 'What encloses the cytoplasm in a cell?',
-            options: ['Cell wall', 'Nucleus', 'Membrane', 'Ribosome'],
-            correctAnswer: 2,
-            selectedAnswer: null
-          },
-          {
-            text: 'Cells are often referred to as the:',
-            options: ['Essence of life', 'Building blocks of life', 'Foundation of organisms', 'Microscopic life'],
-            correctAnswer: 1,
-            selectedAnswer: null
+    const generateSummary = async () => {
+      if (!note.value || generatingSummary.value) return;
+
+      generatingSummary.value = true;
+      try {
+        console.log('Starting summary generation for note:', note.value.id);
+        const response = await api.createSummary(note.value.id, { length: 'auto' });
+        console.log('Summary API response:', response.data);
+
+        if (response.data.success) {
+          console.log('Summary created successfully, refreshing note data...');
+          // Refresh the note data to get the updated summary
+          const noteResponse = await api.getNote(note.value.id);
+          console.log('Note refresh response:', noteResponse.data);
+
+          if (noteResponse.data.success && noteResponse.data.data) {
+            const newSummary = noteResponse.data.data.summary;
+            console.log('New summary from server:', newSummary);
+            note.value.summary = newSummary;
+            console.log('Updated note summary in UI:', note.value.summary);
+          } else {
+            console.error('Failed to refresh note data:', noteResponse.data);
           }
-        ];
-      }, 1500);
+          alert('Summary generated successfully!');
+        } else {
+          console.error('Summary generation failed:', response.data.error);
+          alert('Failed to generate summary: ' + (response.data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error generating summary:', error);
+        alert('Failed to generate summary. Please try again.');
+      } finally {
+        generatingSummary.value = false;
+      }
+    };
+
+    const generateQuiz = async () => {
+      if (!note.value) return;
+
+      try {
+        const response = await api.createQuiz(note.value.id, { difficulty: 'medium', questionCount: 5 });
+        if (response.data.success && response.data.data) {
+          // Assuming the quiz data structure matches what we expect
+          quizQuestions.value = response.data.data.questions || [];
+        } else {
+          alert('Failed to generate quiz: ' + (response.data.error || 'Unknown error'));
+        }
+      } catch (error) {
+        console.error('Error generating quiz:', error);
+        alert('Failed to generate quiz. Please try again.');
+      }
     };
 
     const checkQuizAnswers = () => {
@@ -316,8 +419,11 @@ export default {
       error,
       showExportOptions,
       quizQuestions,
+      generatingSummary,
+      sidebarOpen,
       editNote,
       exportNote,
+      generateSummary,
       generateQuiz,
       checkQuizAnswers,
       resetQuiz

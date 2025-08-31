@@ -39,8 +39,8 @@ class Note {
     }
 
     public function readAllByUser() {
-        $query = "SELECT n.*, 
-                         (SELECT COUNT(*) FROM summaries s WHERE s.note_id = n.note_id) as summary_count
+        $query = "SELECT n.*,
+                         (SELECT COUNT(*) FROM summaries s WHERE s.note_id = n.id) as summary_count
                   FROM notes n
                   WHERE user_id = :user_id
                   ORDER BY created_at DESC";
@@ -50,5 +50,16 @@ class Note {
         $stmt->execute();
 
         return $stmt;
+    }
+
+    public function readById($id, $userId) {
+        $query = "SELECT * FROM notes WHERE id = :id AND user_id = :user_id";
+
+        $stmt = $this->conn->prepare($query);
+        $stmt->bindParam(':id', $id);
+        $stmt->bindParam(':user_id', $userId);
+        $stmt->execute();
+
+        return $stmt->fetch();
     }
 }

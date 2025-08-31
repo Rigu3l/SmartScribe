@@ -2,8 +2,8 @@
   <div class="min-h-screen flex flex-col bg-gray-900 text-white">
     <!-- Header (same as other pages) -->
     <header class="p-4 bg-gray-800 flex justify-between items-center">
-      <div class="text-xl font-bold">SmartScribe</div>
-      <div class="flex items-center space-x-4">
+      <div class="text-lg md:text-xl font-bold">SmartScribe</div>
+      <div class="flex items-center space-x-2 md:space-x-4">
         <div class="relative">
           <button @click="toggleNotifications" class="text-gray-400 hover:text-white relative">
             <font-awesome-icon :icon="['fas', 'bell']" />
@@ -153,7 +153,7 @@
       </aside>
 
       <!-- Progress Tracker Main Content -->
-      <main class="flex-grow p-6">
+      <main class="flex-grow p-4 md:p-6">
         <div class="flex justify-between items-center mb-6">
           <div class="flex items-center space-x-4">
             <h1 class="text-2xl font-bold">Study Progress</h1>
@@ -198,7 +198,7 @@
         </div>
         
         <!-- Overview Cards -->
-        <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6 mb-6">
           <div class="bg-gray-800 rounded-lg p-6">
             <div class="flex justify-between items-center mb-2">
               <h2 class="text-lg font-semibold">Total Notes</h2>
@@ -244,7 +244,7 @@
         </div>
         
         <!-- Subject Distribution -->
-        <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mb-6">
+        <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 md:gap-6 mb-6">
           <div class="bg-gray-800 rounded-lg p-6">
             <h2 class="text-lg font-semibold mb-4">Subject Distribution</h2>
             <div class="space-y-4">
@@ -356,7 +356,7 @@
 
     <!-- Profile Modal -->
     <div v-if="showProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-gray-800 rounded-lg p-6 w-96 max-w-90vw">
+      <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4">
         <div class="flex items-center mb-4">
           <font-awesome-icon :icon="['fas', 'user']" class="text-blue-400 text-xl mr-3" />
           <h3 class="text-lg font-medium">User Profile</h3>
@@ -712,6 +712,8 @@ export default {
       // UI State
       showAddGoalForm,
       newGoal,
+      showUserMenu,
+      showProfileModal,
 
       // Loading states
       loadingProgress,

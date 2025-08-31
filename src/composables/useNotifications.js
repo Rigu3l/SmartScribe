@@ -16,7 +16,7 @@ export function useNotifications() {
       sound: 'success.mp3'
     },
     ERROR: {
-      icon: ['fas', 'exclamation-triangle'],
+      icon: ['fas', 'triangle-exclamation'],
       color: 'text-red-400',
       bgColor: 'bg-red-500',
       sound: 'error.mp3'

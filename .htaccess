@@ -1,15 +1,24 @@
-# Root .htaccess - Redirect to public directory
+# public/.htaccess
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /
+  RewriteBase /SmartScribe-main/
 
-  # Handle API requests first
-  RewriteCond %{REQUEST_URI} ^/SmartScribe-main/api/
-  RewriteRule ^SmartScribe-main/api/(.*)$ SmartScribe-main/public/index.php [L]
+  # CORS headers
+  Header set Access-Control-Allow-Origin "*"
+  Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+  Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-User-ID, X-Requested-With"
+  Header set Access-Control-Allow-Credentials "true"
 
-  # Redirect all other requests to public directory
-  RewriteCond %{REQUEST_URI} !^/SmartScribe-main/public/
+  # Handle API requests
+  RewriteCond %{REQUEST_URI} ^/SmartScribe-main/api/.*
+  RewriteRule ^api/(.*)$ index.php [L]
+
+  # Allow direct access to uploaded files
+  RewriteCond %{REQUEST_URI} ^/SmartScribe-main/uploads/.*
+  RewriteRule . - [L]
+
+  # Handle Vue Router (for SPA)
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule ^SmartScribe-main/(.*)$ SmartScribe-main/public/$1 [L]
+  RewriteRule . index.html [L]
 </IfModule>
