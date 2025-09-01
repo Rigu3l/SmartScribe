@@ -147,12 +147,10 @@ export default {
   },
   
   // OCR
-  scanImage(formData) {
-    return api.post('?resource=ocr', formData, {
-      headers: {
-        'Content-Type': 'multipart/form-data'
-      }
-    })
+  ocr: {
+    processImage(formData) {
+      return api.post('?resource=ocr&action=processImage', formData)
+    }
   },
   
   // Summaries

@@ -109,6 +109,10 @@ switch ($resource) {
         require_once __DIR__ . '/../api/controllers/ExportController.php';
         $controller = new ExportController($db);
         break;
+    case 'ocr':
+        require_once __DIR__ . '/../api/controllers/OCRController.php';
+        $controller = new OCRController();
+        break;
     default:
         http_response_code(404);
         echo json_encode(['error' => 'Resource not found']);
@@ -168,6 +172,24 @@ if ($resource === 'dashboard') {
 
     if ($method === 'GET' && $id) {
         $controller->export($id, $format);
+    } else {
+        http_response_code(405);
+        echo json_encode(['error' => 'Method not allowed']);
+    }
+} elseif ($resource === 'ocr') {
+    // Handle OCR endpoints
+    $method = $_SERVER['REQUEST_METHOD'];
+    if ($method === 'POST') {
+        if ($action === 'processImage') {
+            $controller->processImage();
+        } elseif ($action === 'processPDF') {
+            $controller->processPDF();
+        } elseif ($action === 'processPDFFallback') {
+            $controller->processPDFFallback();
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'OCR action not found']);
+        }
     } else {
         http_response_code(405);
         echo json_encode(['error' => 'Method not allowed']);

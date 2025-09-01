@@ -10,114 +10,175 @@
     </header>
 
     <!-- Main Content -->
-    <main class="flex-grow flex items-center justify-center p-4">
-      <div class="bg-gray-800 rounded-lg p-8 w-full max-w-md">
-        <div class="flex justify-center mb-4">
-          <div class="w-24 h-24 bg-white rounded-full overflow-hidden flex items-center justify-center shadow-md">
-            <img :src="logo" alt="App Logo" class="w-full h-full object-cover" />
+    <main class="flex-grow flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-8" style="min-height: calc(100vh - 200px);">
+      <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 sm:p-10 w-full max-w-md border border-gray-700">
+        <!-- Logo Section -->
+        <div class="flex justify-center mb-8">
+          <div class="w-24 h-24 sm:w-28 sm:h-28 bg-gradient-to-br from-blue-500 to-purple-600 rounded-full overflow-hidden flex items-center justify-center shadow-xl">
+            <img :src="logo" alt="SmartScribe Logo" class="w-20 h-20 sm:w-24 sm:h-24 object-cover rounded-full" />
           </div>
         </div>
         
-        <h2 class="text-xl font-semibold text-center mb-1">Create Your Account</h2>
-        <p class="text-sm text-center text-gray-400 mb-6">Sign up for SmartScribe to start digitizing your notes</p>
+        <!-- Header -->
+        <div class="text-center mb-8">
+          <h1 class="text-2xl sm:text-3xl font-bold text-white mb-2">Create Your Account</h1>
+          <p class="text-gray-400 text-sm sm:text-base">Sign up for SmartScribe to start digitizing your notes</p>
+        </div>
         
-        <form @submit.prevent="handleSignup">
-          <div class="mb-4 grid grid-cols-2 gap-3">
-            <div>
+        <!-- Signup Form -->
+        <form @submit.prevent="handleSignup" class="space-y-6">
+          <!-- Name Fields -->
+          <div class="space-y-2">
+            <label for="firstName" class="block text-sm font-medium text-gray-300">
+              First Name
+            </label>
+            <input
+              id="firstName"
+              type='text'
+              v-model="firstName"
+              placeholder="Enter your first name"
+              class="w-full px-4 py-3 text-sm sm:text-base border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-700 text-white placeholder-gray-400 focus:bg-gray-600"
+              required
+            />
+          </div>
+
+          <div class="space-y-2">
+            <label for="lastName" class="block text-sm font-medium text-gray-300">
+              Last Name
+            </label>
+            <input
+              id="lastName"
+              type='text'
+              v-model="lastName"
+              placeholder="Enter your last name"
+              class="w-full px-4 py-3 text-sm sm:text-base border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-700 text-white placeholder-gray-400 focus:bg-gray-600"
+              required
+            />
+          </div>
+
+          <!-- Email Field -->
+          <div class="space-y-2">
+            <label for="email" class="block text-sm font-medium text-gray-300">
+              Email Address
+            </label>
+            <div class="relative">
+              <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <font-awesome-icon :icon="['fas', 'envelope']" class="text-gray-500 text-sm" />
+              </div>
               <input
-                type='text'
-                v-model="firstName"
-                placeholder="First Name"
-                class="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"
+                id="email"
+                type="email"
+                v-model="email"
+                placeholder="Enter your email"
+                class="w-full pl-10 pr-4 py-3 text-sm sm:text-base border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-700 text-white placeholder-gray-400 focus:bg-gray-600"
                 required
               />
             </div>
-            <div>
-              <input
-                type='text'
-                v-model="lastName"
-                placeholder="Last Name"
-                class="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"
-                required
-              />
-            </div>
           </div>
           
-          <div class="mb-4">
-            <input 
-              type="email" 
-              v-model="email" 
-              placeholder="Email Address" 
-              class="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500"
-              required
-            />
-          </div>
-          
-          <div class="mb-4 relative">
-            <input 
-              ref="passwordInput"
-              type="password" 
-              v-model="password" 
-              placeholder="Password" 
-              class="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500 pr-10"
-              required
-            />
-            <button
-              type="button"
-              @click="togglePasswordField('passwordInput')"
-              class="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-white"
-            >
-              <font-awesome-icon :icon="['fas', 'eye']" class="password-visible-icon hidden" />
-            </button>
-          </div>
-          
-          <div class="mb-6 relative">
-            <input 
-              ref="confirmPasswordInput"
-              type="password" 
-              v-model="confirmPassword" 
-              placeholder="Confirm Password" 
-              class="w-full p-3 rounded bg-gray-700 border border-gray-600 focus:outline-none focus:border-blue-500 pr-10"
-              required
-            />
-            <button
-              type="button"
-              @click="togglePasswordField('confirmPasswordInput')"
-              class="absolute inset-y-0 right-0 pr-2 flex items-center text-gray-400 hover:text-white"
-            >
-              <font-awesome-icon :icon="['fas', 'eye']" class="password-visible-icon hidden" />
-            </button>
-          </div>
-          
-          <button 
-            type="submit" 
-            class="w-full p-3 bg-white text-gray-900 rounded font-medium hover:bg-gray-200 transition"
-            :disabled="isLoading"
-          >
-            <span v-if="isLoading">
-              <font-awesome-icon :icon="['fas', 'spinner']" spin />
-              Creating account...
-            </span>
-            <span v-else>Create Account</span>
-          </button>
+         <!-- Password Field -->
+         <div class="space-y-2">
+           <label for="password" class="block text-sm font-medium text-gray-300">
+             Password
+           </label>
+           <div class="relative">
+             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+               <font-awesome-icon :icon="['fas', 'lock']" class="text-gray-500 text-sm" />
+             </div>
+             <input
+               id="password"
+               ref="passwordInput"
+               :type="passwordVisible ? 'text' : 'password'"
+               v-model="password"
+               placeholder="Enter your password"
+               class="w-full pl-10 pr-12 py-3 text-sm sm:text-base border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-700 text-white placeholder-gray-400 focus:bg-gray-600"
+               required
+             />
+             <button
+               type="button"
+               @click="passwordVisible = !passwordVisible"
+               class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-300 transition-colors"
+             >
+               <font-awesome-icon :icon="['fas', passwordVisible ? 'eye-slash' : 'eye']" class="text-sm" />
+             </button>
+           </div>
+         </div>
+
+         <!-- Confirm Password Field -->
+         <div class="space-y-2">
+           <label for="confirmPassword" class="block text-sm font-medium text-gray-300">
+             Confirm Password
+           </label>
+           <div class="relative">
+             <div class="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+               <font-awesome-icon :icon="['fas', 'lock']" class="text-gray-500 text-sm" />
+             </div>
+             <input
+               id="confirmPassword"
+               ref="confirmPasswordInput"
+               :type="confirmPasswordVisible ? 'text' : 'password'"
+               v-model="confirmPassword"
+               placeholder="Confirm your password"
+               class="w-full pl-10 pr-12 py-3 text-sm sm:text-base border border-gray-600 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent transition-all duration-200 bg-gray-700 text-white placeholder-gray-400 focus:bg-gray-600"
+               required
+             />
+             <button
+               type="button"
+               @click="confirmPasswordVisible = !confirmPasswordVisible"
+               class="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-500 hover:text-gray-300 transition-colors"
+             >
+               <font-awesome-icon :icon="['fas', confirmPasswordVisible ? 'eye-slash' : 'eye']" class="text-sm" />
+             </button>
+           </div>
+         </div>
+
+         <!-- Sign Up Button -->
+         <button
+           type="submit"
+           class="w-full bg-gradient-to-r from-blue-600 to-purple-600 text-white py-3 px-4 rounded-lg font-semibold text-sm sm:text-base hover:from-blue-700 hover:to-purple-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 focus:ring-offset-gray-800 transition-all duration-200 transform hover:scale-[1.02] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:transform-none"
+           :disabled="isLoading"
+         >
+           <span v-if="isLoading" class="flex items-center justify-center">
+             <font-awesome-icon :icon="['fas', 'spinner']" spin class="mr-2" />
+             Creating account...
+           </span>
+           <span v-else class="flex items-center justify-center">
+             <font-awesome-icon :icon="['fas', 'user-plus']" class="mr-2" />
+             Create Account
+           </span>
+         </button>
         </form>
 
-        <div class="flex justify-center space-x-4 my-6">
-          <button class="w-8 h-8 rounded-full bg-blue-600 flex items-center justify-center">
-            <font-awesome-icon :icon="['fab', 'facebook-f']" />
+        <!-- Divider -->
+        <div class="relative my-8">
+          <div class="absolute inset-0 flex items-center">
+            <div class="w-full border-t border-gray-600"></div>
+          </div>
+          <div class="relative flex justify-center text-sm">
+            <span class="px-4 bg-gray-800 text-gray-400">Or continue with</span>
+          </div>
+        </div>
+
+        <!-- Social Login Buttons -->
+        <div class="grid grid-cols-3 gap-3 mb-8">
+          <button class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200">
+            <font-awesome-icon :icon="['fab', 'google']" class="text-red-400 text-lg" />
           </button>
-          <button class="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-            <font-awesome-icon :icon="['fab', 'google']" class="text-gray-900" />
+          <button class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200">
+            <font-awesome-icon :icon="['fab', 'facebook-f']" class="text-blue-400 text-lg" />
           </button>
-          <button class="w-8 h-8 rounded-full bg-white flex items-center justify-center">
-            <font-awesome-icon :icon="['fab', 'apple']" class="text-gray-900" />
+          <button class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200">
+            <font-awesome-icon :icon="['fab', 'apple']" class="text-gray-300 text-lg" />
           </button>
         </div>
-        
-        <div class="text-center text-sm">
-          <p class="text-gray-400">
-            Already have an account? 
-            <router-link to="/login" class="text-white cursor-pointer hover:underline">Sign In</router-link>
+
+        <!-- Sign In Link -->
+        <div class="text-center">
+          <p class="text-gray-400 text-sm">
+            Already have an account?
+            <router-link to="/login" class="text-blue-400 hover:text-blue-300 font-medium hover:underline transition-colors">
+              Sign in here
+            </router-link>
           </p>
         </div>
         <!-- Success Modal -->
@@ -160,7 +221,7 @@ export default {
   name: 'SignupView',
   setup() {
     const router = useRouter();
-    
+
     const firstName = ref('');
     const lastName = ref('');
     const email = ref('');
@@ -169,6 +230,9 @@ export default {
     const isLoading = ref(false);
     const errorMessage = ref('');
     const showSuccessModal = ref(false);
+
+    const passwordVisible = ref(false);
+    const confirmPasswordVisible = ref(false);
 
     const passwordInput = ref(null);
     const confirmPasswordInput = ref(null);
@@ -179,17 +243,10 @@ export default {
     }
 
     const togglePasswordField = (inputRef) => {
-      const inputElement = inputRef === 'passwordInput' ? passwordInput.value : confirmPasswordInput.value;
-      const inputContainer = inputElement.parentElement;
-      const button = inputContainer.querySelector('button');
-      const eyeIcon = button.querySelector('.password-visible-icon');
-
-      if (inputElement.type === 'password') {
-        inputElement.type = 'text';
-        eyeIcon.classList.remove('hidden');
-      } else {
-        inputElement.type = 'password';
-        eyeIcon.classList.add('hidden');
+      if (inputRef === 'passwordInput') {
+        passwordVisible.value = !passwordVisible.value;
+      } else if (inputRef === 'confirmPasswordInput') {
+        confirmPasswordVisible.value = !confirmPasswordVisible.value;
       }
     };
 
@@ -249,7 +306,9 @@ export default {
       togglePasswordField,
       showSuccessModal,
       redirectToLogin,
-      logo
+      logo,
+      passwordVisible,
+      confirmPasswordVisible
     };
   }
 }

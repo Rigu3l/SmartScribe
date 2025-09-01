@@ -1,18 +1,45 @@
 <?php
 // public/index.php
+
+// CORS headers for all requests
 header("Access-Control-Allow-Origin: *");
 header("Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS");
-header("Access-Control-Allow-Headers: Content-Type, Authorization, X-User-ID");
-header("Content-Type: application/json");
+header("Access-Control-Allow-Headers: Content-Type, Authorization, X-User-ID, X-Requested-With");
+header("Access-Control-Allow-Credentials: true");
 
+// Handle preflight OPTIONS requests
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    http_response_code(200);
     exit(0);
+}
+
+// Set JSON content type for API requests (but not for HTML serving or file exports)
+if (!empty($_GET['resource']) || !empty($_GET['action'])) {
+    $resource = $_GET['resource'] ?? '';
+    if ($resource !== 'export') {
+        header("Content-Type: application/json");
+    }
 }
 
 // Check for query parameters first (for direct index.php calls)
 $resource = $_GET['resource'] ?? '';
 $action = $_GET['action'] ?? '';
 $id = $_GET['id'] ?? null;
+
+// Debug logging for request parsing (can be removed in production)
+error_log("API Request - Resource: '$resource', Action: '$action', ID: '$id'");
+
+// If no resource is specified, serve the Vue.js app
+if (empty($resource) && empty($action)) {
+    error_log("DEBUG: No resource or action found, serving Vue.js app");
+    include __DIR__ . '/index.html';
+    exit;
+}
+
+// Set JSON content type for API requests (skip for export)
+if ($resource !== 'export') {
+    header("Content-Type: application/json");
+}
 
 // Debug logging
 error_log("API Request - Resource: $resource, Action: $action, Method: " . $_SERVER['REQUEST_METHOD']);
@@ -27,8 +54,11 @@ if (empty($resource)) {
     $request_uri = $_SERVER['REQUEST_URI'];
     $uri_parts = explode('/', trim($request_uri, '/'));
 
-    // Remove 'api' from the beginning if present
-    if ($uri_parts[0] === 'api') {
+    // Remove 'SmartScribe-main' and 'public' from the beginning if present
+    if ($uri_parts[0] === 'SmartScribe-main') {
+        array_shift($uri_parts);
+    }
+    if ($uri_parts[0] === 'public') {
         array_shift($uri_parts);
     }
 
@@ -74,6 +104,14 @@ switch ($resource) {
     case 'settings':
         require_once __DIR__ . '/../api/controllers/SettingsController.php';
         $controller = new SettingsController($db);
+        break;
+    case 'export':
+        require_once __DIR__ . '/../api/controllers/ExportController.php';
+        $controller = new ExportController($db);
+        break;
+    case 'ocr':
+        require_once __DIR__ . '/../api/controllers/OCRController.php';
+        $controller = new OCRController();
         break;
     default:
         http_response_code(404);
@@ -123,6 +161,35 @@ if ($resource === 'dashboard') {
         $controller->getSettings();
     } elseif ($method === 'PUT' || $method === 'POST') {
         $controller->updateSettings();
+    } else {
+        http_response_code(405);
+        echo json_encode(['error' => 'Method not allowed']);
+    }
+} elseif ($resource === 'export') {
+    // Handle export endpoints
+    $method = $_SERVER['REQUEST_METHOD'];
+    $format = $_GET['format'] ?? 'pdf';
+
+    if ($method === 'GET' && $id) {
+        $controller->export($id, $format);
+    } else {
+        http_response_code(405);
+        echo json_encode(['error' => 'Method not allowed']);
+    }
+} elseif ($resource === 'ocr') {
+    // Handle OCR endpoints
+    $method = $_SERVER['REQUEST_METHOD'];
+    if ($method === 'POST') {
+        if ($action === 'processImage') {
+            $controller->processImage();
+        } elseif ($action === 'processPDF') {
+            $controller->processPDF();
+        } elseif ($action === 'processPDFFallback') {
+            $controller->processPDFFallback();
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'OCR action not found']);
+        }
     } else {
         http_response_code(405);
         echo json_encode(['error' => 'Method not allowed']);

@@ -177,22 +177,33 @@
           <div class="mb-4">
             <label class="block text-sm font-medium mb-2">Preview</label>
             <div class="bg-gray-700 p-3 rounded-md max-h-32 overflow-y-auto text-sm text-gray-300">
-              {{ ocrText.substring(0, 200) }}{{ ocrText.length > 200 ? '...' : '' }}
+              <div v-if="isProcessingFile" class="flex items-center space-x-2">
+                <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin" />
+                <span>Processing file...</span>
+              </div>
+              <div v-else>
+                {{ ocrText ? ocrText.substring(0, 200) : 'No text extracted' }}{{ ocrText && ocrText.length > 200 ? '...' : '' }}
+              </div>
             </div>
           </div>
           <div class="flex justify-end space-x-3">
-            <button 
-              @click="cancelTitleInput" 
-              class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700 transition"
+            <button
+              @click="cancelTitleInput"
+              class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="isProcessingFile"
             >
               Cancel
             </button>
-            <button 
-              @click="saveNoteWithTitle" 
-              class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition"
-              :disabled="!noteTitle.trim()"
+            <button
+              @click="saveNoteWithTitle"
+              class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
+              :disabled="!noteTitle.trim() || isProcessingFile"
             >
-              Save Note
+              <span v-if="isProcessingFile" class="flex items-center space-x-2">
+                <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin" />
+                <span>Saving...</span>
+              </span>
+              <span v-else>Save Note</span>
             </button>
           </div>
         </div>
@@ -412,14 +423,27 @@
             <div class="mb-4">
               <font-awesome-icon :icon="['fas', 'camera']" class="text-4xl text-gray-400" />
             </div>
-            <p class="mb-4 text-gray-400">Take a picture or upload your notes</p>
+            <p class="mb-4 text-gray-400">Take a picture or upload your notes (images with OCR text extraction)</p>
             <div class="flex justify-center space-x-4">
               <button @click="openCamera" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
                 <font-awesome-icon :icon="['fas', 'camera']" class="mr-2" /> Take Photo
               </button>
-              <label class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition cursor-pointer">
-                <font-awesome-icon :icon="['fas', 'upload']" class="mr-2" /> Upload File
-                <input type="file" class="hidden" @change="handleFileUpload" accept="image/*" />
+              <label :class="[
+                'px-4 py-2 rounded-md transition cursor-pointer flex items-center space-x-2',
+                isProcessingFile
+                  ? 'bg-gray-600 cursor-not-allowed opacity-50'
+                  : 'bg-gray-700 hover:bg-gray-600'
+              ]">
+                <font-awesome-icon v-if="isProcessingFile" :icon="['fas', 'spinner']" class="animate-spin" />
+                <font-awesome-icon v-else :icon="['fas', 'upload']" />
+                <span>{{ isProcessingFile ? 'Processing...' : 'Upload Image' }}</span>
+                <input
+                  type="file"
+                  class="hidden"
+                  @change="handleFileUpload"
+                  accept="image/*"
+                  :disabled="isProcessingFile"
+                />
               </label>
             </div>
 
@@ -544,7 +568,7 @@
               </div>
               <h3 class="text-lg font-semibold text-white mb-2">No notes yet</h3>
               <p class="text-gray-400 mb-6 leading-relaxed">
-                Start building your knowledge base by scanning your first note or creating one from scratch.
+                Start building your knowledge base by scanning your first note, uploading images with OCR text extraction, or creating one from scratch.
               </p>
               <div class="flex flex-col sm:flex-row gap-3 justify-center">
                 <button @click="openCamera"
@@ -735,6 +759,7 @@ export default {
 
     // Note creation state
     const ocrText = ref('');
+    const isProcessingFile = ref(false);
     const showSaveConfirmation = ref(false);
     const showTitleModal = ref(false);
     const noteTitle = ref('');
@@ -1050,7 +1075,7 @@ export default {
     };
 
     /**
-     * Handle file upload and perform OCR
+     * Handle image file upload and perform OCR
      */
     const handleFileUpload = async (event) => {
       const file = event.target.files[0];
@@ -1064,13 +1089,16 @@ export default {
         return;
       }
 
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/jpg'];
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
       if (!allowedTypes.includes(file.type)) {
-        alert('Only JPG, PNG images are allowed!');
+        alert('Only JPG, PNG, GIF, and WebP images are allowed!');
         return;
       }
 
+      isProcessingFile.value = true;
+
       try {
+        // Process images with OCR
         const { data: { text } } = await Tesseract.recognize(file, 'eng', {
           logger: () => {} // Disable logging
         });
@@ -1082,7 +1110,10 @@ export default {
         noteTitle.value = ''; // Reset title input
 
       } catch (error) {
-        // Error processing image
+        // Error processing file
+        alert('Error processing file. Please try again.');
+      } finally {
+        isProcessingFile.value = false;
       }
 
       event.target.value = '';
@@ -1219,6 +1250,7 @@ export default {
       pendingImageData,
       showDeleteModal,
       noteToDelete,
+      isProcessingFile,
 
       // Data
       user,

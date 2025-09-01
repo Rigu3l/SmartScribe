@@ -162,44 +162,113 @@
           <div class="bg-gray-800 rounded-lg p-4 sm:p-6">
             <div class="flex flex-col justify-between items-start mb-4 space-y-2" style="flex-direction: column !important;">
               <h2 class="text-base sm:text-lg font-semibold">Study Quiz</h2>
-              <button @click="generateQuiz" class="w-full sm:w-auto px-3 py-2 sm:px-3 sm:py-1 bg-blue-600 rounded text-sm hover:bg-blue-700 transition">
-                <font-awesome-icon :icon="['fas', 'sync-alt']" class="mr-1" /> Generate New Quiz
+              <button @click="generateQuiz" class="w-full sm:w-auto px-3 py-2 sm:px-3 sm:py-1 bg-blue-600 rounded text-sm hover:bg-blue-700 transition" :disabled="isGeneratingQuiz">
+                <font-awesome-icon :icon="['fas', 'sync-alt']" class="mr-1" :spin="isGeneratingQuiz" /> {{ isGeneratingQuiz ? 'Generating Quiz...' : 'Generate New Quiz' }}
               </button>
             </div>
-            
-            <div v-if="quizQuestions.length > 0" class="space-y-4">
+
+            <!-- Quiz Results -->
+            <div v-if="showResults !== undefined && showResults" class="mb-6 bg-gray-700 rounded-lg p-4">
+              <div class="text-center">
+                <h3 class="text-lg font-semibold mb-2">Quiz Results</h3>
+                <div class="text-3xl font-bold mb-2" :class="quizScore === quizQuestions.length ? 'text-green-400' : quizScore >= quizQuestions.length * 0.7 ? 'text-yellow-400' : 'text-red-400'">
+                  {{ quizScore }}/{{ quizQuestions.length }}
+                </div>
+                <p class="text-gray-300 mb-2">
+                  {{ Math.round((quizScore / quizQuestions.length) * 100) }}% Correct
+                </p>
+                <p class="text-sm text-gray-400 mb-4">
+                  You got {{ quizScore }} out of {{ quizQuestions.length }} questions correct
+                </p>
+                <div class="flex justify-center space-x-4">
+                  <button @click="showResults = false; resetQuiz()" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
+                    Retake Quiz
+                  </button>
+                  <button @click="generateQuiz()" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700 transition">
+                    New Quiz
+                  </button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quiz Questions -->
+            <div v-if="quizQuestions.length > 0 && showResults !== undefined && !showResults" class="space-y-4">
               <div v-for="(question, qIndex) in quizQuestions" :key="`question-${qIndex}`" class="bg-gray-700 rounded-lg p-4">
                 <p class="font-medium mb-2">{{ qIndex + 1 }}. {{ question.text }}</p>
                 <div class="space-y-2 ml-4">
-                  <div 
-                    v-for="(option, oIndex) in question.options" 
+                  <div
+                    v-for="(option, oIndex) in question.options"
                     :key="`option-${qIndex}-${oIndex}`"
                     class="flex items-center space-x-2"
+                    :class="{
+                      'text-green-400 font-semibold': quizCompleted && oIndex === question.correctAnswer,
+                      'text-red-400': quizCompleted && question.selectedAnswer === oIndex && oIndex !== question.correctAnswer,
+                      'text-gray-400': quizCompleted && question.selectedAnswer !== oIndex && oIndex !== question.correctAnswer
+                    }"
                   >
-                    <input 
-                      type="radio" 
-                      :id="`q${qIndex}-o${oIndex}`" 
-                      :name="`question-${qIndex}`" 
+                    <input
+                      type="radio"
+                      :id="`q${qIndex}-o${oIndex}`"
+                      :name="`question-${qIndex}`"
                       :value="oIndex"
                       v-model="question.selectedAnswer"
                       class="text-blue-600"
+                      :disabled="quizCompleted"
                     />
-                    <label :for="`q${qIndex}-o${oIndex}`">{{ option }}</label>
+                    <label :for="`q${qIndex}-o${oIndex}`" class="cursor-pointer block p-2 rounded transition-colors" :class="{
+                      'cursor-not-allowed': quizCompleted,
+                      'bg-green-100 text-green-800 border border-green-300': quizCompleted && oIndex === question.correctAnswer,
+                      'bg-red-100 text-red-800 border border-red-300': quizCompleted && question.selectedAnswer === oIndex && oIndex !== question.correctAnswer,
+                      'border border-gray-200': !quizCompleted && question.selectedAnswer === oIndex,
+                      'border border-transparent': !quizCompleted && question.selectedAnswer !== oIndex
+                    }">
+                      {{ option }}
+                    </label>
                   </div>
                 </div>
+
+                <!-- Show explanation after quiz completion -->
+                <div v-if="quizCompleted" class="mt-3 p-3 bg-gray-600 rounded text-sm">
+                  <p class="text-gray-300">
+                    <strong>Correct Answer:</strong> {{ question.originalOptions ? question.originalOptions[question.originalCorrectIndex] : question.options[question.correctAnswer] }}
+                  </p>
+                  <p v-if="question.selectedAnswer !== null && question.selectedAnswer !== question.correctAnswer" class="text-red-300 mt-1">
+                    <strong>Your Answer:</strong> {{ question.options[question.selectedAnswer] }}
+                  </p>
+                  <p v-if="question.selectedAnswer !== null && question.selectedAnswer === question.correctAnswer" class="text-green-300 mt-1">
+                    <strong>Your Answer:</strong> {{ question.options[question.selectedAnswer] }} ✓
+                  </p>
+                </div>
               </div>
-              
+
               <div class="flex justify-between">
-                <button @click="checkQuizAnswers" class="px-4 py-2 bg-green-600 rounded-md hover:bg-green-700 transition">
+                <button
+                  v-if="!quizCompleted"
+                  @click="checkQuizAnswers"
+                  class="px-4 py-2 bg-green-600 rounded-md hover:bg-green-700 transition"
+                  :disabled="!allQuestionsAnswered"
+                >
                   Check Answers
+                </button>
+                <button
+                  v-if="quizCompleted"
+                  @click="showResults = true"
+                  class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition"
+                >
+                  View Results
                 </button>
                 <button @click="resetQuiz" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
                   Reset
                 </button>
               </div>
+
+              <!-- Progress indicator -->
+              <div v-if="!quizCompleted" class="text-center text-sm text-gray-400">
+                {{ answeredQuestionsCount }}/{{ quizQuestions.length }} questions answered
+              </div>
             </div>
-            
-            <div v-else class="text-center py-8 text-gray-400">
+
+            <div v-else-if="showResults !== undefined && !showResults" class="text-center py-8 text-gray-400">
               <p>No quiz questions generated yet. Click "Generate New Quiz" to create questions based on your notes.</p>
             </div>
           </div>
@@ -228,7 +297,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 // import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import api from '@/services/api';
@@ -247,6 +316,27 @@ export default {
     const error = ref(null);
     const generatingSummary = ref(false);
     const sidebarOpen = ref(false);
+
+    // Initialize generatingQuiz with proper reactive reference
+    const generatingQuiz = ref(false);
+
+    // Quiz state management - Initialize all reactive variables at once
+    const quizCompleted = ref(false);
+    const quizScore = ref(0);
+    const showResults = ref(false);
+
+    // Computed property to safely access generatingQuiz state
+    const isGeneratingQuiz = computed(() => generatingQuiz.value);
+
+    // Computed properties for quiz tracking
+    const allQuestionsAnswered = computed(() => {
+      return quizQuestions.value.length > 0 &&
+             quizQuestions.value.every(question => question.selectedAnswer !== null);
+    });
+
+    const answeredQuestionsCount = computed(() => {
+      return quizQuestions.value.filter(question => question.selectedAnswer !== null).length;
+    });
 
     onMounted(async () => {
       try {
@@ -380,23 +470,116 @@ export default {
     };
 
     const generateQuiz = async () => {
-      if (!note.value) return;
+      if (!note.value || generatingQuiz.value) return;
+
+      generatingQuiz.value = true;
 
       try {
-        const response = await api.createQuiz(note.value.id, { difficulty: 'medium', questionCount: 5 });
-        if (response.data.success && response.data.data) {
-          // Assuming the quiz data structure matches what we expect
-          quizQuestions.value = response.data.data.questions || [];
+        // Use the AI summary for better context, fallback to original text if summary not available
+        const usingSummary = note.value.summary && note.value.summary !== 'No summary available. Click "Generate Summary" to create one.';
+        const textForQuiz = usingSummary ? note.value.summary : note.value.originalText;
+
+        // Ensure we have enough content for quiz generation
+        if (!textForQuiz || textForQuiz.length < 50) {
+          alert('Not enough content available for quiz generation. Please generate a summary first or ensure the note has sufficient text.');
+          return;
+        }
+
+        // Inform user about content source
+        const contentSource = usingSummary ? 'AI summary' : 'original text';
+        console.log(`Generating quiz for note "${note.value.title}" using ${contentSource} (${textForQuiz.length} characters)`);
+
+        console.log('Generating quiz using:', textForQuiz.length < 100 ? textForQuiz : textForQuiz.substring(0, 100) + '...');
+        console.log('Text source:', note.value.summary && note.value.summary !== 'No summary available. Click "Generate Summary" to create one.' ? 'AI Summary' : 'Original Text');
+        console.log('Text length:', textForQuiz.length, 'characters');
+
+        // First, generate quiz questions using GPT
+        const gptResponse = await api.gpt.generateQuiz(textForQuiz, {
+          difficulty: 'medium',
+          questionCount: 5,
+          noteTitle: note.value.title || 'Untitled Note'
+        });
+
+        if (gptResponse.data.success && gptResponse.data.data) {
+          const generatedQuestions = gptResponse.data.data.questions || [];
+
+          if (generatedQuestions.length === 0) {
+            alert('No quiz questions were generated. The content may be too short or unclear.');
+            return;
+          }
+
+          // Then, save the quiz to the database
+          const quizResponse = await api.createQuiz(note.value.id, {
+            questions: generatedQuestions,
+            difficulty: 'medium'
+          });
+
+          if (quizResponse.data.success) {
+            // Display the generated questions
+            quizQuestions.value = generatedQuestions.map((q) => {
+              // Handle different correct answer formats (letter vs index)
+              let correctAnswer = q.correct_answer || q.correctAnswer || 0;
+
+              // Convert letter answers (A, B, C, D) to numeric indices (0, 1, 2, 3)
+              if (typeof correctAnswer === 'string') {
+                const letterToIndex = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 };
+                correctAnswer = letterToIndex[correctAnswer.toUpperCase()] ?? 0;
+              }
+
+              // Shuffle the answer options while keeping A-B-C-D labels in order
+              const shuffledOptions = [...q.options];
+              const originalCorrectIndex = correctAnswer;
+
+              // Fisher-Yates shuffle algorithm to randomize option positions
+              for (let i = shuffledOptions.length - 1; i > 0; i--) {
+                const j = Math.floor(Math.random() * (i + 1));
+                [shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]];
+              }
+
+              // Find the new index of the correct answer after shuffling
+              const correctAnswerText = q.options[originalCorrectIndex];
+              const newCorrectIndex = shuffledOptions.findIndex(option => option === correctAnswerText);
+
+              const processedQuestion = {
+                text: q.question,
+                options: shuffledOptions,
+                correctAnswer: newCorrectIndex,
+                selectedAnswer: null,
+                originalOptions: q.options, // Keep original for results display
+                originalCorrectIndex: originalCorrectIndex
+              };
+
+              // Debug logging to verify correct answers are set
+              console.log('Processed quiz question:', {
+                question: processedQuestion.text,
+                correctAnswer: processedQuestion.correctAnswer,
+                correctAnswerText: processedQuestion.options[processedQuestion.correctAnswer],
+                shuffled: true
+              });
+
+              return processedQuestion;
+            });
+            alert(`Quiz generated successfully! Created ${generatedQuestions.length} questions based on the note content.`);
+          } else {
+            alert('Failed to save quiz: ' + (quizResponse.data.error || 'Unknown error'));
+          }
         } else {
-          alert('Failed to generate quiz: ' + (response.data.error || 'Unknown error'));
+          alert('Failed to generate quiz questions: ' + (gptResponse.data.error || 'Unknown error'));
         }
       } catch (error) {
         console.error('Error generating quiz:', error);
         alert('Failed to generate quiz. Please try again.');
+      } finally {
+        generatingQuiz.value = false;
       }
     };
 
     const checkQuizAnswers = () => {
+      if (!allQuestionsAnswered.value) {
+        alert('Please answer all questions before checking your results.');
+        return;
+      }
+
       let correctCount = 0;
       quizQuestions.value.forEach(question => {
         if (question.selectedAnswer === question.correctAnswer) {
@@ -404,13 +587,17 @@ export default {
         }
       });
 
-      alert(`You got ${correctCount} out of ${quizQuestions.value.length} questions correct!`);
+      quizScore.value = correctCount;
+      quizCompleted.value = true;
     };
 
     const resetQuiz = () => {
       quizQuestions.value.forEach(question => {
         question.selectedAnswer = null;
       });
+      quizCompleted.value = false;
+      quizScore.value = 0;
+      showResults.value = false;
     };
 
     return {
@@ -420,7 +607,14 @@ export default {
       showExportOptions,
       quizQuestions,
       generatingSummary,
+      generatingQuiz,
+      isGeneratingQuiz,
       sidebarOpen,
+      quizCompleted,
+      quizScore,
+      showResults,
+      allQuestionsAnswered,
+      answeredQuestionsCount,
       editNote,
       exportNote,
       generateSummary,

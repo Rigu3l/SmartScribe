@@ -14,7 +14,7 @@ class OCRService {
       // Create form data
       const formData = new FormData();
       formData.append('image', imageFile);
-      
+
       // Send to API
       const response = await api.ocr.processImage(formData);
       return response.data;
@@ -22,6 +22,17 @@ class OCRService {
       console.error('OCR processing error:', error);
       throw new Error('Failed to process image. Please try again.');
     }
+  }
+
+
+
+  /**
+   * Check if a file is an image
+   * @param {File} file - The file to check
+   * @returns {boolean} - Whether the file is an image
+   */
+  isImage(file) {
+    return file && file.type.startsWith('image/');
   }
   
   /**

@@ -18,7 +18,8 @@ import {
   faEye,
   faEyeSlash,
   faUser, faChevronDown, faUpload, faArrowRight, faBookOpen,
-  faAlignLeft, faTrash
+  faAlignLeft, faTrash,
+  faEnvelope, faLock, faSignInAlt
 } from '@fortawesome/free-solid-svg-icons'
 import { 
   faTwitter, faFacebook, faInstagram, faGithub,
@@ -36,8 +37,10 @@ library.add(
   faTwitter, faFacebook, faInstagram, faGithub,
   faFacebookF, faGoogle, faApple, faHighlighter, faEye, faEyeSlash,
   faUser, faChevronDown, faUpload, faArrowRight, faBookOpen,
-  faAlignLeft, faTrash
+  faAlignLeft, faTrash,
+  faEnvelope, faLock, faSignInAlt
 )
+
 
 // Check if there's already an app instance and unmount it
 const appContainer = document.getElementById('app')

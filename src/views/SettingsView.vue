@@ -221,14 +221,14 @@
                   <font-awesome-icon :icon="['fas', 'camera']" class="text-white" />
                   <input
                     type="file"
-                    accept="image/*"
+                    accept="image/*,.pdf,application/pdf"
                     @change="handleProfilePictureUpload"
                     class="hidden"
                   />
                 </label>
               </div>
               <p class="text-sm mb-2" :class="themeClasses.secondaryText">Click to change profile picture</p>
-              <p class="text-xs" :class="themeClasses.secondaryText">JPEG, PNG, GIF, WebP (max 5MB)</p>
+              <p class="text-xs" :class="themeClasses.secondaryText">JPEG, PNG, GIF, WebP, PDF (max 5MB)</p>
             </div>
           </div>
 
@@ -829,9 +829,9 @@ export default {
       if (!file) return;
 
       // Validate file type
-      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      const allowedTypes = ['image/jpeg', 'image/png', 'image/gif', 'image/webp', 'application/pdf'];
       if (!allowedTypes.includes(file.type)) {
-        showMessage('Please select a valid image file (JPEG, PNG, GIF, or WebP)', 'error');
+        showMessage('Please select a valid image file (JPEG, PNG, GIF, WebP) or PDF file', 'error');
         return;
       }
 
