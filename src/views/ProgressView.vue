@@ -137,6 +137,12 @@
               </router-link>
             </li>
             <li>
+              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
+                <font-awesome-icon :icon="['fas', 'book']" />
+                <span>Quizzes</span>
+              </router-link>
+            </li>
+            <li>
               <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md bg-gray-700">
                 <font-awesome-icon :icon="['fas', 'chart-line']" />
                 <span>Progress</span>

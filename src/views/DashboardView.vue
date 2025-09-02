@@ -138,6 +138,12 @@
               </router-link>
             </li>
             <li>
+              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md" :class="themeClasses.button">
+                <font-awesome-icon :icon="['fas', 'book']" />
+                <span>Quizzes</span>
+              </router-link>
+            </li>
+            <li>
               <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md" :class="themeClasses.button">
                 <font-awesome-icon :icon="['fas', 'chart-line']" />
                 <span>Progress</span>
@@ -213,7 +219,7 @@
       <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4">
           <div class="flex items-center mb-4">
-            <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-red-400 text-xl mr-3" />
+            <font-awesome-icon :icon="['fas', 'times']" class="text-red-400 text-xl mr-3" />
             <h3 class="text-lg font-medium">Delete Note</h3>
           </div>
           <p class="text-gray-300 mb-6">

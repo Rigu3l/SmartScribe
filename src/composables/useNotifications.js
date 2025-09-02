@@ -5,57 +5,48 @@ export function useNotifications() {
   const notifications = ref([]);
   const isPolling = ref(false);
   const pollingInterval = ref(null);
-  const soundEnabled = ref(true);
 
   // Notification types with professional styling
   const NOTIFICATION_TYPES = {
     SUCCESS: {
       icon: ['fas', 'check-circle'],
       color: 'text-green-400',
-      bgColor: 'bg-green-500',
-      sound: 'success.mp3'
+      bgColor: 'bg-green-500'
     },
     ERROR: {
       icon: ['fas', 'triangle-exclamation'],
       color: 'text-red-400',
-      bgColor: 'bg-red-500',
-      sound: 'error.mp3'
+      bgColor: 'bg-red-500'
     },
     WARNING: {
       icon: ['fas', 'exclamation-circle'],
       color: 'text-yellow-400',
-      bgColor: 'bg-yellow-500',
-      sound: 'warning.mp3'
+      bgColor: 'bg-yellow-500'
     },
     INFO: {
       icon: ['fas', 'info-circle'],
       color: 'text-blue-400',
-      bgColor: 'bg-blue-500',
-      sound: 'info.mp3'
+      bgColor: 'bg-blue-500'
     },
     NOTE_CREATED: {
       icon: ['fas', 'file-alt'],
       color: 'text-purple-400',
-      bgColor: 'bg-purple-500',
-      sound: 'note.mp3'
+      bgColor: 'bg-purple-500'
     },
     NOTE_UPDATED: {
       icon: ['fas', 'edit'],
       color: 'text-indigo-400',
-      bgColor: 'bg-indigo-500',
-      sound: 'update.mp3'
+      bgColor: 'bg-indigo-500'
     },
     GOAL_ACHIEVED: {
       icon: ['fas', 'trophy'],
       color: 'text-yellow-500',
-      bgColor: 'bg-yellow-600',
-      sound: 'achievement.mp3'
+      bgColor: 'bg-yellow-600'
     },
     SYSTEM: {
       icon: ['fas', 'cog'],
       color: 'text-gray-400',
-      bgColor: 'bg-gray-500',
-      sound: 'system.mp3'
+      bgColor: 'bg-gray-500'
     }
   };
 
@@ -102,20 +93,6 @@ export function useNotifications() {
     }
   };
 
-  // Play notification sound
-  const playSound = (soundFile) => {
-    if (!soundEnabled.value) return;
-
-    try {
-      const audio = new Audio(`/sounds/${soundFile}`);
-      audio.volume = 0.3;
-      audio.play().catch(() => {
-        // Silently fail if audio can't be played
-      });
-    } catch (error) {
-      // Silently fail if audio is not supported
-    }
-  };
 
   // Format time ago
   const formatTimeAgo = (timestamp) => {
@@ -151,10 +128,10 @@ export function useNotifications() {
     // Add time display
     newNotification.time = formatTimeAgo(newNotification.timestamp);
 
-    // Play sound for new notifications
-    if (!notificationData.silent) {
-      playSound(type.sound);
-    }
+    // Play sound for new notifications (disabled - sound files not available)
+    // if (!notificationData.silent) {
+    //   playSound(type.sound);
+    // }
 
     // Add to beginning of array
     notifications.value.unshift(newNotification);
@@ -414,7 +391,6 @@ export function useNotifications() {
     showNotifications,
     notifications,
     unreadNotifications,
-    soundEnabled,
 
     // Basic methods
     toggleNotifications,

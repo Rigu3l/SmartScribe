@@ -435,9 +435,16 @@ class AuthController {
     private function getUserIdFromHeader() {
         $headers = getallheaders();
 
-        // First try to validate token from Authorization header
-        if (isset($headers['Authorization'])) {
-            $authHeader = $headers['Authorization'];
+        // First try to validate token from Authorization header (case-insensitive)
+        $authHeader = null;
+        foreach ($headers as $key => $value) {
+            if (strtolower($key) === 'authorization') {
+                $authHeader = $value;
+                break;
+            }
+        }
+
+        if ($authHeader) {
             if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
                 $token = $matches[1];
                 $userId = $this->validateToken($token);
@@ -448,8 +455,9 @@ class AuthController {
         }
 
         // Fallback to X-User-ID header (for backward compatibility)
-        if (isset($headers['X-User-ID'])) {
-            return intval($headers['X-User-ID']);
+        if (isset($headers['X-User-ID']) || isset($headers['x-user-id'])) {
+            $userIdHeader = $headers['X-User-ID'] ?? $headers['x-user-id'];
+            return intval($userIdHeader);
         }
 
         return null;

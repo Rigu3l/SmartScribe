@@ -138,6 +138,12 @@
               </router-link>
             </li>
             <li>
+              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
+                <font-awesome-icon :icon="['fas', 'book']" />
+                <span>Quizzes</span>
+              </router-link>
+            </li>
+            <li>
               <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
                 <font-awesome-icon :icon="['fas', 'chart-line']" />
                 <span>Progress</span>
@@ -238,7 +244,7 @@
         <!-- Error State -->
         <div v-if="notesError" class="bg-red-800 rounded-lg p-6 text-center">
           <div class="mb-4">
-            <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-4xl text-red-400" />
+            <font-awesome-icon :icon="['fas', 'times']" class="text-4xl text-red-400" />
           </div>
           <h3 class="text-xl font-medium mb-2">Unable to Load Notes</h3>
           <p class="text-red-300 mb-4">{{ notesError || 'An error occurred while loading your notes.' }}</p>
@@ -357,7 +363,7 @@
         @click.stop
       >
         <div class="flex items-center mb-4">
-          <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-red-400 text-xl mr-3" />
+          <font-awesome-icon :icon="['fas', 'times']" class="text-red-400 text-xl mr-3" />
           <h3 class="text-lg font-medium">Delete Note</h3>
         </div>
         <p class="text-gray-300 mb-6">
@@ -611,7 +617,6 @@ export default {
         }
 
         const response = await api.getNotes();
-        console.log('📡 Notes API response:', response.data);
 
         if (response.data && response.data.success) {
           console.log('✅ Notes loaded successfully:', response.data.data?.length || 0, 'notes');

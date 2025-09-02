@@ -8,6 +8,8 @@ import ProgressView from '../views/ProgressView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import NoteDetailView from '../views/NoteDetailView.vue'
 import NoteEditorView from '@/views/NoteEditorView.vue'
+import QuizView from '../views/QuizView.vue'
+import QuizTakingView from '../views/QuizTakingView.vue'
 import NotFoundView from '@/views/NotFoundView.vue'
 // import { meta } from '@babel/eslint-parser'
 
@@ -49,6 +51,18 @@ const routes = [
     path: '/notes/edit',
     name: 'note-editor',
     component: NoteEditorView,
+    //meta: { requiresAuth: true }
+  },
+  {
+    path: '/quizzes',
+    name: 'quizzes',
+    component: QuizView,
+    //meta: { requiresAuth: true }
+  },
+  {
+    path: '/quizzes/:id',
+    name: 'quiz-taking',
+    component: QuizTakingView,
     //meta: { requiresAuth: true }
   },
   {

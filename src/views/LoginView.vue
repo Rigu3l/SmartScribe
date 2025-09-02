@@ -180,6 +180,9 @@ export default {
           localStorage.setItem("user", JSON.stringify(response.data.user));
           localStorage.setItem("token", response.data.token || '');
 
+          console.log('🔐 Login successful - Token stored:', response.data.token);
+          console.log('👤 User data stored:', response.data.user);
+
           router.push('/dashboard');
         } else {
           throw new Error('Invalid response from server');

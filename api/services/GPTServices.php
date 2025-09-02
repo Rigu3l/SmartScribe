@@ -7,9 +7,11 @@ class GPTService {
 
     public function __construct() {
         $this->geminiApiKey = getenv('GOOGLE_GEMINI_API_KEY');
-        if (!$this->geminiApiKey || $this->geminiApiKey === 'your_google_gemini_api_key_here') {
+        if (!$this->geminiApiKey || $this->geminiApiKey === 'your_google_gemini_api_key_here' || $this->geminiApiKey === 'your_actual_api_key_here') {
             error_log("Google Gemini API key not found or is placeholder in environment variables");
             $this->geminiApiKey = null;
+        } else {
+            error_log("Google Gemini API key found and loaded successfully");
         }
     }
 
@@ -43,7 +45,12 @@ class GPTService {
     }
 
     public function generateQuiz($text, $options = []) {
+        error_log("GPT SERVICE: generateQuiz called");
+        error_log("GPT SERVICE: Text length: " . strlen($text));
+        error_log("GPT SERVICE: Options: " . json_encode($options));
+
         if (empty($text)) {
+            error_log("GPT SERVICE: Empty text provided, returning empty quiz");
             return ['quiz' => 'No content provided', 'questions' => []];
         }
 
@@ -52,18 +59,35 @@ class GPTService {
         $count = $options['questionCount'] ?? 5;
         $noteTitle = $options['noteTitle'] ?? 'this study material';
 
+        error_log("GPT SERVICE: Using difficulty: $difficulty, count: $count, noteTitle: $noteTitle");
+        error_log("GPT SERVICE: Gemini API key status: " . ($this->geminiApiKey ? 'set' : 'not set'));
+
         if (!$this->geminiApiKey) {
+            error_log("GPT SERVICE: No API key, using fallback quiz generation");
             return $this->generateFallbackQuiz($text, $difficulty, $count, $noteTitle);
         }
 
+        error_log("GPT SERVICE: Building quiz prompt...");
         $prompt = $this->buildQuizPrompt($text, $difficulty, $count, $noteTitle);
+        error_log("GPT SERVICE: Prompt length: " . strlen($prompt));
+
+        error_log("GPT SERVICE: Calling Gemini API...");
         $response = $this->callGemini($prompt);
+        error_log("GPT SERVICE: Gemini response: " . ($response ? 'received (' . strlen($response) . ' chars)' : 'null/empty'));
 
         if (!$response) {
+            error_log("GPT SERVICE: No response from Gemini, using fallback");
             return $this->generateFallbackQuiz($text, $difficulty, $count, $noteTitle);
         }
 
-        return $this->parseQuizResponse($response);
+        error_log("GPT SERVICE: Parsing quiz response...");
+        $parsed = $this->parseQuizResponse($response);
+        error_log("GPT SERVICE: Parsed result type: " . gettype($parsed));
+        if (is_array($parsed) && isset($parsed['questions'])) {
+            error_log("GPT SERVICE: Parsed questions count: " . count($parsed['questions']));
+        }
+
+        return $parsed;
     }
 
     public function extractKeywords($text, $count = 5) {

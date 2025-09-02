@@ -93,7 +93,7 @@
         </div>
 
         <div v-else-if="error" class="flex flex-col items-center justify-center h-full">
-          <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="text-4xl text-red-400 mb-4" />
+          <font-awesome-icon :icon="['fas', 'times']" class="text-4xl text-red-400 mb-4" />
           <h2 class="text-xl font-medium mb-2">Error Loading Note</h2>
           <p class="text-gray-400 mb-4">{{ error }}</p>
           <router-link to="/notes" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">

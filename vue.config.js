@@ -10,8 +10,23 @@ module.exports = defineConfig({
         changeOrigin: true,
         pathRewrite: {
           '^/api': '/SmartScribe-main/public'
+        },
+        onProxyReq: (proxyReq, req) => {
+          // Forward Authorization header
+          if (req.headers.authorization) {
+            proxyReq.setHeader('Authorization', req.headers.authorization);
+          }
+          // Forward other headers
+          if (req.headers['x-user-id']) {
+            proxyReq.setHeader('X-User-ID', req.headers['x-user-id']);
+          }
         }
       }
+    },
+    headers: {
+      'Cache-Control': 'no-cache, no-store, must-revalidate',
+      'Pragma': 'no-cache',
+      'Expires': '0'
     }
   },
   configureWebpack: {

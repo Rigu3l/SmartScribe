@@ -134,10 +134,48 @@ class SettingsController {
 
     private function getUserIdFromHeader() {
         $headers = getallheaders();
-        if (isset($headers['X-User-ID'])) {
-            return intval($headers['X-User-ID']);
+
+        // First try to validate token from Authorization header (case-insensitive)
+        $authHeader = null;
+        foreach ($headers as $key => $value) {
+            if (strtolower($key) === 'authorization') {
+                $authHeader = $value;
+                break;
+            }
         }
+
+        if ($authHeader) {
+            if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                $token = $matches[1];
+                $userId = $this->validateToken($token);
+                if ($userId) {
+                    return $userId;
+                }
+            }
+        }
+
+        // Fallback to X-User-ID header (for backward compatibility)
+        if (isset($headers['X-User-ID']) || isset($headers['x-user-id'])) {
+            $userIdHeader = $headers['X-User-ID'] ?? $headers['x-user-id'];
+            return intval($userIdHeader);
+        }
+
         return null;
+    }
+
+    private function validateToken($token) {
+        if (!$token) return null;
+
+        try {
+            $stmt = $this->db->prepare("SELECT user_id FROM user_tokens WHERE token = ? AND expires_at > NOW()");
+            $stmt->execute([$token]);
+            $result = $stmt->fetch();
+
+            return $result ? $result['user_id'] : null;
+        } catch (Exception $e) {
+            error_log("Token validation error: " . $e->getMessage());
+            return null;
+        }
     }
 }
 ?>

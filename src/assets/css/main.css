@@ -13,6 +13,19 @@ body {
   font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
 }
 
+/* Force override any cached styles */
+html body {
+  background-color: #111827 !important; /* gray-900 */
+  color: white !important;
+  font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+}
+
+/* Ensure HomeView styles take precedence */
+#app .flex.flex-col.min-h-screen {
+  background-color: #111827 !important;
+  color: white !important;
+}
+
 /* Prevent horizontal scrolling on all devices */
 * {
   box-sizing: border-box;

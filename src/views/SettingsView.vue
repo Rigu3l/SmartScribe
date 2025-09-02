@@ -130,6 +130,12 @@
               </router-link>
             </li>
             <li>
+              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
+                <font-awesome-icon :icon="['fas', 'book']" />
+                <span>Quizzes</span>
+              </router-link>
+            </li>
+            <li>
               <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
                 <font-awesome-icon :icon="['fas', 'chart-line']" />
                 <span>Progress</span>
@@ -310,7 +316,7 @@
             <h2 class="font-semibold mb-4" :class="[themeClasses.text, fontSizeClasses.body]">Danger Zone</h2>
             <p class="mb-4" :class="themeClasses.secondaryText">Once you delete your account, there is no going back. Please be certain.</p>
             <button @click="deleteAccount" class="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 transition">
-              <font-awesome-icon :icon="['fas', 'triangle-exclamation']" class="mr-2" />
+              <font-awesome-icon :icon="['fas', 'times']" class="mr-2" />
               Delete Account
             </button>
           </div>

@@ -2,7 +2,7 @@
 import axios from 'axios'
 
 const api = axios.create({
-  baseURL: 'http://localhost/SmartScribe-main/public/index.php/',
+  baseURL: '/api/index.php/',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -218,8 +218,14 @@ export default {
   updateQuiz(id, data) {
     return api.put(`?resource=quizzes&id=${id}`, data)
   },
+  deleteQuiz(id) {
+    return api.delete(`?resource=quizzes&id=${id}`)
+  },
   generateQuiz(noteId, options) {
     return api.post(`?resource=quizzes&action=generate&note_id=${noteId}`, options)
+  },
+  saveQuiz(quizData) {
+    return api.post('?resource=quizzes', quizData)
   },
 
   // Export

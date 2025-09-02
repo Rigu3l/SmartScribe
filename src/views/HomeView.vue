@@ -1,5 +1,5 @@
 <template>
-  <div class="flex flex-col min-h-screen bg-gray-900 text-white">
+  <div class="flex flex-col min-h-screen bg-gray-900 text-white" style="background-color: #111827 !important; color: white !important;">
     <header class="p-4 flex justify-between items-center">
       <div class="text-xl font-bold">SmartScribe</div>
       <div class="space-x-2">
@@ -58,13 +58,7 @@
       </div>
     </main>
 
-    <footer class="p-4 bg-gray-800 text-gray-400 flex justify-between items-center text-sm">
-      <div class="flex space-x-4">
-        <a href="#" class="hover:text-white">Docs</a>
-        <a href="#" class="hover:text-white">Guides</a>
-        <a href="#" class="hover:text-white">Help</a>
-        <a href="#" class="hover:text-white">Contact</a>
-      </div>
+    <footer class="p-4 bg-gray-800 text-gray-400 flex justify-center items-center text-sm">
       <div>© 2025 SmartScribe Inc.</div>
     </footer>
   </div>
@@ -72,6 +66,34 @@
 
 <script>
 export default {
-  name: 'HomeView'
+  name: 'HomeView',
+  mounted() {
+    // Ensure proper styling is applied
+    document.body.classList.add('loaded');
+  }
 }
 </script>
+
+<style scoped>
+/* Ensure consistent dark theme styling */
+.flex.flex-col.min-h-screen {
+  background-color: #111827 !important;
+  color: white !important;
+}
+
+.bg-gray-800 {
+  background-color: #1f2937 !important;
+}
+
+.text-white {
+  color: white !important;
+}
+
+.text-gray-400 {
+  color: #9ca3af !important;
+}
+
+.text-gray-300 {
+  color: #d1d5db !important;
+}
+</style>

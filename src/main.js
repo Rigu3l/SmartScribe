@@ -19,7 +19,8 @@ import {
   faEyeSlash,
   faUser, faChevronDown, faUpload, faArrowRight, faBookOpen,
   faAlignLeft, faTrash,
-  faEnvelope, faLock, faSignInAlt
+  faEnvelope, faLock, faSignInAlt,
+  faRocket
 } from '@fortawesome/free-solid-svg-icons'
 import { 
   faTwitter, faFacebook, faInstagram, faGithub,
@@ -38,7 +39,8 @@ library.add(
   faFacebookF, faGoogle, faApple, faHighlighter, faEye, faEyeSlash,
   faUser, faChevronDown, faUpload, faArrowRight, faBookOpen,
   faAlignLeft, faTrash,
-  faEnvelope, faLock, faSignInAlt
+  faEnvelope, faLock, faSignInAlt,
+  faRocket
 )
 
 
@@ -62,5 +64,15 @@ try {
 } catch (error) {
   // Error initializing app store
 }
+
+// Show body after CSS loads to prevent FOUC
+window.addEventListener('load', () => {
+  document.body.classList.add('loaded');
+});
+
+// Fallback: show body after a short delay in case load event doesn't fire
+setTimeout(() => {
+  document.body.classList.add('loaded');
+}, 100);
 
 app.mount('#app')
