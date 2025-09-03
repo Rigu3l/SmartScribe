@@ -247,7 +247,7 @@
           <div class="mb-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
               <div>
-                <h1 class="text-2xl sm:text-3xl font-bold mb-2">Quiz Management</h1>
+                <h1 class="text-2xl sm:text-3xl font-bold mb-2">Quizzes</h1>
                 <p class="text-gray-400">Create and manage your study quizzes</p>
               </div>
               <div class="flex space-x-3 mt-4 sm:mt-0">
