@@ -2,8 +2,39 @@
   <div class="min-h-screen flex flex-col bg-gray-900 text-white overflow-x-hidden">
     <!-- Header -->
     <header class="p-3 sm:p-4 bg-gray-800 flex justify-between items-center">
-      <div class="text-lg sm:text-xl font-bold">SmartScribe</div>
+      <div class="flex items-center space-x-3">
+        <!-- Stunning Modern Sidebar Toggle Button -->
+        <button @click="toggleSidebar"
+                class="group relative flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-800 via-gray-800 to-slate-900 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-gray-400 hover:text-white transition-all duration-500 ease-out transform hover:scale-110 hover:rotate-3 active:scale-95 overflow-hidden border border-slate-700 hover:border-indigo-400/50 shadow-xl hover:shadow-2xl hover:shadow-indigo-500/30 backdrop-blur-md"
+                :title="sidebarVisible ? 'Hide sidebar' : 'Show sidebar'">
+
+          <!-- Animated background particles -->
+          <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+            <div class="absolute top-1 left-2 w-1 h-1 bg-indigo-400 rounded-full animate-ping"></div>
+            <div class="absolute top-3 right-1 w-0.5 h-0.5 bg-purple-400 rounded-full animate-pulse"></div>
+            <div class="absolute bottom-2 left-3 w-0.5 h-0.5 bg-pink-400 rounded-full animate-bounce"></div>
+          </div>
+
+          <!-- Main icon with enhanced styling -->
+          <span class="text-2xl font-black transition-all duration-500 ease-out group-hover:scale-125 group-hover:drop-shadow-lg filter group-hover:brightness-110 relative z-10"
+                :class="sidebarVisible ? 'rotate-180 group-hover:rotate-90' : 'rotate-0 group-hover:-rotate-12'">
+            ☰
+          </span>
+
+          <!-- Multi-layer glow effects -->
+          <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-indigo-500/20 group-hover:via-purple-500/15 group-hover:to-pink-500/20 transition-all duration-500 blur-sm"></div>
+          <div class="absolute inset-1 rounded-xl bg-gradient-to-br from-indigo-400/0 to-purple-400/0 group-hover:from-indigo-400/10 group-hover:to-purple-400/10 transition-all duration-700"></div>
+
+          <!-- Pulsing ring effect -->
+          <div class="absolute inset-0 rounded-2xl border-2 border-indigo-500/0 group-hover:border-indigo-400/30 transition-all duration-500 animate-pulse group-hover:animate-none"></div>
+
+          <!-- Inner highlight -->
+          <div class="absolute inset-2 rounded-lg bg-gradient-to-br from-white/0 to-white/5 group-hover:from-white/10 group-hover:to-white/0 transition-all duration-300"></div>
+        </button>
+        <div class="text-lg sm:text-xl font-bold">SmartScribe</div>
+      </div>
       <div class="flex items-center space-x-2 sm:space-x-4">
+
         <button class="text-gray-400 hover:text-white p-2">
           <font-awesome-icon :icon="['fas', 'bell']" class="text-sm sm:text-base" />
         </button>
@@ -31,6 +62,7 @@
 
       <!-- Sidebar -->
       <aside
+        v-if="sidebarVisible"
         :class="[
           'bg-gray-800 p-4 transition-all duration-300 ease-in-out',
           sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
@@ -94,6 +126,7 @@
               </router-link>
             </li>
           </ul>
+
         </nav>
       </aside>
 
@@ -347,6 +380,7 @@
 <script>
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
+import { useStore } from 'vuex'
 import api from '@/services/api'
 
 export default {
@@ -355,6 +389,7 @@ export default {
     console.log('=== QUIZVIEW SETUP START ===')
     const route = useRoute()
     const router = useRouter()
+    const store = useStore()
 
     console.log('Route params:', route.params)
     console.log('Route path:', route.path)
@@ -417,6 +452,9 @@ export default {
     const answeredQuestionsCount = computed(() => {
       return quizQuestions.value.filter(question => question.selectedAnswer !== null).length
     })
+
+    // Sidebar visibility from store
+    const sidebarVisible = computed(() => store.getters['app/getSidebarVisible'])
 
     const improvementAdvice = computed(() => {
       const score = quizScore.value
@@ -483,6 +521,17 @@ export default {
 
       return advice
     })
+
+    // =====================================
+    // SIDEBAR FUNCTIONS
+    // =====================================
+
+    /**
+     * Toggle sidebar visibility
+     */
+    const toggleSidebar = () => {
+      store.dispatch('app/toggleSidebar')
+    }
 
     // Methods
     const loadNoteData = async () => {
@@ -1066,6 +1115,7 @@ export default {
       isLoading,
       error,
       sidebarOpen,
+      sidebarVisible,
       isGeneratingQuiz,
       quizQuestions,
       quizCompleted,
@@ -1083,6 +1133,7 @@ export default {
       savedQuizzes,
       isLoadingSavedQuizzes,
       selectedSavedQuiz,
+      toggleSidebar,
       generateNewQuiz,
       checkAnswers,
       resetQuiz,

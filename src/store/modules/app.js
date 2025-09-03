@@ -20,6 +20,9 @@ const state = {
   // Global theme settings
   theme: 'dark', // 'dark', 'light', 'system'
   fontSize: 16,
+
+  // Sidebar visibility
+  sidebarVisible: true,
 };
 
 const getters = {
@@ -33,6 +36,7 @@ const getters = {
   // Theme getters
   getTheme: (state) => state.theme,
   getFontSize: (state) => state.fontSize,
+  getSidebarVisible: (state) => state.sidebarVisible,
   getCurrentTheme: (state) => {
     if (state.theme === 'system' && typeof window !== 'undefined') {
       return window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light';
@@ -153,6 +157,10 @@ const mutations = {
   SET_FONT_SIZE(state, fontSize) {
     state.fontSize = fontSize;
   },
+
+  SET_SIDEBAR_VISIBLE(state, visible) {
+    state.sidebarVisible = visible;
+  },
 };
 
 const actions = {
@@ -216,6 +224,17 @@ const actions = {
     dispatch('saveThemeSettings');
   },
 
+  setSidebarVisible({ commit, dispatch }, visible) {
+    commit('SET_SIDEBAR_VISIBLE', visible);
+    dispatch('saveThemeSettings');
+  },
+
+  toggleSidebar({ commit, dispatch, state }) {
+    const newVisibility = !state.sidebarVisible;
+    commit('SET_SIDEBAR_VISIBLE', newVisibility);
+    dispatch('saveThemeSettings');
+  },
+
   applyTheme(theme) {
     // Only run on client-side
     if (typeof window === 'undefined' || typeof document === 'undefined') {
@@ -242,7 +261,8 @@ const actions = {
     // Save to localStorage
     const settings = {
       theme: state.theme,
-      fontSize: state.fontSize
+      fontSize: state.fontSize,
+      sidebarVisible: state.sidebarVisible
     };
     localStorage.setItem('smartscribe_theme_settings', JSON.stringify(settings));
   },
@@ -258,6 +278,9 @@ const actions = {
         }
         if (settings.fontSize) {
           commit('SET_FONT_SIZE', settings.fontSize);
+        }
+        if (typeof settings.sidebarVisible === 'boolean') {
+          commit('SET_SIDEBAR_VISIBLE', settings.sidebarVisible);
         }
         // Apply the loaded theme
         dispatch('applyTheme', settings.theme || 'dark');
