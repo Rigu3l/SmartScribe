@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex flex-col bg-gray-900 text-white overflow-x-hidden">
     <!-- Header -->
-    <header class="p-3 sm:p-4 bg-gray-800 flex justify-between items-center">
+    <header :class="themeClasses.header" class="p-4 flex justify-between items-center">
       <div class="flex items-center space-x-3">
         <!-- Classic Sidebar Toggle Button -->
         <button @click="toggleSidebar"
@@ -27,14 +27,122 @@
             <div class="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 border-l border-t border-gray-700 rotate-45"></div>
           </div>
         </button>
-        <div class="text-lg sm:text-xl font-bold">SmartScribe</div>
+        <div class="text-lg md:text-xl font-bold">SmartScribe</div>
       </div>
-      <div class="flex items-center space-x-2 sm:space-x-4">
+      <div class="flex items-center space-x-2 md:space-x-4">
 
-        <button class="text-gray-400 hover:text-white p-2">
-          <font-awesome-icon :icon="['fas', 'bell']" class="text-sm sm:text-base" />
-        </button>
-        <div class="w-6 h-6 sm:w-8 sm:h-8 bg-gray-600 rounded-full"></div>
+        <div class="relative">
+          <button @click="toggleNotifications" class="text-gray-400 hover:text-white relative">
+            <font-awesome-icon :icon="['fas', 'bell']" />
+            <span v-if="unreadNotifications > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
+              {{ unreadNotifications }}
+            </span>
+          </button>
+          <div v-if="showNotifications" class="absolute right-0 mt-2 w-80 bg-gray-800 rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
+            <div class="p-4 border-b border-gray-700">
+              <h3 class="text-lg font-semibold">Notifications</h3>
+            </div>
+            <div v-if="notifications.length > 0">
+              <div v-for="(notification, index) in notifications" :key="notification.id || index"
+                   class="p-4 border-b border-gray-700 hover:bg-gray-700 transition-colors"
+                   :class="{
+                     'bg-gray-700': !notification.read,
+                     'cursor-pointer': !notification.read
+                   }"
+                   @click="markAsRead(notification)">
+                <div class="flex items-start space-x-3">
+                  <div class="flex-shrink-0 mt-1">
+                    <div :class="[
+                      'w-8 h-8 rounded-full flex items-center justify-center',
+                      notification.bgColor
+                    ]">
+                      <font-awesome-icon :icon="notification.icon" class="text-white text-sm" />
+                    </div>
+                  </div>
+                  <div class="flex-grow">
+                    <div class="flex items-start justify-between">
+                      <div class="flex-grow">
+                        <p class="text-sm font-medium text-white">{{ notification.title }}</p>
+                        <p class="text-xs text-gray-300 mt-1">{{ notification.message }}</p>
+                        <p class="text-xs text-gray-500 mt-2">{{ notification.time }}</p>
+                      </div>
+                      <div class="flex items-center space-x-2 ml-2">
+                        <div v-if="!notification.read" class="flex-shrink-0">
+                          <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
+                        </div>
+                        <button v-if="notification.persistent"
+                                @click.stop="removeNotification(notification.id)"
+                                class="text-gray-400 hover:text-red-400 text-xs">
+                          <font-awesome-icon :icon="['fas', 'times']" />
+                        </button>
+                      </div>
+                    </div>
+
+                    <!-- Notification Actions -->
+                    <div v-if="notification.actions && notification.actions.length > 0" class="mt-3 flex space-x-2">
+                      <button v-for="(action, actionIndex) in notification.actions" :key="actionIndex"
+                              @click.stop="executeAction(notification, action)"
+                              class="px-2 py-1 text-xs rounded transition-colors"
+                              :class="{
+                                'bg-blue-600 text-white hover:bg-blue-700': action.action === 'navigate',
+                                'bg-gray-600 text-white hover:bg-gray-700': action.action === 'dismiss',
+                                'bg-green-600 text-white hover:bg-green-700': action.action === 'callback'
+                              }">
+                        {{ action.label }}
+                      </button>
+                    </div>
+
+                    <!-- Priority Indicator -->
+                    <div v-if="notification.priority === 'urgent'" class="mt-2 flex items-center">
+                      <div class="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
+                      <span class="text-xs text-red-400 font-medium">URGENT</span>
+                    </div>
+                    <div v-else-if="notification.priority === 'high'" class="mt-2 flex items-center">
+                      <div class="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
+                      <span class="text-xs text-orange-400 font-medium">HIGH PRIORITY</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+            <div v-else class="p-4 text-center text-gray-400">
+              <font-awesome-icon :icon="['fas', 'bell-slash']" class="text-2xl mb-2" />
+              <p>No notifications yet</p>
+            </div>
+            <div v-if="notifications.length > 0" class="p-3 border-t border-gray-700">
+              <button @click="markAllAsRead" class="text-sm text-blue-400 hover:text-blue-300">
+                Mark all as read
+              </button>
+            </div>
+          </div>
+          <!-- Backdrop to close notifications when clicking outside -->
+          <div v-if="showNotifications" class="fixed inset-0 z-0" @click="closeNotifications"></div>
+        </div>
+        <div class="relative">
+          <button @click="toggleUserMenu" class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-600">
+              <img
+                v-if="user && user.profilePicture"
+                :key="user.profilePicture"
+                :src="getProfilePictureUrl(user.profilePicture)"
+                alt="Profile"
+                class="w-full h-full object-cover"
+                @error="handleImageError"
+                @load="handleImageLoad"
+              />
+              <div v-else class="w-full h-full bg-gray-600 flex items-center justify-center">
+                <font-awesome-icon :icon="['fas', 'user']" class="text-white text-sm" />
+              </div>
+            </div>
+            <span>{{ user?.name || 'User' }}</span>
+            <font-awesome-icon :icon="['fas', 'chevron-down']" class="text-xs" />
+          </button>
+          <div v-if="showUserMenu" class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-10">
+            <button @click="openProfileModal" class="w-full text-left block px-4 py-2 hover:bg-gray-700">Profile</button>
+            <router-link to="/settings" @click="closeUserMenu" class="block px-4 py-2 hover:bg-gray-700">Settings</router-link>
+            <button @click="logout" class="w-full text-left block px-4 py-2 hover:bg-gray-700 text-red-400 hover:text-red-300">Logout</button>
+          </div>
+        </div>
       </div>
     </header>
 
@@ -122,7 +230,6 @@
               </router-link>
             </li>
           </ul>
-
         </nav>
       </aside>
 
@@ -377,6 +484,8 @@
 import { ref, onMounted, computed } from 'vue'
 import { useRoute, useRouter } from 'vue-router'
 import { useStore } from 'vuex'
+import { useNotifications } from '@/composables/useNotifications'
+import { useUserProfile } from '@/composables/useUserProfile'
 import api from '@/services/api'
 
 export default {
@@ -386,6 +495,30 @@ export default {
     const route = useRoute()
     const router = useRouter()
     const store = useStore()
+
+    // =====================================
+    // NOTIFICATION SYSTEM
+    // =====================================
+    const {
+      showNotifications,
+      notifications,
+      unreadNotifications,
+      toggleNotifications,
+      closeNotifications,
+      markAsRead,
+      markAllAsRead,
+      showSuccess,
+      showInfo,
+      showWarning
+    } = useNotifications()
+
+    // =====================================
+    // USER PROFILE SYSTEM
+    // =====================================
+    const {
+      user: userProfile,
+      loadUserProfile
+    } = useUserProfile()
 
     console.log('Route params:', route.params)
     console.log('Route path:', route.path)
@@ -439,6 +572,9 @@ export default {
     const showDeleteConfirmation = ref(false)
     const quizToDelete = ref(null)
 
+    // User menu state
+    const showUserMenu = ref(false)
+
     // Computed properties
     const allQuestionsAnswered = computed(() => {
       return quizQuestions.value.length > 0 &&
@@ -451,6 +587,14 @@ export default {
 
     // Sidebar visibility from store
     const sidebarVisible = computed(() => store.getters['app/getSidebarVisible'])
+
+    // Use user from composable
+    const user = userProfile
+
+    // Use global theme classes from store
+    const themeClasses = computed(() => {
+      return store.getters['app/getThemeClasses'];
+    });
 
     const improvementAdvice = computed(() => {
       const score = quizScore.value
@@ -527,6 +671,68 @@ export default {
      */
     const toggleSidebar = () => {
       store.dispatch('app/toggleSidebar')
+    }
+
+    // =====================================
+    // USER MENU FUNCTIONS
+    // =====================================
+
+    /**
+     * Toggle user menu dropdown
+     */
+    const toggleUserMenu = () => {
+      showUserMenu.value = !showUserMenu.value
+    }
+
+    /**
+     * Close user menu dropdown
+     */
+    const closeUserMenu = () => {
+      showUserMenu.value = false
+    }
+
+    /**
+     * Open user profile modal
+     */
+    const openProfileModal = () => {
+      showUserMenu.value = false
+      // For now, just close the menu
+      // In a full implementation, this would open a profile modal
+    }
+
+    /**
+     * Logout user and redirect to login
+     */
+    const logout = async () => {
+      try {
+        router.push('/login')
+      } catch (error) {
+        // Error logging out
+      }
+    }
+
+    // =====================================
+    // PROFILE PICTURE FUNCTIONS
+    // =====================================
+
+    // Get profile picture URL
+    const getProfilePictureUrl = (profilePicturePath) => {
+      if (!profilePicturePath) return null
+      // Since the backend stores relative paths from public directory, construct the full URL
+      // Add timestamp to prevent caching issues
+      const timestamp = Date.now()
+      // Use relative URL to avoid CORS issues and ensure proper path resolution
+      return `/${profilePicturePath}?t=${timestamp}`
+    }
+
+    // Handle image loading errors
+    const handleImageError = () => {
+      // Profile picture failed to load
+    }
+
+    // Handle successful image loading
+    const handleImageLoad = () => {
+      // Profile picture loaded successfully
     }
 
     // Methods
@@ -1086,6 +1292,10 @@ export default {
         await loadSavedQuizzes()
         console.log('loadSavedQuizzes completed successfully')
 
+        console.log('Calling loadUserProfile...')
+        await loadUserProfile()
+        console.log('loadUserProfile completed successfully')
+
         console.log('=== ONMOUNTED END ===')
       } catch (error) {
         console.error('=== ONMOUNTED ERROR ===')
@@ -1129,6 +1339,8 @@ export default {
       savedQuizzes,
       isLoadingSavedQuizzes,
       selectedSavedQuiz,
+      showUserMenu,
+      user,
       toggleSidebar,
       generateNewQuiz,
       checkAnswers,
@@ -1151,7 +1363,26 @@ export default {
       cancelDelete,
       proceedDelete,
       showDeleteConfirmation,
-      quizToDelete
+      quizToDelete,
+      toggleUserMenu,
+      closeUserMenu,
+      openProfileModal,
+      logout,
+      getProfilePictureUrl,
+      handleImageError,
+      handleImageLoad,
+      showNotifications,
+      notifications,
+      unreadNotifications,
+      toggleNotifications,
+      closeNotifications,
+      markAsRead,
+      markAllAsRead,
+      showSuccess,
+      showInfo,
+      showWarning,
+      loadUserProfile,
+      themeClasses
     }
   }
 }

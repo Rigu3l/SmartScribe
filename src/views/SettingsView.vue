@@ -1,7 +1,7 @@
 <template>
   <div class="min-h-screen flex flex-col transition-colors duration-300" :class="themeClasses.main">
-    <!-- Header (same as other pages) -->
-    <header class="p-4 flex justify-between items-center transition-colors duration-300" :class="themeClasses.header">
+        <!-- Header -->
+    <header :class="themeClasses.header" class="p-4 flex justify-between items-center">
       <div class="flex items-center space-x-3">
         <!-- Classic Sidebar Toggle Button -->
         <button @click="toggleSidebar"
@@ -27,9 +27,9 @@
             <div class="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 border-l border-t border-gray-700 rotate-45"></div>
           </div>
         </button>
-        <div class="text-xl font-bold">SmartScribe</div>
+        <div class="text-lg md:text-xl font-bold">SmartScribe</div>
       </div>
-      <div class="flex items-center space-x-4">
+      <div class="flex items-center space-x-2 md:space-x-4">
 
         <div class="relative">
           <button @click="toggleNotifications" class="text-gray-400 hover:text-white relative">
@@ -54,7 +54,7 @@
                   <div class="flex-shrink-0 mt-1">
                     <div :class="[
                       'w-8 h-8 rounded-full flex items-center justify-center',
-                      notification.bgColor || 'bg-blue-500'
+                      notification.bgColor
                     ]">
                       <font-awesome-icon :icon="notification.icon" class="text-white text-sm" />
                     </div>
@@ -62,9 +62,9 @@
                   <div class="flex-grow">
                     <div class="flex items-start justify-between">
                       <div class="flex-grow">
-                        <p class="text-sm font-medium" :class="themeClasses.text">{{ notification.title }}</p>
-                        <p class="text-xs mt-1" :class="themeClasses.secondaryText">{{ notification.message }}</p>
-                        <p class="text-xs mt-2" :class="themeClasses.secondaryText">{{ notification.time }}</p>
+                        <p class="text-sm font-medium text-white">{{ notification.title }}</p>
+                        <p class="text-xs text-gray-300 mt-1">{{ notification.message }}</p>
+                        <p class="text-xs text-gray-500 mt-2">{{ notification.time }}</p>
                       </div>
                       <div class="flex items-center space-x-2 ml-2">
                         <div v-if="!notification.read" class="flex-shrink-0">
@@ -105,11 +105,11 @@
                 </div>
               </div>
             </div>
-            <div v-else class="p-4 text-center" :class="themeClasses.secondaryText">
+            <div v-else class="p-4 text-center text-gray-400">
               <font-awesome-icon :icon="['fas', 'bell-slash']" class="text-2xl mb-2" />
               <p>No notifications yet</p>
             </div>
-            <div v-if="notifications.length > 0" class="p-3 border-t" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'border-gray-700' : 'border-gray-200'">
+            <div v-if="notifications.length > 0" class="p-3 border-t border-gray-700">
               <button @click="markAllAsRead" class="text-sm text-blue-400 hover:text-blue-300">
                 Mark all as read
               </button>
@@ -118,22 +118,30 @@
           <!-- Backdrop to close notifications when clicking outside -->
           <div v-if="showNotifications" class="fixed inset-0 z-0" @click="closeNotifications"></div>
         </div>
-        <div class="flex items-center space-x-2">
-          <div class="w-8 h-8 rounded-full overflow-hidden" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-600' : 'bg-gray-300'">
-            <img
-              v-if="user.profilePicture"
-              :key="user.profilePicture"
-              :src="getProfilePictureUrl(user.profilePicture)"
-              alt="Profile"
-              class="w-full h-full object-cover"
-              @error="handleImageError"
-              @load="handleImageLoad"
-            />
-            <div v-else class="w-full h-full flex items-center justify-center" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-600' : 'bg-gray-300'">
-              <font-awesome-icon :icon="['fas', 'user']" class="text-sm" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-700'" />
+        <div class="relative">
+          <button @click="toggleUserMenu" class="flex items-center space-x-2">
+            <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-600">
+              <img
+                v-if="user && user.profilePicture"
+                :key="user.profilePicture"
+                :src="getProfilePictureUrl(user.profilePicture)"
+                alt="Profile"
+                class="w-full h-full object-cover"
+                @error="handleImageError"
+                @load="handleImageLoad"
+              />
+              <div v-else class="w-full h-full bg-gray-600 flex items-center justify-center">
+                <font-awesome-icon :icon="['fas', 'user']" class="text-white text-sm" />
+              </div>
             </div>
+            <span>{{ user?.name || 'User' }}</span>
+            <font-awesome-icon :icon="['fas', 'chevron-down']" class="text-xs" />
+          </button>
+          <div v-if="showUserMenu" class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-10">
+            <button @click="openProfileModal" class="w-full text-left block px-4 py-2 hover:bg-gray-700">Profile</button>
+            <router-link to="/settings" @click="closeUserMenu" class="block px-4 py-2 hover:bg-gray-700">Settings</router-link>
+            <button @click="logout" class="w-full text-left block px-4 py-2 hover:bg-gray-700 text-red-400 hover:text-red-300">Logout</button>
           </div>
-          <span class="text-sm" :class="themeClasses.secondaryText">{{ user.name }}</span>
         </div>
       </div>
     </header>
@@ -641,6 +649,9 @@ export default {
     const message = ref('');
     const messageType = ref(''); // 'success' or 'error'
 
+    // User menu state
+    const showUserMenu = ref(false);
+
     // Use global theme and font size from store
     const settings = reactive({
       get theme() {
@@ -922,6 +933,63 @@ export default {
       event.target.value = '';
     };
 
+    // =====================================
+    // USER MENU FUNCTIONS
+    // =====================================
+
+    /**
+     * Toggle user menu dropdown
+     */
+    const toggleUserMenu = () => {
+      showUserMenu.value = !showUserMenu.value;
+    };
+
+    /**
+     * Close user menu dropdown
+     */
+    const closeUserMenu = () => {
+      showUserMenu.value = false;
+    };
+
+    /**
+     * Open user profile modal
+     */
+    const openProfileModal = () => {
+      // For now, just close the menu
+      // In a full implementation, this would open a profile modal
+      showUserMenu.value = false;
+    };
+
+    /**
+     * Logout user and redirect to login
+     */
+    const logout = async () => {
+      try {
+        // Clear user data
+        user.value = {
+          id: null,
+          firstName: '',
+          lastName: '',
+          name: '',
+          email: '',
+          profilePicture: null
+        };
+
+        // Clear localStorage
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+
+        // Close menu
+        showUserMenu.value = false;
+
+        // In a real app, you would redirect to login page
+        // For now, just show a message
+        showMessage('Logged out successfully!');
+      } catch (error) {
+        showMessage('Error logging out', 'error');
+      }
+    };
+
     // Load settings and user profile on mount
     onMounted(async () => {
       await Promise.all([
@@ -941,6 +1009,7 @@ export default {
       themeClasses,
       fontSizeClasses,
       sidebarVisible,
+      showUserMenu,
       isLoading,
       message,
       messageType,
@@ -957,6 +1026,10 @@ export default {
       handleImageError,
       handleImageLoad,
       toggleSidebar,
+      toggleUserMenu,
+      closeUserMenu,
+      openProfileModal,
+      logout,
       showNotifications,
       notifications,
       unreadNotifications,
