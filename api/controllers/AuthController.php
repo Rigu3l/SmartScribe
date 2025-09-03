@@ -202,6 +202,25 @@ class AuthController {
             $updateFields = [];
             $params = [];
 
+            if (isset($data['first_name'])) {
+                $updateFields[] = "first_name = ?";
+                $params[] = $data['first_name'];
+            }
+
+            if (isset($data['last_name'])) {
+                $updateFields[] = "last_name = ?";
+                $params[] = $data['last_name'];
+            }
+
+            // Update the combined name field when first_name or last_name is updated
+            if (isset($data['first_name']) || isset($data['last_name'])) {
+                $firstName = $data['first_name'] ?? '';
+                $lastName = $data['last_name'] ?? '';
+                $fullName = trim($firstName . ' ' . $lastName);
+                $updateFields[] = "name = ?";
+                $params[] = $fullName;
+            }
+
             if (isset($data['name'])) {
                 $updateFields[] = "name = ?";
                 $params[] = $data['name'];

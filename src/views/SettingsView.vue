@@ -2,8 +2,39 @@
   <div class="min-h-screen flex flex-col transition-colors duration-300" :class="themeClasses.main">
     <!-- Header (same as other pages) -->
     <header class="p-4 flex justify-between items-center transition-colors duration-300" :class="themeClasses.header">
-      <div class="text-xl font-bold">SmartScribe</div>
+      <div class="flex items-center space-x-3">
+        <!-- Stunning Modern Sidebar Toggle Button -->
+        <button @click="toggleSidebar"
+                class="group relative flex items-center justify-center w-12 h-12 rounded-2xl bg-gradient-to-br from-slate-800 via-gray-800 to-slate-900 hover:from-indigo-500 hover:via-purple-500 hover:to-pink-500 text-gray-400 hover:text-white transition-all duration-500 ease-out transform hover:scale-110 hover:rotate-3 active:scale-95 overflow-hidden border border-slate-700 hover:border-indigo-400/50 shadow-xl hover:shadow-2xl hover:shadow-indigo-500/30 backdrop-blur-md"
+                :title="sidebarVisible ? 'Hide sidebar' : 'Show sidebar'">
+
+          <!-- Animated background particles -->
+          <div class="absolute inset-0 opacity-0 group-hover:opacity-100 transition-opacity duration-500">
+            <div class="absolute top-1 left-2 w-1 h-1 bg-indigo-400 rounded-full animate-ping"></div>
+            <div class="absolute top-3 right-1 w-0.5 h-0.5 bg-purple-400 rounded-full animate-pulse"></div>
+            <div class="absolute bottom-2 left-3 w-0.5 h-0.5 bg-pink-400 rounded-full animate-bounce"></div>
+          </div>
+
+          <!-- Main icon with enhanced styling -->
+          <span class="text-2xl font-black transition-all duration-500 ease-out group-hover:scale-125 group-hover:drop-shadow-lg filter group-hover:brightness-110 relative z-10"
+                :class="sidebarVisible ? 'rotate-180 group-hover:rotate-90' : 'rotate-0 group-hover:-rotate-12'">
+            ☰
+          </span>
+
+          <!-- Multi-layer glow effects -->
+          <div class="absolute inset-0 rounded-2xl bg-gradient-to-br from-indigo-500/0 via-purple-500/0 to-pink-500/0 group-hover:from-indigo-500/20 group-hover:via-purple-500/15 group-hover:to-pink-500/20 transition-all duration-500 blur-sm"></div>
+          <div class="absolute inset-1 rounded-xl bg-gradient-to-br from-indigo-400/0 to-purple-400/0 group-hover:from-indigo-400/10 group-hover:to-purple-400/10 transition-all duration-700"></div>
+
+          <!-- Pulsing ring effect -->
+          <div class="absolute inset-0 rounded-2xl border-2 border-indigo-500/0 group-hover:border-indigo-400/30 transition-all duration-500 animate-pulse group-hover:animate-none"></div>
+
+          <!-- Inner highlight -->
+          <div class="absolute inset-2 rounded-lg bg-gradient-to-br from-white/0 to-white/5 group-hover:from-white/10 group-hover:to-white/0 transition-all duration-300"></div>
+        </button>
+        <div class="text-xl font-bold">SmartScribe</div>
+      </div>
       <div class="flex items-center space-x-4">
+
         <div class="relative">
           <button @click="toggleNotifications" class="text-gray-400 hover:text-white relative">
             <font-awesome-icon :icon="['fas', 'bell']" />
@@ -114,7 +145,7 @@
     <!-- Main Content -->
     <div class="flex flex-grow">
       <!-- Sidebar (same as other pages) -->
-      <aside class="w-64 p-4 transition-colors duration-300" :class="themeClasses.sidebar">
+      <aside v-if="sidebarVisible" class="w-64 p-4 transition-colors duration-300" :class="themeClasses.sidebar">
         <nav>
           <ul class="space-y-2">
             <li>
@@ -148,6 +179,7 @@
               </router-link>
             </li>
           </ul>
+
         </nav>
       </aside>
 
@@ -240,11 +272,19 @@
 
           <div class="rounded-lg p-6" :class="themeClasses.card">
             <h2 class="font-semibold mb-4" :class="[themeClasses.text, fontSizeClasses.body]">Profile Information</h2>
-            <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-4">
               <div>
-                <label class="block text-sm mb-1" :class="themeClasses.secondaryText">Full Name</label>
+                <label class="block text-sm mb-1" :class="themeClasses.secondaryText">First Name</label>
                 <input
-                  v-model="user.name"
+                  v-model="user.firstName"
+                  class="w-full p-2 rounded border focus:outline-none focus:border-blue-500 transition-colors duration-300"
+                  :class="themeClasses.input"
+                />
+              </div>
+              <div>
+                <label class="block text-sm mb-1" :class="themeClasses.secondaryText">Last Name</label>
+                <input
+                  v-model="user.lastName"
                   class="w-full p-2 rounded border focus:outline-none focus:border-blue-500 transition-colors duration-300"
                   :class="themeClasses.input"
                 />
@@ -384,6 +424,7 @@
             </div>
             <p class="mt-2 transition-all duration-300" :class="[themeClasses.secondaryText, fontSizeClasses.label]">Current font size: {{ store.getters['app/getFontSize'] }}px</p>
           </div>
+
         </div>
         
         <!-- Notifications Settings -->
@@ -587,6 +628,8 @@ export default {
 
     const user = ref({
       id: null,
+      firstName: '',
+      lastName: '',
       name: '',
       email: '',
       profilePicture: null
@@ -640,6 +683,20 @@ export default {
     const fontSizeClasses = computed(() => {
       return store.getters['app/getFontSizeClasses'];
     });
+
+    // Sidebar visibility from store
+    const sidebarVisible = computed(() => store.getters['app/getSidebarVisible']);
+
+    // =====================================
+    // SIDEBAR FUNCTIONS
+    // =====================================
+
+    /**
+     * Toggle sidebar visibility
+     */
+    const toggleSidebar = () => {
+      store.dispatch('app/toggleSidebar');
+    };
 
     // Theme is now handled globally by the store
     // No need for local theme watching or application
@@ -713,7 +770,8 @@ export default {
 
         // Create profile data to update
         const profileData = {
-          name: user.value.name,
+          first_name: user.value.firstName,
+          last_name: user.value.lastName,
           email: user.value.email
         };
 
@@ -798,6 +856,8 @@ export default {
         if (response.data.success) {
           user.value = {
             id: response.data.user.id,
+            firstName: response.data.user.first_name || '',
+            lastName: response.data.user.last_name || '',
             name: response.data.user.name || 'User',
             email: response.data.user.email || 'user@example.com',
             profilePicture: response.data.user.profile_picture || null
@@ -884,6 +944,7 @@ export default {
       settings,
       themeClasses,
       fontSizeClasses,
+      sidebarVisible,
       isLoading,
       message,
       messageType,
@@ -899,6 +960,7 @@ export default {
       getProfilePictureUrl,
       handleImageError,
       handleImageLoad,
+      toggleSidebar,
       showNotifications,
       notifications,
       unreadNotifications,
