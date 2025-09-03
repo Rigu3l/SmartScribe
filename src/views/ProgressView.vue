@@ -146,37 +146,37 @@
     </header>
 
     <!-- Main Content -->
-    <div class="flex flex-grow">
+    <div class="flex flex-grow transition-all duration-300">
       <!-- Sidebar (same as other pages) -->
-      <aside v-if="sidebarVisible" class="w-64 bg-gray-800 p-4">
+      <aside v-if="sidebarVisible" class="w-64 p-4 transition-all duration-300 ease-in-out" :class="themeClasses.sidebar">
         <nav>
           <ul class="space-y-2">
             <li>
-              <router-link to="/dashboard" class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
+              <router-link to="/dashboard" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
                 <font-awesome-icon :icon="['fas', 'home']" />
                 <span>Dashboard</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/notes" class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
+              <router-link to="/notes" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
                 <font-awesome-icon :icon="['fas', 'book']" />
                 <span>My Notes</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
+              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
                 <font-awesome-icon :icon="['fas', 'book']" />
                 <span>Quizzes</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md bg-gray-700">
+              <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200'">
                 <font-awesome-icon :icon="['fas', 'chart-line']" />
                 <span>Progress</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/settings" class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700">
+              <router-link to="/settings" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
                 <font-awesome-icon :icon="['fas', 'cog']" />
                 <span>Settings</span>
               </router-link>
@@ -187,7 +187,7 @@
       </aside>
 
       <!-- Progress Tracker Main Content -->
-      <main class="flex-grow p-4 md:p-6">
+      <main class="flex-1 p-4 md:p-6 transition-all duration-300 ease-in-out">
         <div class="flex justify-between items-center mb-6">
           <div class="flex items-center space-x-4">
             <h1 class="text-2xl font-bold">Study Progress</h1>
@@ -538,6 +538,11 @@ export default {
     // Sidebar visibility from store
     const sidebarVisible = computed(() => store.getters['app/getSidebarVisible']);
 
+    // Use global theme classes from store
+    const themeClasses = computed(() => {
+      return store.getters['app/getThemeClasses'];
+    });
+
     const goals = ref([
       {
         title: 'Complete Biology Chapter 5-8',
@@ -799,7 +804,13 @@ export default {
       toggleNotifications,
       closeNotifications,
       markAsRead,
-      markAllAsRead
+      markAllAsRead,
+
+      // Theme classes
+      themeClasses,
+
+      // Store for theme access
+      store
     };
   }
 }

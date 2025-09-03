@@ -147,7 +147,7 @@
     </header>
 
     <!-- Main Content -->
-    <div class="flex flex-grow">
+    <div class="flex flex-grow transition-all duration-300">
       <!-- Mobile Menu Button -->
       <button
         @click="sidebarOpen = !sidebarOpen"
@@ -165,25 +165,15 @@
       ></div>
 
       <!-- Sidebar -->
-      <aside
-        v-if="sidebarVisible"
-        :class="[
-          'bg-gray-800 p-4 transition-all duration-300 ease-in-out',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-          'fixed md:relative z-50 md:z-auto',
-          'w-64 md:w-64 max-w-full',
-          'min-h-screen md:min-h-0',
-          'top-0 left-0 md:top-auto md:left-auto',
-          'overflow-hidden'
-        ]"
-      >
-        <nav class="mt-16 md:mt-0">
+      <aside v-if="sidebarVisible" class="w-64 p-4 transition-all duration-300 ease-in-out" :class="themeClasses.sidebar">
+        <nav>
           <ul class="space-y-2">
             <li>
               <router-link
                 to="/dashboard"
                 @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
+                class="flex items-center space-x-2 p-2 rounded-md"
+                :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'"
               >
                 <font-awesome-icon :icon="['fas', 'home']" />
                 <span>Dashboard</span>
@@ -193,7 +183,8 @@
               <router-link
                 to="/notes"
                 @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
+                class="flex items-center space-x-2 p-2 rounded-md"
+                :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'"
               >
                 <font-awesome-icon :icon="['fas', 'book']" />
                 <span>My Notes</span>
@@ -203,7 +194,8 @@
               <router-link
                 to="/quizzes"
                 @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md bg-gray-700"
+                class="flex items-center space-x-2 p-2 rounded-md"
+                :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200'"
               >
                 <font-awesome-icon :icon="['fas', 'book']" />
                 <span>Quizzes</span>
@@ -213,7 +205,8 @@
               <router-link
                 to="/progress"
                 @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
+                class="flex items-center space-x-2 p-2 rounded-md"
+                :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'"
               >
                 <font-awesome-icon :icon="['fas', 'chart-line']" />
                 <span>Progress</span>
@@ -223,18 +216,19 @@
               <router-link
                 to="/settings"
                 @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
+                class="flex items-center space-x-2 p-2 rounded-md"
+                :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'"
               >
                 <font-awesome-icon :icon="['fas', 'cog']" />
                 <span>Settings</span>
               </router-link>
             </li>
           </ul>
+
         </nav>
       </aside>
-
       <!-- Quiz Main Content -->
-      <main class="flex-grow p-4 sm:p-6 ml-0 md:ml-0" style="width: 100vw; max-width: 100vw;">
+      <main class="flex-1 p-4 sm:p-6 ml-0 md:ml-0 transition-all duration-300 ease-in-out" style="width: 100vw; max-width: 100vw;">
         <div v-if="isLoading" class="flex justify-center items-center h-full">
           <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-3xl sm:text-4xl text-blue-500" />
         </div>
@@ -1382,7 +1376,8 @@ export default {
       showInfo,
       showWarning,
       loadUserProfile,
-      themeClasses
+      themeClasses,
+      store
     }
   }
 }

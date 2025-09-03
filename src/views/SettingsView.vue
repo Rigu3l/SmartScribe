@@ -147,9 +147,9 @@
     </header>
 
     <!-- Main Content -->
-    <div class="flex flex-grow">
+    <div class="flex flex-grow transition-all duration-300">
       <!-- Sidebar (same as other pages) -->
-      <aside v-if="sidebarVisible" class="w-64 p-4 transition-colors duration-300" :class="themeClasses.sidebar">
+      <aside v-if="sidebarVisible" class="w-64 p-4 transition-all duration-300 ease-in-out" :class="themeClasses.sidebar">
         <nav>
           <ul class="space-y-2">
             <li>
@@ -188,7 +188,7 @@
       </aside>
 
       <!-- Settings Main Content -->
-      <main class="flex-grow p-6 transition-colors duration-300" :class="themeClasses.mainContent">
+      <main class="flex-1 p-6 transition-all duration-300 ease-in-out" :class="themeClasses.mainContent">
         <h1 class="font-bold mb-6 transition-all duration-300" :class="[themeClasses.text, fontSizeClasses.heading]">Settings</h1>
 
         <!-- Message Display -->
