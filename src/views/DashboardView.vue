@@ -328,40 +328,6 @@
         <div class="flex justify-between items-center mb-6">
           <h1 class="text-2xl font-bold">Dashboard</h1>
           <div class="flex items-center space-x-4">
-            <!-- Connection Status Indicator -->
-            <div class="flex items-center space-x-2">
-              <div
-                :class="[
-                  'w-2 h-2 rounded-full transition-colors duration-300',
-                  isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-                ]"
-              ></div>
-              <span
-                :class="[
-                  'text-sm transition-colors duration-300',
-                  isConnected ? 'text-green-400' : 'text-red-400'
-                ]"
-              >
-                {{ isConnected ? 'Live Updates' : 'Offline' }}
-              </span>
-              <span v-if="lastSync" class="text-xs text-gray-500">
-                ({{ new Date(lastSync).toLocaleTimeString() }})
-              </span>
-            </div>
-
-            <!-- Refresh Button -->
-            <button
-              @click="refreshNotes(); refreshStats(); refreshUser()"
-              :disabled="loadingNotes || loadingStats || loadingUser"
-              class="flex items-center space-x-1 px-3 py-1 bg-gray-700 rounded-md hover:bg-gray-600 transition disabled:opacity-50"
-            >
-              <font-awesome-icon
-                :icon="['fas', loadingNotes || loadingStats || loadingUser ? 'spinner' : 'sync-alt']"
-                :class="loadingNotes || loadingStats || loadingUser ? 'animate-spin' : ''"
-                class="text-sm"
-              />
-              <span class="text-sm">Refresh</span>
-            </button>
           </div>
         </div>
 
