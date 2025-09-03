@@ -191,23 +191,6 @@
         <div class="flex justify-between items-center mb-6">
           <div class="flex items-center space-x-4">
             <h1 class="text-2xl font-bold">Study Progress</h1>
-            <!-- Connection Status Indicator -->
-            <div class="flex items-center space-x-2">
-              <div
-                :class="[
-                  'w-2 h-2 rounded-full transition-colors duration-300',
-                  isConnected ? 'bg-green-500 animate-pulse' : 'bg-red-500'
-                ]"
-              ></div>
-              <span
-                :class="[
-                  'text-sm transition-colors duration-300',
-                  isConnected ? 'text-green-400' : 'text-red-400'
-                ]"
-              >
-                {{ isConnected ? 'Live' : 'Offline' }}
-              </span>
-            </div>
           </div>
           <div class="flex items-center space-x-2">
             <button
@@ -385,6 +368,7 @@
             </div>
           </div>
         </div>
+
       </main>
     </div>
 
@@ -561,6 +545,7 @@ export default {
       }
     ]);
 
+
     const showAddGoalForm = ref(false);
     const newGoal = ref({
       title: '',
@@ -570,6 +555,7 @@ export default {
     // User menu state
     const showUserMenu = ref(false);
     const showProfileModal = ref(false);
+
 
     // =====================================
     // SIMPLE API FUNCTIONS
@@ -610,6 +596,7 @@ export default {
         loadUserProfile()
       ]);
 
+      // Achievements are now automatically reactive - no manual initialization needed
       console.log('ProgressView mounted and data loaded');
     });
     
@@ -810,7 +797,7 @@ export default {
       themeClasses,
 
       // Store for theme access
-      store
+      store,
     };
   }
 }
