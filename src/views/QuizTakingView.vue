@@ -385,7 +385,14 @@ export default {
     const route = useRoute()
 
     // State
+    const routeParams = route.params
+    console.log('🔄 QUIZ TAKING VIEW: Route params received:', routeParams)
+    console.log('🔄 QUIZ TAKING VIEW: Route params.id:', routeParams.id)
+    console.log('🔄 QUIZ TAKING VIEW: Route params.id type:', typeof routeParams.id)
+
     const quizId = ref(parseInt(route.params.id) || null)
+    console.log('🔄 QUIZ TAKING VIEW: Parsed quizId:', quizId.value)
+
     const quizTitle = ref('Loading Quiz...')
     const noteTitle = ref('')
     const isLoading = ref(true)
@@ -544,22 +551,39 @@ Unanswered: ${getUnansweredQuestionsCount()}`)
 
     // Methods
     const loadQuiz = async () => {
+      console.log('🔄 QUIZ LOADING: Starting to load quiz...')
+      console.log('🔄 QUIZ LOADING: Quiz ID:', quizId.value)
+
       if (!quizId.value) {
+        console.error('❌ QUIZ LOADING: No quiz ID provided')
         error.value = 'No quiz ID provided'
         isLoading.value = false
         return
       }
 
       try {
+        console.log('🔄 QUIZ LOADING: Making API call to getQuiz...')
         const response = await api.getQuiz(quizId.value)
+        console.log('🔄 QUIZ LOADING: API response received:', response)
+        console.log('🔄 QUIZ LOADING: Response status:', response.status)
+        console.log('🔄 QUIZ LOADING: Response data:', response.data)
+
         if (response.data.success && response.data.data) {
           const quizData = response.data.data
+          console.log('✅ QUIZ LOADING: Quiz data received:', quizData)
 
           // Load the quiz questions
           const questions = quizData.questions || []
+          console.log('🔄 QUIZ LOADING: Raw questions from API:', questions)
+          console.log('🔄 QUIZ LOADING: Questions type:', typeof questions)
+          console.log('🔄 QUIZ LOADING: Questions isArray:', Array.isArray(questions))
+
           if (!Array.isArray(questions) || questions.length === 0) {
+            console.error('❌ QUIZ LOADING: No questions found in quiz data')
             throw new Error('No questions found in quiz data')
           }
+
+          console.log('✅ QUIZ LOADING: Found', questions.length, 'questions, processing...')
 
           quizQuestions.value = questions.map(q => {
             // Handle correct answer conversion from letter to index

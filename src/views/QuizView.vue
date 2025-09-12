@@ -263,243 +263,7 @@
             </div>
           </div>
 
-          <!-- Active Quiz Section -->
-          <div v-if="quizQuestions.length > 0" class="bg-gray-800 rounded-lg p-6 mb-6">
-            <div class="flex justify-between items-center mb-6">
-              <h3 class="text-xl font-semibold">Active Quiz</h3>
-              <div class="flex space-x-2">
-                <button @click="resetQuiz" class="px-3 py-1 bg-gray-600 rounded-md hover:bg-gray-700 transition text-sm">
-                  <font-awesome-icon :icon="['fas', 'undo']" class="mr-1" />
-                  Reset
-                </button>
-                <button @click="saveQuiz" :disabled="isSavingQuiz" class="px-3 py-1 bg-blue-600 rounded-md hover:bg-blue-700 transition text-sm disabled:opacity-50">
-                  <font-awesome-icon :icon="['fas', 'save']" class="mr-1" :spin="isSavingQuiz" />
-                  {{ isSavingQuiz ? 'Saving...' : 'Save Quiz' }}
-                </button>
-              </div>
-            </div>
 
-            <!-- Quiz Info -->
-            <div class="mb-6">
-              <div class="mb-4">
-                <h4 class="font-semibold text-white text-lg mb-2">{{ quizTitle || 'Active Quiz' }}</h4>
-                <div class="text-sm text-gray-400">
-                  <span class="text-xs">Active Quiz Session</span>
-                </div>
-              </div>
-              <div class="flex justify-between items-center mb-2">
-                <span class="text-sm text-gray-400">Progress</span>
-                <span class="text-sm text-gray-400">{{ answeredQuestionsCount }} / {{ quizQuestions.length }} answered</span>
-              </div>
-              <div class="w-full bg-gray-700 rounded-full h-2">
-                <div class="bg-blue-600 h-2 rounded-full transition-all duration-300"
-                     :style="{ width: `${(answeredQuestionsCount / quizQuestions.length) * 100}%` }"></div>
-              </div>
-            </div>
-
-            <!-- Quiz Questions -->
-            <div class="space-y-6">
-              <div v-for="(question, index) in quizQuestions" :key="index" class="bg-gray-700 rounded-lg p-4">
-                <h4 class="font-medium text-white mb-4">{{ index + 1 }}. {{ question.text }}</h4>
-
-                <div class="space-y-2">
-                  <div v-for="(option, optionIndex) in question.options" :key="optionIndex"
-                       class="flex items-center space-x-3 p-3 rounded-md cursor-pointer transition-all"
-                       :class="{
-                         'bg-blue-600 text-white': question.selectedAnswer === optionIndex,
-                         'bg-gray-600 hover:bg-gray-500': question.selectedAnswer !== optionIndex
-                       }"
-                       @click="question.selectedAnswer = optionIndex">
-                    <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center"
-                         :class="{
-                           'border-white bg-blue-600': question.selectedAnswer === optionIndex,
-                           'border-gray-400': question.selectedAnswer !== optionIndex
-                         }">
-                      <div v-if="question.selectedAnswer === optionIndex" class="w-2 h-2 bg-white rounded-full"></div>
-                    </div>
-                    <span class="text-sm">{{ option }}</span>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Quiz Actions -->
-            <div class="mt-6 flex justify-center space-x-4">
-              <button @click="toggleShowAnswers" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
-                <font-awesome-icon :icon="['fas', 'eye']" class="mr-2" />
-                {{ showCorrectAnswers ? 'Hide Answers' : 'Show Answers' }}
-              </button>
-              <button @click="checkAnswers" :disabled="!allQuestionsAnswered"
-                      class="px-6 py-3 bg-green-600 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
-                <font-awesome-icon :icon="['fas', 'check']" class="mr-2" />
-                Check Answers
-              </button>
-            </div>
-
-            <!-- Immediate Answer Feedback (when showCorrectAnswers is true) -->
-            <div v-if="showCorrectAnswers" class="mt-6 bg-gray-700 rounded-lg p-4">
-              <h4 class="font-semibold mb-4 text-white">📚 Answer Key</h4>
-              <div class="space-y-3">
-                <div v-for="(question, index) in quizQuestions" :key="index"
-                     class="bg-gray-600 rounded-lg p-3">
-                  <div class="flex items-start space-x-3 mb-2">
-                    <div class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-gray-500 text-white">
-                      {{ index + 1 }}
-                    </div>
-                    <div class="flex-1">
-                      <p class="text-sm text-white font-medium mb-2">{{ question.text }}</p>
-
-                      <div class="space-y-1">
-                        <div v-for="(option, optionIndex) in question.originalOptions" :key="optionIndex"
-                             class="flex items-center space-x-2 text-xs">
-                          <div class="w-4 h-4 rounded-full border flex items-center justify-center"
-                               :class="{
-                                 'border-green-400 bg-green-400': optionIndex === question.originalCorrectIndex,
-                                 'border-gray-400': optionIndex !== question.originalCorrectIndex
-                               }">
-                            <div v-if="optionIndex === question.originalCorrectIndex"
-                                 class="w-2 h-2 rounded-full bg-white"></div>
-                          </div>
-                          <span :class="{
-                            'text-green-300 font-medium': optionIndex === question.originalCorrectIndex,
-                            'text-gray-300': optionIndex !== question.originalCorrectIndex
-                          }">
-                            {{ option }}
-                            <span v-if="optionIndex === question.originalCorrectIndex" class="text-green-400 font-bold ml-1">(Correct Answer)</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
-
-          <!-- Quiz Results Section -->
-          <div v-if="quizCompleted" class="bg-gray-800 rounded-lg p-6 mb-6">
-            <div class="text-center mb-6">
-              <h3 class="text-2xl font-bold mb-2">Quiz Results</h3>
-              <div class="text-6xl font-bold mb-4" :class="quizScore / quizQuestions.length >= 0.8 ? 'text-green-400' : quizScore / quizQuestions.length >= 0.6 ? 'text-yellow-400' : 'text-red-400'">
-                {{ Math.round((quizScore / quizQuestions.length) * 100) }}%
-              </div>
-              <p class="text-gray-400">{{ quizScore }} out of {{ quizQuestions.length }} correct</p>
-            </div>
-
-            <!-- Performance Analysis -->
-            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
-              <div class="text-center">
-                <div class="text-2xl font-bold text-green-400">{{ quizScore }}</div>
-                <div class="text-sm text-gray-400">Correct</div>
-              </div>
-              <div class="text-center">
-                <div class="text-2xl font-bold text-red-400">{{ quizQuestions.length - quizScore }}</div>
-                <div class="text-sm text-gray-400">Incorrect</div>
-              </div>
-              <div class="text-center">
-                <div class="text-2xl font-bold text-blue-400">{{ Math.round((quizScore / quizQuestions.length) * 100) }}%</div>
-                <div class="text-sm text-gray-400">Accuracy</div>
-              </div>
-              <div class="text-center">
-                <div class="text-2xl font-bold text-purple-400">{{ quizQuestions.length }}</div>
-                <div class="text-sm text-gray-400">Total Questions</div>
-              </div>
-            </div>
-
-            <!-- Detailed Statistics -->
-            <div class="bg-gray-700 rounded-lg p-4 mb-6">
-              <h4 class="font-semibold mb-3 text-white">📊 Detailed Performance</h4>
-              <div class="grid grid-cols-2 gap-4 text-sm">
-                <div>
-                  <span class="text-gray-400">Questions Answered:</span>
-                  <span class="text-white ml-2">{{ quizQuestions.length }}</span>
-                </div>
-                <div>
-                  <span class="text-gray-400">Time Spent:</span>
-                  <span class="text-white ml-2">N/A</span>
-                </div>
-                <div>
-                  <span class="text-gray-400">Average per Question:</span>
-                  <span class="text-white ml-2">{{ Math.round((quizScore / quizQuestions.length) * 100) }}%</span>
-                </div>
-                <div>
-                  <span class="text-gray-400">Performance Level:</span>
-                  <span class="text-white ml-2" :class="quizScore / quizQuestions.length >= 0.8 ? 'text-green-400' : quizScore / quizQuestions.length >= 0.6 ? 'text-yellow-400' : 'text-red-400'">
-                    {{ quizScore / quizQuestions.length >= 0.8 ? 'Excellent' : quizScore / quizQuestions.length >= 0.6 ? 'Good' : 'Needs Improvement' }}
-                  </span>
-                </div>
-              </div>
-            </div>
-
-            <!-- Question Review -->
-            <div class="bg-gray-700 rounded-lg p-4 mb-6">
-              <h4 class="font-semibold mb-4 text-white">📝 Question Review</h4>
-              <div class="space-y-4 max-h-96 overflow-y-auto">
-                <div v-for="(question, index) in quizQuestions" :key="index"
-                     class="bg-gray-600 rounded-lg p-3">
-                  <div class="flex items-start space-x-3 mb-2">
-                    <div class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
-                         :class="question.selectedAnswer === question.correctAnswer ? 'bg-green-500 text-white' : 'bg-red-500 text-white'">
-                      {{ index + 1 }}
-                    </div>
-                    <div class="flex-1">
-                      <p class="text-sm text-white font-medium mb-2">{{ question.text }}</p>
-
-                      <div class="space-y-1">
-                        <div v-for="(option, optionIndex) in question.options" :key="optionIndex"
-                             class="flex items-center space-x-2 text-xs">
-                          <div class="w-4 h-4 rounded-full border flex items-center justify-center"
-                               :class="{
-                                 'border-green-400 bg-green-400': optionIndex === question.correctAnswer,
-                                 'border-red-400 bg-red-400': optionIndex === question.selectedAnswer && optionIndex !== question.correctAnswer,
-                                 'border-gray-400': optionIndex !== question.correctAnswer && optionIndex !== question.selectedAnswer
-                               }">
-                            <div v-if="optionIndex === question.correctAnswer || optionIndex === question.selectedAnswer"
-                                 class="w-2 h-2 rounded-full bg-white"></div>
-                          </div>
-                          <span :class="{
-                            'text-green-300 font-medium': optionIndex === question.correctAnswer,
-                            'text-red-300': optionIndex === question.selectedAnswer && optionIndex !== question.correctAnswer,
-                            'text-gray-300': optionIndex !== question.correctAnswer && optionIndex !== question.selectedAnswer
-                          }">
-                            {{ option }}
-                            <span v-if="optionIndex === question.correctAnswer" class="text-green-400 font-bold ml-1">(Correct)</span>
-                            <span v-if="optionIndex === question.selectedAnswer && optionIndex !== question.correctAnswer" class="text-red-400 font-bold ml-1">(Your Answer)</span>
-                          </span>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Improvement Advice -->
-            <div class="bg-gray-700 rounded-lg p-4 mb-6">
-              <h4 class="font-semibold mb-3 text-white">📚 Study Recommendations</h4>
-              <div class="space-y-2">
-                <div v-for="advice in improvementAdvice" :key="advice.id" class="flex items-start space-x-3">
-                  <font-awesome-icon :icon="advice.icon" class="text-blue-400 mt-1" />
-                  <div>
-                    <div class="font-medium text-white">{{ advice.title }}</div>
-                    <div class="text-sm text-gray-300">{{ advice.description }}</div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <!-- Results Actions -->
-            <div class="flex justify-center space-x-4">
-              <button @click="retakeQuiz" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
-                <font-awesome-icon :icon="['fas', 'redo']" class="mr-2" />
-                Retake Quiz
-              </button>
-              <button @click="resetQuiz" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700 transition">
-                <font-awesome-icon :icon="['fas', 'times']" class="mr-2" />
-                Close Results
-              </button>
-            </div>
-          </div>
 
 
           <!-- Saved Quizzes Section -->
@@ -510,6 +274,10 @@
                 <button @click="debugQuizStatus" class="text-gray-400 hover:text-gray-300 text-sm">
                   <font-awesome-icon :icon="['fas', 'info-circle']" class="mr-1" />
                   Debug
+                </button>
+                <button @click="testQuizGeneration" class="text-blue-400 hover:text-blue-300 text-sm">
+                  <font-awesome-icon :icon="['fas', 'flask']" class="mr-1" />
+                  Test Quiz
                 </button>
                 <button @click="loadSavedQuizzes" class="text-blue-400 hover:text-blue-300 text-sm">
                   <font-awesome-icon :icon="['fas', 'sync-alt']" class="mr-1" />
@@ -811,19 +579,11 @@ export default {
     const selectedNotes = ref([])
     const isLoadingNotes = ref(false)
 
-    // Quiz state
-    const quizQuestions = ref([])
-    const quizCompleted = ref(false)
-    const quizScore = ref(0)
-    const showResults = ref(false)
-    const isSavingQuiz = ref(false)
-    const savedQuizId = ref(null)
-    const showCorrectAnswers = ref(false)
+    // Quiz state - removed since we redirect to QuizTakingView
 
     // Saved quizzes state
     const savedQuizzes = ref([])
     const isLoadingSavedQuizzes = ref(false)
-    const selectedSavedQuiz = ref(null)
 
     // Delete confirmation state
     const showDeleteConfirmation = ref(false)
@@ -833,14 +593,6 @@ export default {
     const showUserMenu = ref(false)
 
     // Computed properties
-    const allQuestionsAnswered = computed(() => {
-      return quizQuestions.value.length > 0 &&
-             quizQuestions.value.every(question => question.selectedAnswer !== null)
-    })
-
-    const answeredQuestionsCount = computed(() => {
-      return quizQuestions.value.filter(question => question.selectedAnswer !== null).length
-    })
 
 
     // Sidebar visibility from store
@@ -854,71 +606,6 @@ export default {
       return store.getters['app/getThemeClasses'];
     });
 
-    const improvementAdvice = computed(() => {
-      const score = quizScore.value
-      const total = quizQuestions.value.length
-      const percentage = (score / total) * 100
-
-      const advice = []
-
-      if (percentage >= 90) {
-        advice.push({
-          id: 1,
-          icon: ['fas', 'trophy'],
-          title: 'Excellent Performance!',
-          description: 'You have a strong grasp of this material. Consider moving to more advanced topics.'
-        })
-      } else if (percentage >= 80) {
-        advice.push({
-          id: 1,
-          icon: ['fas', 'thumbs-up'],
-          title: 'Great Job!',
-          description: 'You\'re doing well. Focus on the few areas where you made mistakes for even better results.'
-        })
-      } else if (percentage >= 70) {
-        advice.push({
-          id: 1,
-          icon: ['fas', 'book-open'],
-          title: 'Good Progress',
-          description: 'You\'re on the right track. Review the incorrect answers and try again.'
-        })
-      } else if (percentage >= 60) {
-        advice.push({
-          id: 1,
-          icon: ['fas', 'lightbulb'],
-          title: 'Keep Studying',
-          description: 'Focus on understanding the core concepts. Consider breaking down complex topics into smaller parts.'
-        })
-      } else {
-        advice.push({
-          id: 1,
-          icon: ['fas', 'graduation-cap'],
-          title: 'Time for Review',
-          description: 'Take time to thoroughly review the material. Consider creating flashcards or mind maps for key concepts.'
-        })
-      }
-
-      // Add specific advice based on wrong answers
-      const wrongAnswers = total - score
-      if (wrongAnswers > 0) {
-        advice.push({
-          id: 2,
-          icon: ['fas', 'search'],
-          title: 'Review Incorrect Answers',
-          description: `Focus on understanding why ${wrongAnswers} answer${wrongAnswers > 1 ? 's were' : ' was'} incorrect.`
-        })
-      }
-
-      // Add general study tips
-      advice.push({
-        id: 3,
-        icon: ['fas', 'clock'],
-        title: 'Study Tip',
-        description: 'Spaced repetition helps retain information better. Review this material again in a few days.'
-      })
-
-      return advice
-    })
 
     // =====================================
     // SIDEBAR FUNCTIONS
@@ -1151,9 +838,17 @@ export default {
     }
 
     const generateQuizFromNotes = async (notes) => {
-      if (isGeneratingQuiz.value) return
+      console.log('🎯 QUIZ GENERATION: generateQuizFromNotes function called!')
+      console.log('🎯 QUIZ GENERATION: Notes received:', notes.length, 'notes')
+      console.log('🎯 QUIZ GENERATION: First note preview:', notes[0] ? notes[0].title : 'No notes')
+
+      if (isGeneratingQuiz.value) {
+        console.log('⚠️ QUIZ GENERATION: Already generating, returning early')
+        return
+      }
 
       isGeneratingQuiz.value = true
+      console.log('✅ QUIZ GENERATION: Set isGeneratingQuiz to true')
 
       try {
         console.log('=== FRONTEND QUIZ GENERATION START ===')
@@ -1230,6 +925,10 @@ export default {
           }
         }
 
+        console.log('🔄 QUIZ GENERATION: Starting GPT API call...')
+        console.log('🔄 QUIZ GENERATION: Combined content length:', combinedContent.length)
+        console.log('🔄 QUIZ GENERATION: Note titles:', noteTitles)
+
         // Generate quiz questions from combined content
         const gptResponse = await api.gpt.generateQuiz(combinedContent, {
           difficulty: 'medium',
@@ -1238,88 +937,171 @@ export default {
           quizTitle: generatedQuizTitle
         })
 
+        console.log('🔄 QUIZ GENERATION: GPT API response received:', gptResponse)
+        console.log('🔄 QUIZ GENERATION: GPT response status:', gptResponse.status)
+        console.log('🔄 QUIZ GENERATION: GPT response data:', gptResponse.data)
+
         if (gptResponse.data && gptResponse.data.success && gptResponse.data.data) {
           const generatedQuestions = gptResponse.data.data.questions || gptResponse.data.data || []
+          console.log('🔄 QUIZ GENERATION: Generated questions:', generatedQuestions)
+          console.log('🔄 QUIZ GENERATION: Questions count:', generatedQuestions.length)
 
           if (!Array.isArray(generatedQuestions) || generatedQuestions.length === 0) {
-            alert('No quiz questions were generated. The content may be too short or unclear.')
+            console.error('❌ QUIZ GENERATION: No questions generated')
+            showWarning('Generation Failed', 'No quiz questions were generated. The content may be too short or unclear.')
             return
           }
+
+          console.log('✅ QUIZ GENERATION: Questions generated successfully, now saving to database...')
 
           // For multiple notes, we'll create a quiz without saving to a specific note
           // Save the quiz to the database (using first note as reference or create a general quiz)
           const referenceNoteId = notes.length === 1 ? notes[0].id : (noteId.value || notes[0].id)
+          console.log('🔄 QUIZ GENERATION: Using reference note ID:', referenceNoteId)
 
-          const quizResponse = await api.createQuiz(referenceNoteId, {
+          const quizData = {
             questions: generatedQuestions,
             difficulty: 'medium',
             source: notes.length === 1 ? 'single_note' : 'multiple_notes',
             note_count: notes.length,
             title: generatedQuizTitle,
             note_title: generatedQuizTitle
-          })
+          }
+          console.log('🔄 QUIZ GENERATION: Quiz data to save:', quizData)
+          console.log('🔄 QUIZ GENERATION: Reference note ID:', referenceNoteId)
+          console.log('🔄 QUIZ GENERATION: Generated questions count:', generatedQuestions.length)
+          console.log('🔄 QUIZ GENERATION: First question preview:', generatedQuestions[0] ? JSON.stringify(generatedQuestions[0]).substring(0, 100) + '...' : 'No questions')
 
-          if (quizResponse.data.success) {
-            // Process and display the questions
-            quizQuestions.value = generatedQuestions.map((q) => {
-              let correctAnswer = q.correct_answer || q.correctAnswer || 0
+          console.log('🔄 QUIZ GENERATION: About to call api.createQuiz...')
+          const quizResponse = await api.createQuiz(referenceNoteId, quizData)
+          console.log('🔄 QUIZ GENERATION: api.createQuiz returned:', quizResponse)
+          console.log('🔄 QUIZ GENERATION: Quiz creation API response:', quizResponse)
+          console.log('🔄 QUIZ GENERATION: Quiz creation response data:', quizResponse.data)
 
-              if (typeof correctAnswer === 'string') {
-                const letterToIndex = { 'A': 0, 'B': 1, 'C': 2, 'D': 3 }
-                correctAnswer = letterToIndex[correctAnswer.toUpperCase()] ?? 0
+          if (quizResponse.data && quizResponse.data.success) {
+            console.log('✅ QUIZ GENERATION: Quiz creation response data:', quizResponse.data)
+            console.log('✅ QUIZ GENERATION: Full response data keys:', Object.keys(quizResponse.data))
+            console.log('✅ QUIZ GENERATION: Response data.data keys:', quizResponse.data.data ? Object.keys(quizResponse.data.data) : 'no data.data')
+
+            // Enhanced quiz ID extraction with multiple fallback mechanisms
+            let quizId = null
+
+            // Try different possible locations for the quiz ID
+            if (quizResponse.data.quiz_id) {
+              quizId = quizResponse.data.quiz_id
+              console.log('✅ QUIZ GENERATION: Found quiz_id in response.data')
+            } else if (quizResponse.data.id) {
+              quizId = quizResponse.data.id
+              console.log('✅ QUIZ GENERATION: Found id in response.data')
+            } else if (quizResponse.data.data && quizResponse.data.data.quiz_id) {
+              quizId = quizResponse.data.data.quiz_id
+              console.log('✅ QUIZ GENERATION: Found quiz_id in response.data.data')
+            } else if (quizResponse.data.data && quizResponse.data.data.id) {
+              quizId = quizResponse.data.data.id
+              console.log('✅ QUIZ GENERATION: Found id in response.data.data')
+            } else if (quizResponse.data.data && typeof quizResponse.data.data === 'number') {
+              quizId = quizResponse.data.data
+              console.log('✅ QUIZ GENERATION: Found numeric ID in response.data.data')
+            } else if (typeof quizResponse.data.data === 'string' && !isNaN(parseInt(quizResponse.data.data))) {
+              quizId = parseInt(quizResponse.data.data)
+              console.log('✅ QUIZ GENERATION: Found numeric string ID in response.data.data')
+            }
+
+            console.log('✅ QUIZ GENERATION: Quiz saved successfully with ID:', quizId)
+            console.log('✅ QUIZ GENERATION: Quiz ID type:', typeof quizId)
+            console.log('✅ QUIZ GENERATION: Quiz ID value:', quizId)
+
+            // Validate quiz ID before redirecting
+            if (!quizId || isNaN(parseInt(quizId))) {
+              console.error('❌ QUIZ GENERATION: Invalid quiz ID received:', quizId)
+              console.error('❌ QUIZ GENERATION: Full response data:', JSON.stringify(quizResponse.data, null, 2))
+
+              // Try to extract from any nested object or array
+              const findQuizId = (obj, path = '') => {
+                if (typeof obj === 'number' && obj > 0) {
+                  console.log(`Found potential quiz ID ${obj} at path: ${path}`)
+                  return obj
+                }
+                if (typeof obj === 'string' && !isNaN(parseInt(obj)) && parseInt(obj) > 0) {
+                  console.log(`Found potential quiz ID ${obj} at path: ${path}`)
+                  return parseInt(obj)
+                }
+                if (obj && typeof obj === 'object') {
+                  for (const key in obj) {
+                    const result = findQuizId(obj[key], path + '.' + key)
+                    if (result) return result
+                  }
+                }
+                return null
               }
 
-              const shuffledOptions = [...q.options]
-              const originalCorrectIndex = correctAnswer
-
-              for (let i = shuffledOptions.length - 1; i > 0; i--) {
-                const j = Math.floor(Math.random() * (i + 1))
-                ;[shuffledOptions[i], shuffledOptions[j]] = [shuffledOptions[j], shuffledOptions[i]]
+              const extractedId = findQuizId(quizResponse.data)
+              if (extractedId) {
+                console.log('✅ QUIZ GENERATION: Extracted quiz ID from deep search:', extractedId)
+                quizId = extractedId
+              } else {
+                showWarning('Save Failed', 'Quiz was created but received invalid quiz ID. Please try again.')
+                return
               }
+            }
 
-              const correctAnswerText = q.options[originalCorrectIndex]
-              const newCorrectIndex = shuffledOptions.findIndex(option => option === correctAnswerText)
+            // Show success message
+            showSuccess(`Quiz Generated!`, `Created ${generatedQuestions.length} questions from ${notes.length} selected note${notes.length > 1 ? 's' : ''}`)
 
-              return {
-                text: q.question,
-                options: shuffledOptions,
-                correctAnswer: newCorrectIndex,
-                selectedAnswer: null,
-                originalOptions: q.options,
-                originalCorrectIndex: originalCorrectIndex
-              }
-            })
+            // Refresh the saved quizzes list to show the new quiz
+            console.log('🔄 QUIZ GENERATION: Refreshing saved quizzes list...')
+            try {
+              await loadSavedQuizzes()
+              console.log('✅ QUIZ GENERATION: Saved quizzes list refreshed successfully')
+            } catch (refreshError) {
+              console.warn('⚠️ QUIZ GENERATION: Failed to refresh quizzes list:', refreshError)
+              // Don't fail the entire process if refresh fails
+            }
 
-            // Set quiz title for display - use the generated title (which is now just the note title)
-            quizTitle.value = generatedQuizTitle
+            // Redirect to QuizTakingView with the quiz ID
+            console.log('🔄 QUIZ GENERATION: Redirecting to quiz taking view...')
+            console.log('🔄 QUIZ GENERATION: Redirect URL:', `/quizzes/${quizId}`)
 
-            // Reset quiz state
-            quizCompleted.value = false
-            quizScore.value = 0
-            showResults.value = false
-
-            console.log('Quiz generated successfully from', notes.length, 'note(s)')
-
-            // Show success message and scroll to quiz
-            alert(`Quiz "${generatedQuizTitle}" generated successfully! Created ${generatedQuestions.length} questions from ${notes.length} selected note${notes.length > 1 ? 's' : ''}.`)
-
-            // Scroll to the quiz section
             setTimeout(() => {
-              const quizSection = document.querySelector('.bg-gray-800.rounded-lg.p-6.mb-6')
-              if (quizSection) {
-                quizSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              console.log('🔄 QUIZ GENERATION: Executing router.push...')
+              try {
+                router.push(`/quizzes/${quizId}`)
+                console.log('✅ QUIZ GENERATION: Router.push completed successfully')
+              } catch (routerError) {
+                console.error('❌ QUIZ GENERATION: Router.push failed:', routerError)
+                // Fallback: show success message and stay on current page
+                showSuccess('Quiz Created Successfully!', `Your quiz has been saved and is ready to take. You can find it in your quizzes list.`)
               }
-            }, 100)
+            }, 1000) // Small delay to show the success message
           } else {
-            alert('Failed to save quiz: ' + (quizResponse.data.error || 'Unknown error'))
+            console.error('❌ QUIZ GENERATION: Quiz creation failed:', quizResponse.data?.error)
+            console.error('❌ QUIZ GENERATION: Full quiz response:', quizResponse.data)
+
+            // Try to provide more specific error messages
+            let errorMessage = 'Failed to save quiz'
+            if (quizResponse.data?.error) {
+              errorMessage += ': ' + quizResponse.data.error
+            } else if (quizResponse.data?.message) {
+              errorMessage += ': ' + quizResponse.data.message
+            } else if (quizResponse.status === 401) {
+              errorMessage = 'Authentication failed. Please log in again.'
+            } else if (quizResponse.status === 403) {
+              errorMessage = 'You do not have permission to create quizzes.'
+            } else if (quizResponse.status === 500) {
+              errorMessage = 'Server error occurred. Please try again later.'
+            }
+
+            showWarning('Save Failed', errorMessage)
           }
         } else {
           const errorMessage = gptResponse.data?.error || 'Failed to generate quiz questions'
+          console.error('❌ QUIZ GENERATION: GPT API failed:', errorMessage)
+          console.error('❌ QUIZ GENERATION: Full GPT response:', gptResponse)
+
           if (errorMessage.includes('API key') || errorMessage.includes('authentication') || errorMessage.includes('Gemini')) {
-            alert('AI service is not configured properly. Please check your Google Gemini API key in the .env file.\n\nUsing basic fallback quiz generation instead.')
-            // The backend should handle fallback, so this should still work
+            showWarning('AI Service Error', 'AI service is not configured properly. Please check your Google Gemini API key in the .env file.')
           } else {
-            alert('Failed to generate quiz questions: ' + errorMessage)
+            showWarning('Generation Failed', 'Failed to generate quiz questions: ' + errorMessage)
           }
         }
       } catch (error) {
@@ -1331,98 +1113,9 @@ export default {
       }
     }
 
-    const checkAnswers = () => {
-      if (!allQuestionsAnswered.value) {
-        alert('Please answer all questions before checking your results.')
-        return
-      }
+    // Quiz functions removed - now handled by QuizTakingView
 
-      let correctCount = 0
-      quizQuestions.value.forEach(question => {
-        if (question.selectedAnswer === question.correctAnswer) {
-          correctCount++
-        }
-      })
-
-      quizScore.value = correctCount
-      quizCompleted.value = true
-    }
-
-    const resetQuiz = () => {
-      quizQuestions.value.forEach(question => {
-        question.selectedAnswer = null
-      })
-      quizCompleted.value = false
-      quizScore.value = 0
-      showResults.value = false
-    }
-
-    const retakeQuiz = () => {
-      resetQuiz()
-    }
-
-    const toggleShowAnswers = () => {
-      showCorrectAnswers.value = !showCorrectAnswers.value
-    }
-
-    const saveQuiz = async () => {
-      if (!quizQuestions.value.length) {
-        alert('No quiz to save. Please generate a quiz first.')
-        return
-      }
-
-      try {
-        isSavingQuiz.value = true
-
-        // Determine which note_id to use
-        let noteIdToUse = noteId.value
-
-        // If no specific note ID, try to get user's first note
-        if (!noteIdToUse) {
-          try {
-            const notesResponse = await api.getNotes()
-            if (notesResponse.data.success && notesResponse.data.data && notesResponse.data.data.length > 0) {
-              noteIdToUse = notesResponse.data.data[0].id
-              console.log('Using first available note ID:', noteIdToUse)
-            }
-          } catch (error) {
-            console.error('Error fetching notes for quiz save:', error)
-          }
-        }
-
-        if (!noteIdToUse) {
-          alert('Unable to save quiz: No notes available. Please create a note first.')
-          return
-        }
-
-        const quizData = {
-          note_id: noteIdToUse,
-          questions: quizQuestions.value,
-          difficulty: 'medium',
-          score: quizScore.value,
-          title: noteTitle.value,
-          note_title: noteTitle.value
-        }
-
-        console.log('Saving quiz with data:', quizData)
-
-        const response = await api.saveQuiz(quizData)
-
-        if (response.data.success) {
-          savedQuizId.value = response.data.quiz_id
-          alert('Quiz saved successfully!')
-          // Refresh saved quizzes list
-          loadSavedQuizzes()
-        } else {
-          alert('Failed to save quiz: ' + (response.data.error || 'Unknown error'))
-        }
-      } catch (error) {
-        console.error('Error saving quiz:', error)
-        alert('Failed to save quiz. Please try again.')
-      } finally {
-        isSavingQuiz.value = false
-      }
-    }
+    // saveQuiz function removed - quiz saving is handled by QuizTakingView
 
     const debugQuizStatus = () => {
       console.log('=== QUIZ STATUS DEBUG ===')
@@ -1457,9 +1150,21 @@ Check console for detailed quiz data.`)
       try {
         isLoadingSavedQuizzes.value = true
         console.log('Making API call to getQuizzes')
+        console.log('API base URL will be determined by axios configuration')
         const response = await api.getQuizzes()
         console.log('API response received:', response)
+        console.log('Response status:', response.status)
+        console.log('Response headers:', response.headers)
+        console.log('Response data type:', typeof response.data)
         console.log('Response data:', response.data)
+
+        if (response.data && typeof response.data === 'string' && response.data.includes('<html>')) {
+          console.error('❌ CRITICAL: Received HTML response instead of JSON!')
+          console.error('❌ This indicates the API request was not routed correctly')
+          console.error('❌ Response contains HTML:', response.data.substring(0, 200) + '...')
+          error.value = 'API routing error: received HTML instead of JSON'
+          return
+        }
 
         if (response.data.success && response.data.data) {
           console.log('Processing', response.data.data.length, 'quizzes')
@@ -1523,6 +1228,7 @@ Check console for detailed quiz data.`)
         } else {
           console.error('Failed to load saved quizzes:', response.data?.error)
           console.error('Response data:', response.data)
+          error.value = response.data?.error || 'Failed to load quizzes'
         }
       } catch (error) {
         console.error('Error loading saved quizzes:', error)
@@ -1531,6 +1237,23 @@ Check console for detailed quiz data.`)
           stack: error.stack,
           response: error.response
         })
+
+        if (error.response) {
+          console.error('Error response status:', error.response.status)
+          console.error('Error response data:', error.response.data)
+          if (typeof error.response.data === 'string' && error.response.data.includes('<html>')) {
+            console.error('❌ CRITICAL: Error response contains HTML instead of JSON!')
+            error.value = 'Server error: received HTML response'
+          } else {
+            error.value = error.response.data?.error || 'Failed to load quizzes'
+          }
+        } else if (error.request) {
+          console.error('No response received from server')
+          error.value = 'No response from server'
+        } else {
+          console.error('Request setup error:', error.message)
+          error.value = 'Request setup error'
+        }
       } finally {
         isLoadingSavedQuizzes.value = false
         console.log('=== LOAD SAVED QUIZZES END ===')
@@ -1576,43 +1299,7 @@ Check console for detailed quiz data.`)
       }
     }
 
-    const loadSavedQuiz = async (quizId) => {
-      try {
-        const response = await api.getQuiz(quizId)
-
-        if (response.data.success && response.data.data) {
-          const quizData = response.data.data
-          // Backend already returns parsed questions, no need to JSON.parse
-          const questions = quizData.questions || []
-
-          // Load the quiz questions
-          quizQuestions.value = questions.map(q => ({
-            text: q.question || q.text,
-            options: q.options || [],
-            correctAnswer: q.correct_answer || q.correctAnswer || 0,
-            selectedAnswer: null,
-            originalOptions: q.options || [],
-            originalCorrectIndex: q.correct_answer || q.correctAnswer || 0
-          }))
-
-          // Set quiz title for display - use note title as the quiz title
-          quizTitle.value = quizData.note_title || quizData.title || `Quiz #${quizId}`
-
-          // Reset quiz state
-          quizCompleted.value = false
-          quizScore.value = 0
-          showResults.value = false
-          selectedSavedQuiz.value = quizData
-
-          alert(`Loaded saved quiz with ${questions.length} questions!`)
-        } else {
-          alert('Failed to load quiz: ' + (response.data?.error || 'Unknown error'))
-        }
-      } catch (error) {
-        console.error('Error loading saved quiz:', error)
-        alert('Failed to load quiz. Please try again.')
-      }
-    }
+    // loadSavedQuiz function removed - quiz loading is handled by QuizTakingView
 
 
     // Initialize
@@ -1659,32 +1346,16 @@ Check console for detailed quiz data.`)
       sidebarOpen,
       sidebarVisible,
       isGeneratingQuiz,
-      quizQuestions,
-      quizCompleted,
-      quizScore,
-      showResults,
-      showCorrectAnswers,
-      toggleShowAnswers,
-      allQuestionsAnswered,
-      answeredQuestionsCount,
-      improvementAdvice,
       showNoteSelector,
       availableNotes,
       selectedNotes,
       isLoadingNotes,
-      isSavingQuiz,
-      savedQuizId,
       savedQuizzes,
       isLoadingSavedQuizzes,
-      selectedSavedQuiz,
       showUserMenu,
       user,
       toggleSidebar,
       generateNewQuiz,
-      checkAnswers,
-      resetQuiz,
-      retakeQuiz,
-      saveQuiz,
       loadAvailableNotes,
       toggleNoteSelection,
       selectAllNotes,
@@ -1694,7 +1365,6 @@ Check console for detailed quiz data.`)
       generateQuizFromSelectedNotes,
       generateQuizFromNotes,
       loadSavedQuizzes,
-      loadSavedQuiz,
       startQuiz,
       confirmDeleteQuiz,
       deleteQuiz,
