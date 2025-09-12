@@ -15,6 +15,12 @@ node_modules/
 /public/js/
 /public/sounds/
 
+# Apache configuration files
+.htaccess
+
+# Windows batch files
+*.bat
+
 # Logs
 logs/
 *.log
