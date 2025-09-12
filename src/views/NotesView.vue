@@ -247,7 +247,7 @@
               activeFilter === 'favorites' ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
             ]"
           >
-            <font-awesome-icon :icon="['fas', 'star']" class="text-xs" />
+            <font-awesome-icon :icon="['fas', 'star']" class="text-xs text-yellow-500" />
             <span>Favorites</span>
           </button>
         </div>
@@ -279,8 +279,8 @@
         <!-- Notes Grid -->
         <div v-else-if="notes.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <div
-            v-for="(note, index) in filteredNotes"
-            :key="index"
+            v-for="note in filteredNotes"
+            :key="`${note.id}-${note.isFavorite}`"
             class="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer relative"
             @click="viewNote(note.id)"
           >
@@ -288,8 +288,8 @@
               <div class="flex justify-between items-start mb-2">
                 <h3 class="font-medium">{{ note.title }}</h3>
                 <div class="flex space-x-2">
-                  <button @click.stop="toggleFavorite(note.id)" class="text-gray-400 hover:text-yellow-500">
-                    <font-awesome-icon :icon="['fas', note.isFavorite ? 'star' : 'star']" :class="note.isFavorite ? 'text-yellow-500' : ''" />
+                  <button @click.stop="toggleFavorite(note.id)" class="text-gray-400 hover:text-yellow-500 transition-colors">
+                    <font-awesome-icon :icon="['fas', 'star']" :class="note.isFavorite ? 'text-yellow-500' : 'text-gray-400 opacity-50'" />
                   </button>
                   <div class="relative">
                     <button @click.stop="showNoteMenu(note.id)" class="text-gray-400 hover:text-white">
@@ -462,7 +462,7 @@
 </template>
 
 <script>
-import { ref, computed, onMounted, watch } from 'vue';
+import { ref, computed, onMounted, watch, nextTick } from 'vue';
 import { useRouter, useRoute } from 'vue-router';
 import { useStore } from 'vuex';
 import { useNotifications } from '@/composables/useNotifications';
@@ -497,7 +497,8 @@ export default {
     const {
       user: userProfile,
       loading: loadingUser,
-      loadUserProfile
+      loadUserProfile,
+      getProfilePictureUrl
     } = useUserProfile();
 
     // Simple reactive data
@@ -536,7 +537,7 @@ export default {
         date: new Date(note.created_at).toLocaleDateString(),
         createdAt: new Date(note.created_at), // Keep original Date object for sorting
         timestamp: new Date(note.created_at).getTime(), // Timestamp for precise sorting
-        isFavorite: false, // You can add favorite logic here
+        isFavorite: note.is_favorite || false, // Load favorite state from database
         tags: [] // You can add tags logic here
       }));
     });
@@ -552,15 +553,6 @@ export default {
       return store.getters['app/getThemeClasses'];
     });
 
-    // Get profile picture URL
-    const getProfilePictureUrl = (profilePicturePath) => {
-      if (!profilePicturePath) return null;
-      // Since the backend stores relative paths from public directory, construct the full URL
-      // Add timestamp to prevent caching issues
-      const timestamp = Date.now();
-      // Use relative URL to avoid CORS issues and ensure proper path resolution
-      return `/${profilePicturePath}?t=${timestamp}`;
-    };
 
     // Format date as "time ago" for recent notes
     const getTimeAgo = (date) => {
@@ -596,9 +588,11 @@ export default {
         return notes.value;
       } else if (activeFilter.value === 'recent') {
         // Sort by timestamp (most recent first) for better precision
-        return [...notes.value].sort((a, b) => b.timestamp - a.timestamp);
+        const sorted = [...notes.value].sort((a, b) => b.timestamp - a.timestamp);
+        return sorted;
       } else if (activeFilter.value === 'favorites') {
-        return notes.value.filter(note => note.isFavorite);
+        const favorites = notes.value.filter(note => note.isFavorite);
+        return favorites;
       }
       return notes.value;
     });
@@ -636,7 +630,12 @@ export default {
           return;
         }
 
+        console.log('🚀 Making API call to getNotes...');
         const response = await api.getNotes();
+        console.log('📡 API call completed. Response status:', response.status);
+        console.log('📡 Response headers:', response.headers);
+        console.log('📡 Response data type:', typeof response.data);
+        console.log('📡 Response data preview:', response.data?.substring ? response.data.substring(0, 200) : response.data);
 
         if (response.data && response.data.success) {
           console.log('✅ Notes loaded successfully:', response.data.data?.length || 0, 'notes');
@@ -742,12 +741,49 @@ export default {
       router.push(`/notes/${noteId}`);
     };
 
-    const toggleFavorite = (noteId) => {
-      const note = notes.value.find(n => n.id === noteId);
-      if (note) {
-        note.isFavorite = !note.isFavorite;
-        // In a real app, you would also update this on the server
-        updateNoteOnServer(note);
+    const toggleFavorite = async (noteId) => {
+      const noteIndex = notes.value.findIndex(n => n.id === noteId);
+
+      if (noteIndex !== -1) {
+        const note = notes.value[noteIndex];
+        const newFavoriteState = !note.isFavorite;
+
+        // Optimistically update the local state - ensure Vue detects the change
+        const updatedNotes = [...notes.value];
+        updatedNotes[noteIndex] = { ...note, isFavorite: newFavoriteState };
+
+        // Create a completely new object to ensure Vue reactivity is triggered
+        notesResponse.value = {
+          ...notesResponse.value,
+          data: [...updatedNotes] // Create new array reference
+        };
+
+        // Force DOM update with nextTick
+        await nextTick();
+
+        try {
+          // Update the favorite status on the server
+          await api.updateNote(noteId, {
+            title: note.title,
+            text: note.original_text,
+            is_favorite: newFavoriteState
+          });
+        } catch (error) {
+          console.error('Error updating favorite status:', error);
+          // Revert the local change if server update fails
+          const revertedNotes = [...notes.value];
+          revertedNotes[noteIndex] = { ...note, isFavorite: !newFavoriteState };
+
+          // Create a completely new object to ensure Vue reactivity is triggered
+          notesResponse.value = {
+            ...notesResponse.value,
+            data: [...revertedNotes] // Create new array reference
+          };
+
+          // Force DOM update with nextTick
+          await nextTick();
+          showWarning('Update failed', 'Failed to update favorite status. Please try again.');
+        }
       }
     };
 
@@ -822,13 +858,6 @@ export default {
     // Notes are now handled by the real-time system
     // The getNotes function is replaced by the useRealtime composable
 
-    const updateNoteOnServer = async (note) => {
-      try {
-        await api.updateNote(note.id, note);
-      } catch (error) {
-        console.error('Error updating note:', error);
-      }
-    };
 
     // =====================================
     // SIDEBAR FUNCTIONS
