@@ -3,9 +3,13 @@
 class Quiz {
     private $conn;
     public $note_id;
+    public $user_id;
     public $questions;
     public $difficulty;
     public $score;
+    public $title;
+    public $note_title;
+    public $total_questions;
 
     public function __construct($db) {
         $this->conn = $db;
@@ -14,12 +18,14 @@ class Quiz {
     public function create() {
         error_log("QUIZ MODEL: create() called");
         error_log("QUIZ MODEL: note_id: " . $this->note_id);
+        error_log("QUIZ MODEL: user_id: " . $this->user_id);
         error_log("QUIZ MODEL: questions length: " . strlen($this->questions));
-        error_log("QUIZ MODEL: difficulty: " . $this->difficulty);
         error_log("QUIZ MODEL: score: " . ($this->score ?? 'null'));
+        error_log("QUIZ MODEL: title: " . ($this->title ?? 'null'));
+        error_log("QUIZ MODEL: total_questions: " . ($this->total_questions ?? 'null'));
 
-        $query = "INSERT INTO quizzes (note_id, questions, difficulty, score, created_at)
-                  VALUES (:note_id, :questions, :difficulty, :score, NOW())";
+        $query = "INSERT INTO quizzes (note_id, user_id, questions, score, title, total_questions, created_at)
+                  VALUES (:note_id, :user_id, :questions, :score, :title, :total_questions, NOW())";
 
         error_log("QUIZ MODEL: SQL query prepared");
 
@@ -28,9 +34,11 @@ class Quiz {
             error_log("QUIZ MODEL: Statement prepared successfully");
 
             $stmt->bindParam(':note_id', $this->note_id);
+            $stmt->bindParam(':user_id', $this->user_id);
             $stmt->bindParam(':questions', $this->questions);
-            $stmt->bindParam(':difficulty', $this->difficulty);
             $stmt->bindParam(':score', $this->score);
+            $stmt->bindParam(':title', $this->title);
+            $stmt->bindParam(':total_questions', $this->total_questions);
 
             error_log("QUIZ MODEL: Parameters bound, executing...");
             $result = $stmt->execute();
@@ -94,6 +102,16 @@ class Quiz {
         if (isset($data['questions'])) {
             $updateFields[] = "questions = :questions";
             $params[':questions'] = json_encode($data['questions']);
+        }
+
+        if (isset($data['title'])) {
+            $updateFields[] = "title = :title";
+            $params[':title'] = $data['title'];
+        }
+
+        if (isset($data['note_title'])) {
+            $updateFields[] = "note_title = :note_title";
+            $params[':note_title'] = $data['note_title'];
         }
 
         if (empty($updateFields)) {

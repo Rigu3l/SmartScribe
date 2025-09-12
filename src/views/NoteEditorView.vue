@@ -104,13 +104,15 @@
         <div v-else>
           <div class="flex flex-col justify-between items-start mb-6 space-y-4" style="flex-direction: column !important;">
             <div class="w-full sm:w-auto flex-1">
-              <h1 class="text-xl sm:text-2xl font-bold">
-                <input
-                  v-model="note.title"
-                  class="bg-transparent border-b border-gray-700 focus:border-blue-500 focus:outline-none pb-1 w-full text-lg sm:text-xl"
-                  placeholder="Note Title"
-                />
-              </h1>
+              <div class="flex items-center space-x-3 mb-2">
+                <h1 class="text-xl sm:text-2xl font-bold flex-1">
+                  <input
+                    v-model="note.title"
+                    class="bg-transparent border-b border-gray-700 focus:border-blue-500 focus:outline-none pb-1 w-full text-lg sm:text-xl"
+                    placeholder="Note Title"
+                  />
+                </h1>
+              </div>
               <p class="text-gray-400 text-xs sm:text-sm">Last edited: {{ note.lastEdited }}</p>
             </div>
             <div class="flex space-x-2 sm:space-x-3 w-full sm:w-auto">
@@ -156,6 +158,15 @@
                 </button>
               </div>
             </div>
+
+            <!-- Highlighted Text Display -->
+            <div v-if="note.keywords.length > 0 && note.originalText" class="mt-4">
+              <h3 class="text-sm font-medium text-gray-300 mb-2">Highlighted Keywords:</h3>
+              <div
+                class="w-full min-h-32 max-h-64 bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 text-sm sm:text-base overflow-y-auto border border-gray-600"
+                v-html="highlightedOriginalText"
+              ></div>
+            </div>
           </div>
 
           <!-- AI Generated Summary -->
@@ -173,13 +184,21 @@
                   <option value="medium">Medium</option>
                   <option value="long">Long</option>
                 </select>
+                <select
+                  v-model="summaryFormat"
+                  class="bg-gray-700 rounded px-2 py-1 sm:p-1 text-xs sm:text-sm flex-1 sm:flex-none ml-2"
+                >
+                  <option value="paragraph">Paragraph</option>
+                  <option value="bullet_points">Bullet Points</option>
+                </select>
               </div>
             </div>
             <div class="relative">
               <textarea
                 v-model="note.summary"
-                class="w-full h-64 sm:h-96 bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base overflow-x-hidden resize-none"
+                class="w-full h-64 sm:h-96 bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base overflow-x-hidden resize-none whitespace-pre-line"
                 placeholder="AI-generated summary will appear here"
+                style="white-space: pre-line;"
               ></textarea>
               <div class="absolute top-2 right-2 flex space-x-2">
                 <button @click="generateSummary" :disabled="generatingSummary" title="Regenerate Summary" class="p-1 bg-gray-600 rounded hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed">
@@ -218,61 +237,6 @@
             <font-awesome-icon :icon="['fas', 'magic']" class="mr-1" /> Auto-extract Keywords
           </button>
         </div>
-
-        <!-- Quiz Generator -->
-        <div class="mt-6 bg-gray-800 rounded-lg p-4 sm:p-6">
-          <h2 class="text-base sm:text-lg font-semibold mb-4">Study Quiz</h2>
-          <p class="text-gray-400 text-sm mb-4">Generate quiz questions based on your notes to test your knowledge.</p>
-          <div class="flex flex-col space-y-3 mb-6" style="flex-direction: column !important;">
-            <button @click="generateQuiz" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition w-full sm:w-auto">
-              <font-awesome-icon :icon="['fas', 'question-circle']" class="mr-2" /> Generate Quiz
-            </button>
-            <div class="flex space-x-3 w-full sm:w-auto">
-              <select v-model="quizDifficulty" class="bg-gray-700 rounded px-3 py-2 flex-1 sm:flex-none text-sm">
-                <option value="easy">Easy</option>
-                <option value="medium">Medium</option>
-                <option value="hard">Hard</option>
-              </select>
-              <select v-model="quizQuestionCount" class="bg-gray-700 rounded px-3 py-2 flex-1 sm:flex-none text-sm">
-                <option value="5">5 Questions</option>
-                <option value="10">10 Questions</option>
-                <option value="15">15 Questions</option>
-              </select>
-            </div>
-          </div>
-
-          <div v-if="quizQuestions.length > 0" class="space-y-4">
-            <div v-for="(question, qIndex) in quizQuestions" :key="`question-${qIndex}`" class="bg-gray-700 rounded-lg p-4">
-              <p class="font-medium mb-2">{{ qIndex + 1 }}. {{ question.text }}</p>
-              <div class="space-y-2 ml-4">
-                <div
-                  v-for="(option, oIndex) in question.options"
-                  :key="`option-${qIndex}-${oIndex}`"
-                  class="flex items-center space-x-2"
-                >
-                  <input
-                    type="radio"
-                    :id="`q${qIndex}-o${oIndex}`"
-                    :name="`question-${qIndex}`"
-                    :value="oIndex"
-                    v-model="question.selectedAnswer"
-                    class="text-blue-600"
-                  />
-                  <label :for="`q${qIndex}-o${oIndex}`">{{ option }}</label>
-                </div>
-              </div>
-            </div>
-
-            <div class="flex justify-between">
-              <button @click="checkQuizAnswers" class="px-4 py-2 bg-green-600 rounded-md hover:bg-green-700 transition">
-                Check Answers
-              </button>
-              <button @click="resetQuiz" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
-                Reset
-              </button>
-            </div>
-          </div>
-        </div>
         </div>
       </main>
     </div>
@@ -280,7 +244,7 @@
 </template>
 
 <script>
-import { ref, onMounted } from 'vue';
+import { ref, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import api from '@/services/api';
@@ -301,6 +265,7 @@ export default {
      });
 
      const summaryLength = ref('auto');
+     const summaryFormat = ref('paragraph');
      const newKeyword = ref('');
      const quizDifficulty = ref('medium');
      const quizQuestionCount = ref('5');
@@ -312,7 +277,34 @@ export default {
      const showExportOptions = ref(false);
      const sidebarOpen = ref(false);
 
-    onMounted(async () => {
+   // Computed property to highlight keywords in the original text
+   const highlightedOriginalText = computed(() => {
+     if (!note.value.originalText || note.value.keywords.length === 0) {
+       return note.value.originalText;
+     }
+
+     let text = note.value.originalText;
+     const keywords = note.value.keywords.filter(keyword => keyword.trim() !== '');
+
+     if (keywords.length === 0) {
+       return text;
+     }
+
+     // Sort keywords by length (longest first) to handle overlapping keywords
+     const sortedKeywords = keywords.sort((a, b) => b.length - a.length);
+
+     // Create a regex pattern for all keywords (case-insensitive)
+     const keywordPattern = sortedKeywords.map(keyword =>
+       keyword.replace(/[.*+?^${}()|[\]\\]/g, '\\$&') // Escape special regex characters
+     ).join('|');
+
+     const regex = new RegExp(`(${keywordPattern})`, 'gi');
+
+     // Replace matches with highlighted spans
+     return text.replace(regex, '<span class="keyword-highlight">$1</span>');
+   });
+
+   onMounted(async () => {
       try {
         const noteId = route.query.id;
 
@@ -330,7 +322,8 @@ export default {
               lastEdited: noteData.last_edited || new Date().toLocaleString(),
               originalText: noteData.original_text || '',
               summary: noteData.summary || '',
-              keywords: noteData.keywords ? noteData.keywords.split(',').map(k => k.trim()) : []
+              keywords: noteData.keywords ? noteData.keywords.split(',').map(k => k.trim()) : [],
+              summaryFormat: noteData.summary_format || 'paragraph'
             };
           } else {
             error.value = response.data?.error || 'Note not found';
@@ -478,7 +471,9 @@ export default {
       try {
         // If we have a note ID (editing existing note), use the API
         if (note.value.id) {
-          const response = await api.createSummary(note.value.id, { length: summaryLength.value });
+          console.log('Generating summary for existing note ID:', note.value.id);
+          const response = await api.createSummary(note.value.id, { length: summaryLength.value, format: summaryFormat.value });
+          console.log('Summary API response:', response);
           if (response.data.success) {
             // Refresh the note data to get the updated summary
             const noteResponse = await api.getNote(note.value.id);
@@ -491,7 +486,9 @@ export default {
           }
         } else {
           // For new notes, use the direct GPT service
+          console.log('Generating summary for new note');
           const response = await api.gpt.generateSummary(note.value.originalText, { length: summaryLength.value });
+          console.log('GPT Summary API response:', response);
           if (response.data) {
             note.value.summary = response.data;
             alert('Summary generated successfully!');
@@ -501,7 +498,23 @@ export default {
         }
       } catch (error) {
         console.error('Error generating summary:', error);
-        alert('Failed to generate summary. Please try again.');
+        let errorMessage = 'Failed to generate summary. Please try again.';
+
+        if (error.response) {
+          if (error.response.status === 401) {
+            errorMessage = 'Authentication required. Please log in to generate summaries.';
+          } else if (error.response.status === 403) {
+            errorMessage = 'Access denied. You do not have permission to generate summaries.';
+          } else if (error.response.data?.error) {
+            errorMessage = 'Summary generation failed: ' + error.response.data.error;
+          } else if (error.response.data?.message) {
+            errorMessage = 'Summary generation failed: ' + error.response.data.message;
+          }
+        } else if (error.message) {
+          errorMessage = 'Network error: ' + error.message;
+        }
+
+        alert(errorMessage);
       } finally {
         generatingSummary.value = false;
       }
@@ -649,6 +662,7 @@ export default {
     return {
       note,
       summaryLength,
+      summaryFormat,
       newKeyword,
       quizDifficulty,
       quizQuestionCount,
@@ -659,6 +673,7 @@ export default {
       generatingSummary,
       showExportOptions,
       sidebarOpen,
+      highlightedOriginalText,
       saveNote,
       generateSummary,
       addKeyword,
@@ -672,3 +687,15 @@ export default {
   }
 }
 </script>
+
+<style scoped>
+.keyword-highlight {
+  background-color: rgba(59, 130, 246, 0.3);
+  color: #fbbf24;
+  padding: 2px 4px;
+  border-radius: 3px;
+  font-weight: 600;
+  border: 1px solid rgba(59, 130, 246, 0.5);
+  box-shadow: 0 0 0 1px rgba(59, 130, 246, 0.2);
+}
+</style>

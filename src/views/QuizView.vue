@@ -256,21 +256,266 @@
                   {{ isGeneratingQuiz ? 'Generating...' : 'Create New Quiz' }}
                 </button>
                 <router-link to="/notes" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700 transition">
-                  <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-2" />
+                  <font-awesome-icon :icon="['fas', 'angle-left']" class="mr-2" />
                   Back to Notes
                 </router-link>
               </div>
             </div>
           </div>
 
+          <!-- Active Quiz Section -->
+          <div v-if="quizQuestions.length > 0" class="bg-gray-800 rounded-lg p-6 mb-6">
+            <div class="flex justify-between items-center mb-6">
+              <h3 class="text-xl font-semibold">Active Quiz</h3>
+              <div class="flex space-x-2">
+                <button @click="resetQuiz" class="px-3 py-1 bg-gray-600 rounded-md hover:bg-gray-700 transition text-sm">
+                  <font-awesome-icon :icon="['fas', 'undo']" class="mr-1" />
+                  Reset
+                </button>
+                <button @click="saveQuiz" :disabled="isSavingQuiz" class="px-3 py-1 bg-blue-600 rounded-md hover:bg-blue-700 transition text-sm disabled:opacity-50">
+                  <font-awesome-icon :icon="['fas', 'save']" class="mr-1" :spin="isSavingQuiz" />
+                  {{ isSavingQuiz ? 'Saving...' : 'Save Quiz' }}
+                </button>
+              </div>
+            </div>
+
+            <!-- Quiz Info -->
+            <div class="mb-6">
+              <div class="mb-4">
+                <h4 class="font-semibold text-white text-lg mb-2">{{ quizTitle || 'Active Quiz' }}</h4>
+                <div class="text-sm text-gray-400">
+                  <span class="text-xs">Active Quiz Session</span>
+                </div>
+              </div>
+              <div class="flex justify-between items-center mb-2">
+                <span class="text-sm text-gray-400">Progress</span>
+                <span class="text-sm text-gray-400">{{ answeredQuestionsCount }} / {{ quizQuestions.length }} answered</span>
+              </div>
+              <div class="w-full bg-gray-700 rounded-full h-2">
+                <div class="bg-blue-600 h-2 rounded-full transition-all duration-300"
+                     :style="{ width: `${(answeredQuestionsCount / quizQuestions.length) * 100}%` }"></div>
+              </div>
+            </div>
+
+            <!-- Quiz Questions -->
+            <div class="space-y-6">
+              <div v-for="(question, index) in quizQuestions" :key="index" class="bg-gray-700 rounded-lg p-4">
+                <h4 class="font-medium text-white mb-4">{{ index + 1 }}. {{ question.text }}</h4>
+
+                <div class="space-y-2">
+                  <div v-for="(option, optionIndex) in question.options" :key="optionIndex"
+                       class="flex items-center space-x-3 p-3 rounded-md cursor-pointer transition-all"
+                       :class="{
+                         'bg-blue-600 text-white': question.selectedAnswer === optionIndex,
+                         'bg-gray-600 hover:bg-gray-500': question.selectedAnswer !== optionIndex
+                       }"
+                       @click="question.selectedAnswer = optionIndex">
+                    <div class="w-4 h-4 rounded-full border-2 flex items-center justify-center"
+                         :class="{
+                           'border-white bg-blue-600': question.selectedAnswer === optionIndex,
+                           'border-gray-400': question.selectedAnswer !== optionIndex
+                         }">
+                      <div v-if="question.selectedAnswer === optionIndex" class="w-2 h-2 bg-white rounded-full"></div>
+                    </div>
+                    <span class="text-sm">{{ option }}</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Quiz Actions -->
+            <div class="mt-6 flex justify-center space-x-4">
+              <button @click="toggleShowAnswers" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
+                <font-awesome-icon :icon="['fas', 'eye']" class="mr-2" />
+                {{ showCorrectAnswers ? 'Hide Answers' : 'Show Answers' }}
+              </button>
+              <button @click="checkAnswers" :disabled="!allQuestionsAnswered"
+                      class="px-6 py-3 bg-green-600 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
+                <font-awesome-icon :icon="['fas', 'check']" class="mr-2" />
+                Check Answers
+              </button>
+            </div>
+
+            <!-- Immediate Answer Feedback (when showCorrectAnswers is true) -->
+            <div v-if="showCorrectAnswers" class="mt-6 bg-gray-700 rounded-lg p-4">
+              <h4 class="font-semibold mb-4 text-white">📚 Answer Key</h4>
+              <div class="space-y-3">
+                <div v-for="(question, index) in quizQuestions" :key="index"
+                     class="bg-gray-600 rounded-lg p-3">
+                  <div class="flex items-start space-x-3 mb-2">
+                    <div class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold bg-gray-500 text-white">
+                      {{ index + 1 }}
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-sm text-white font-medium mb-2">{{ question.text }}</p>
+
+                      <div class="space-y-1">
+                        <div v-for="(option, optionIndex) in question.originalOptions" :key="optionIndex"
+                             class="flex items-center space-x-2 text-xs">
+                          <div class="w-4 h-4 rounded-full border flex items-center justify-center"
+                               :class="{
+                                 'border-green-400 bg-green-400': optionIndex === question.originalCorrectIndex,
+                                 'border-gray-400': optionIndex !== question.originalCorrectIndex
+                               }">
+                            <div v-if="optionIndex === question.originalCorrectIndex"
+                                 class="w-2 h-2 rounded-full bg-white"></div>
+                          </div>
+                          <span :class="{
+                            'text-green-300 font-medium': optionIndex === question.originalCorrectIndex,
+                            'text-gray-300': optionIndex !== question.originalCorrectIndex
+                          }">
+                            {{ option }}
+                            <span v-if="optionIndex === question.originalCorrectIndex" class="text-green-400 font-bold ml-1">(Correct Answer)</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- Quiz Results Section -->
+          <div v-if="quizCompleted" class="bg-gray-800 rounded-lg p-6 mb-6">
+            <div class="text-center mb-6">
+              <h3 class="text-2xl font-bold mb-2">Quiz Results</h3>
+              <div class="text-6xl font-bold mb-4" :class="quizScore / quizQuestions.length >= 0.8 ? 'text-green-400' : quizScore / quizQuestions.length >= 0.6 ? 'text-yellow-400' : 'text-red-400'">
+                {{ Math.round((quizScore / quizQuestions.length) * 100) }}%
+              </div>
+              <p class="text-gray-400">{{ quizScore }} out of {{ quizQuestions.length }} correct</p>
+            </div>
+
+            <!-- Performance Analysis -->
+            <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+              <div class="text-center">
+                <div class="text-2xl font-bold text-green-400">{{ quizScore }}</div>
+                <div class="text-sm text-gray-400">Correct</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-red-400">{{ quizQuestions.length - quizScore }}</div>
+                <div class="text-sm text-gray-400">Incorrect</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-blue-400">{{ Math.round((quizScore / quizQuestions.length) * 100) }}%</div>
+                <div class="text-sm text-gray-400">Accuracy</div>
+              </div>
+              <div class="text-center">
+                <div class="text-2xl font-bold text-purple-400">{{ quizQuestions.length }}</div>
+                <div class="text-sm text-gray-400">Total Questions</div>
+              </div>
+            </div>
+
+            <!-- Detailed Statistics -->
+            <div class="bg-gray-700 rounded-lg p-4 mb-6">
+              <h4 class="font-semibold mb-3 text-white">📊 Detailed Performance</h4>
+              <div class="grid grid-cols-2 gap-4 text-sm">
+                <div>
+                  <span class="text-gray-400">Questions Answered:</span>
+                  <span class="text-white ml-2">{{ quizQuestions.length }}</span>
+                </div>
+                <div>
+                  <span class="text-gray-400">Time Spent:</span>
+                  <span class="text-white ml-2">N/A</span>
+                </div>
+                <div>
+                  <span class="text-gray-400">Average per Question:</span>
+                  <span class="text-white ml-2">{{ Math.round((quizScore / quizQuestions.length) * 100) }}%</span>
+                </div>
+                <div>
+                  <span class="text-gray-400">Performance Level:</span>
+                  <span class="text-white ml-2" :class="quizScore / quizQuestions.length >= 0.8 ? 'text-green-400' : quizScore / quizQuestions.length >= 0.6 ? 'text-yellow-400' : 'text-red-400'">
+                    {{ quizScore / quizQuestions.length >= 0.8 ? 'Excellent' : quizScore / quizQuestions.length >= 0.6 ? 'Good' : 'Needs Improvement' }}
+                  </span>
+                </div>
+              </div>
+            </div>
+
+            <!-- Question Review -->
+            <div class="bg-gray-700 rounded-lg p-4 mb-6">
+              <h4 class="font-semibold mb-4 text-white">📝 Question Review</h4>
+              <div class="space-y-4 max-h-96 overflow-y-auto">
+                <div v-for="(question, index) in quizQuestions" :key="index"
+                     class="bg-gray-600 rounded-lg p-3">
+                  <div class="flex items-start space-x-3 mb-2">
+                    <div class="flex-shrink-0 w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold"
+                         :class="question.selectedAnswer === question.correctAnswer ? 'bg-green-500 text-white' : 'bg-red-500 text-white'">
+                      {{ index + 1 }}
+                    </div>
+                    <div class="flex-1">
+                      <p class="text-sm text-white font-medium mb-2">{{ question.text }}</p>
+
+                      <div class="space-y-1">
+                        <div v-for="(option, optionIndex) in question.options" :key="optionIndex"
+                             class="flex items-center space-x-2 text-xs">
+                          <div class="w-4 h-4 rounded-full border flex items-center justify-center"
+                               :class="{
+                                 'border-green-400 bg-green-400': optionIndex === question.correctAnswer,
+                                 'border-red-400 bg-red-400': optionIndex === question.selectedAnswer && optionIndex !== question.correctAnswer,
+                                 'border-gray-400': optionIndex !== question.correctAnswer && optionIndex !== question.selectedAnswer
+                               }">
+                            <div v-if="optionIndex === question.correctAnswer || optionIndex === question.selectedAnswer"
+                                 class="w-2 h-2 rounded-full bg-white"></div>
+                          </div>
+                          <span :class="{
+                            'text-green-300 font-medium': optionIndex === question.correctAnswer,
+                            'text-red-300': optionIndex === question.selectedAnswer && optionIndex !== question.correctAnswer,
+                            'text-gray-300': optionIndex !== question.correctAnswer && optionIndex !== question.selectedAnswer
+                          }">
+                            {{ option }}
+                            <span v-if="optionIndex === question.correctAnswer" class="text-green-400 font-bold ml-1">(Correct)</span>
+                            <span v-if="optionIndex === question.selectedAnswer && optionIndex !== question.correctAnswer" class="text-red-400 font-bold ml-1">(Your Answer)</span>
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Improvement Advice -->
+            <div class="bg-gray-700 rounded-lg p-4 mb-6">
+              <h4 class="font-semibold mb-3 text-white">📚 Study Recommendations</h4>
+              <div class="space-y-2">
+                <div v-for="advice in improvementAdvice" :key="advice.id" class="flex items-start space-x-3">
+                  <font-awesome-icon :icon="advice.icon" class="text-blue-400 mt-1" />
+                  <div>
+                    <div class="font-medium text-white">{{ advice.title }}</div>
+                    <div class="text-sm text-gray-300">{{ advice.description }}</div>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <!-- Results Actions -->
+            <div class="flex justify-center space-x-4">
+              <button @click="retakeQuiz" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
+                <font-awesome-icon :icon="['fas', 'redo']" class="mr-2" />
+                Retake Quiz
+              </button>
+              <button @click="resetQuiz" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700 transition">
+                <font-awesome-icon :icon="['fas', 'times']" class="mr-2" />
+                Close Results
+              </button>
+            </div>
+          </div>
+
+
           <!-- Saved Quizzes Section -->
           <div class="bg-gray-800 rounded-lg p-6">
             <div class="flex justify-between items-center mb-6">
               <h3 class="text-xl font-semibold">Your Quizzes</h3>
-              <button @click="loadSavedQuizzes" class="text-blue-400 hover:text-blue-300 text-sm">
-                <font-awesome-icon :icon="['fas', 'sync']" class="mr-1" />
-                Refresh
-              </button>
+              <div class="flex space-x-2">
+                <button @click="debugQuizStatus" class="text-gray-400 hover:text-gray-300 text-sm">
+                  <font-awesome-icon :icon="['fas', 'info-circle']" class="mr-1" />
+                  Debug
+                </button>
+                <button @click="loadSavedQuizzes" class="text-blue-400 hover:text-blue-300 text-sm">
+                  <font-awesome-icon :icon="['fas', 'sync-alt']" class="mr-1" />
+                  Refresh
+                </button>
+              </div>
             </div>
 
             <!-- Loading State -->
@@ -295,12 +540,18 @@
               <div
                 v-for="quiz in savedQuizzes"
                 :key="quiz.id"
-                class="bg-gray-700 rounded-lg p-5 hover:bg-gray-600 transition-all duration-200 cursor-pointer transform hover:scale-105"
+                class="bg-gray-700 rounded-lg p-5 hover:bg-gray-600 transition-all duration-200 cursor-pointer transform hover:scale-105 relative"
                 @click="startQuiz(quiz.id)"
               >
+                <!-- Completion Status Indicator -->
+                <div v-if="quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0" class="absolute top-2 right-2 w-3 h-3 bg-green-500 rounded-full" title="Completed"></div>
+                <div v-else class="absolute top-2 right-2 w-3 h-3 bg-gray-500 rounded-full" title="Not taken"></div>
                 <div class="flex items-start justify-between mb-4">
                   <div class="flex-1">
-                    <h4 class="font-semibold text-white text-lg mb-2">{{ quiz.title || `Quiz #${quiz.id}` }}</h4>
+                    <h4 class="font-semibold text-white text-lg mb-2">{{ quiz.title }}</h4>
+                    <div class="text-sm text-gray-400 mb-2">
+                      <span class="text-xs">ID: {{ quiz.id }}</span>
+                    </div>
                     <p class="text-sm text-gray-400 mb-2">
                       Created: {{ new Date(quiz.created_at).toLocaleDateString() }}
                     </p>
@@ -310,28 +561,41 @@
                     </div>
                   </div>
                   <div class="text-right">
-                    <div class="text-xl font-bold mb-1" :class="quiz.accuracy >= 80 ? 'text-green-400' : quiz.accuracy >= 60 ? 'text-yellow-400' : 'text-red-400'">
-                      {{ quiz.accuracy }}%
+                    <div class="text-2xl font-bold mb-1" :class="quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0 ? (quiz.accuracy >= 80 ? 'text-green-400' : quiz.accuracy >= 60 ? 'text-yellow-400' : 'text-red-400') : 'text-gray-500'">
+                      {{ quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0 ? quiz.accuracy + '%' : 'Not taken' }}
                     </div>
-                    <div class="text-xs text-gray-400">Best Score</div>
+                    <div class="text-xs text-gray-400 mb-2">{{ quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0 ? 'Accuracy' : 'Status' }}</div>
+                    <div class="text-sm">
+                      <span class="text-green-400 font-medium">{{ (quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0) ? quiz.score : 0 }}</span>
+                      <span class="text-gray-500 mx-1">/</span>
+                      <span class="text-red-400 font-medium">{{ (quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0) ? (quiz.questionCount - quiz.score) : 0 }}</span>
+                    </div>
+                    <div class="text-xs text-gray-400">Correct/Incorrect</div>
                   </div>
                 </div>
 
                 <!-- Performance Analysis -->
                 <div class="bg-gray-600 rounded-lg p-3 mb-4">
-                  <h5 class="text-sm font-semibold mb-2 text-gray-200">Performance Analysis</h5>
+                  <h5 class="text-sm font-semibold mb-2 text-gray-200">Performance Statistics</h5>
                   <div class="grid grid-cols-3 gap-2 text-center">
                     <div>
-                      <div class="text-lg font-bold text-blue-400">{{ quiz.score || 0 }}</div>
+                      <div class="text-lg font-bold text-green-400">{{ (quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0) ? quiz.score : 0 }}</div>
                       <div class="text-xs text-gray-400">Correct</div>
                     </div>
                     <div>
-                      <div class="text-lg font-bold text-red-400">{{ (quiz.questionCount || 0) - (quiz.score || 0) }}</div>
+                      <div class="text-lg font-bold text-red-400">{{ (quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0) ? (quiz.questionCount - quiz.score) : 0 }}</div>
                       <div class="text-xs text-gray-400">Incorrect</div>
                     </div>
                     <div>
-                      <div class="text-lg font-bold text-yellow-400">{{ quiz.accuracy || 0 }}%</div>
+                      <div class="text-lg font-bold text-blue-400">{{ quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0 ? (quiz.accuracy || 0) + '%' : 'N/A' }}</div>
                       <div class="text-xs text-gray-400">Accuracy</div>
+                    </div>
+                  </div>
+                  <div class="mt-2 pt-2 border-t border-gray-500">
+                    <div class="text-xs text-gray-300 text-center">
+                      <span class="font-medium">Difficulty:</span> {{ quiz.difficulty || 'Medium' }}
+                      <span class="mx-2">•</span>
+                      <span class="font-medium">Questions:</span> {{ quiz.questionCount || 0 }}
                     </div>
                   </div>
                 </div>
@@ -485,7 +749,6 @@ import api from '@/services/api'
 export default {
   name: 'QuizView',
   setup() {
-    console.log('=== QUIZVIEW SETUP START ===')
     const route = useRoute()
     const router = useRouter()
     const store = useStore()
@@ -511,20 +774,18 @@ export default {
     // =====================================
     const {
       user: userProfile,
-      loadUserProfile
+      loadUserProfile,
+      getProfilePictureUrl
     } = useUserProfile()
 
-    console.log('Route params:', route.params)
-    console.log('Route path:', route.path)
+    // Route debugging removed for production
 
     // State - Add error handling for route params
     let parsedNoteId = null
     try {
       const paramId = route.params.id
-      console.log('Raw route param id:', paramId, 'Type:', typeof paramId)
       if (paramId && paramId !== 'undefined' && paramId !== 'null') {
         parsedNoteId = parseInt(paramId)
-        console.log('Parsed noteId:', parsedNoteId, 'Is NaN:', isNaN(parsedNoteId))
         if (isNaN(parsedNoteId)) {
           parsedNoteId = null
         }
@@ -536,12 +797,13 @@ export default {
 
     const noteId = ref(parsedNoteId)
     const noteTitle = ref('Loading...')
+    const quizTitle = ref('')
     const isLoading = ref(true)
     const error = ref(null)
     const sidebarOpen = ref(false)
     const isGeneratingQuiz = ref(false)
 
-    console.log('Initial state set - noteId:', noteId.value)
+    // Initial state set
 
     // Note selection state
     const showNoteSelector = ref(false)
@@ -556,6 +818,7 @@ export default {
     const showResults = ref(false)
     const isSavingQuiz = ref(false)
     const savedQuizId = ref(null)
+    const showCorrectAnswers = ref(false)
 
     // Saved quizzes state
     const savedQuizzes = ref([])
@@ -578,6 +841,7 @@ export default {
     const answeredQuestionsCount = computed(() => {
       return quizQuestions.value.filter(question => question.selectedAnswer !== null).length
     })
+
 
     // Sidebar visibility from store
     const sidebarVisible = computed(() => store.getters['app/getSidebarVisible'])
@@ -705,19 +969,6 @@ export default {
       }
     }
 
-    // =====================================
-    // PROFILE PICTURE FUNCTIONS
-    // =====================================
-
-    // Get profile picture URL
-    const getProfilePictureUrl = (profilePicturePath) => {
-      if (!profilePicturePath) return null
-      // Since the backend stores relative paths from public directory, construct the full URL
-      // Add timestamp to prevent caching issues
-      const timestamp = Date.now()
-      // Use relative URL to avoid CORS issues and ensure proper path resolution
-      return `/${profilePicturePath}?t=${timestamp}`
-    }
 
     // Handle image loading errors
     const handleImageError = () => {
@@ -949,17 +1200,33 @@ export default {
         console.log('Combined content length:', combinedContent.length)
         console.log('Note titles:', noteTitles.join(', '))
 
-        // Generate quiz title based on content
-        const titleResponse = await api.gpt.extractKeywords(combinedContent, 3)
-        let quizTitle = 'General Knowledge Quiz'
+        // Generate quiz title using note title(s)
+        let generatedQuizTitle = 'General Knowledge Quiz'
 
-        if (titleResponse.data && titleResponse.data.success && titleResponse.data.data) {
-          const keywords = titleResponse.data.data
-          if (Array.isArray(keywords) && keywords.length > 0) {
-            // Create a meaningful title from the top keywords
-            const mainTopic = keywords[0].toLowerCase()
-            const secondaryTopic = keywords.length > 1 ? keywords[1].toLowerCase() : ''
-            quizTitle = `${mainTopic.charAt(0).toUpperCase() + mainTopic.slice(1)}${secondaryTopic ? ' & ' + secondaryTopic.charAt(0).toUpperCase() + secondaryTopic.slice(1) : ''} Quiz`
+        if (notes.length === 1) {
+          // For single note, use the note title as the quiz title
+          generatedQuizTitle = notes[0].title || 'Untitled Note'
+        } else if (notes.length === 2) {
+          // For two notes, combine both titles
+          const title1 = notes[0].title || 'Note 1'
+          const title2 = notes[1].title || 'Note 2'
+          generatedQuizTitle = `${title1} & ${title2}`
+        } else if (notes.length > 2) {
+          // For multiple notes, show first note title and count
+          const firstTitle = notes[0].title || 'First Note'
+          const remainingCount = notes.length - 1
+          generatedQuizTitle = `${firstTitle} + ${remainingCount} more notes`
+        } else {
+          // Fallback for edge cases
+          const titleResponse = await api.gpt.extractKeywords(combinedContent, 3)
+          if (titleResponse.data && titleResponse.data.success && titleResponse.data.data) {
+            const keywords = titleResponse.data.data
+            if (Array.isArray(keywords) && keywords.length > 0) {
+              // Create a meaningful title from the top keywords
+              const mainTopic = keywords[0].toLowerCase()
+              const secondaryTopic = keywords.length > 1 ? keywords[1].toLowerCase() : ''
+              generatedQuizTitle = `${mainTopic.charAt(0).toUpperCase() + mainTopic.slice(1)}${secondaryTopic ? ' & ' + secondaryTopic.charAt(0).toUpperCase() + secondaryTopic.slice(1) : ''} Quiz`
+            }
           }
         }
 
@@ -968,7 +1235,7 @@ export default {
           difficulty: 'medium',
           questionCount: Math.min(10, Math.max(5, notes.length * 2)), // More questions for multiple notes
           noteTitle: noteTitles.length === 1 ? noteTitles[0] : `${noteTitles.length} Selected Notes`,
-          quizTitle: quizTitle
+          quizTitle: generatedQuizTitle
         })
 
         if (gptResponse.data && gptResponse.data.success && gptResponse.data.data) {
@@ -988,7 +1255,8 @@ export default {
             difficulty: 'medium',
             source: notes.length === 1 ? 'single_note' : 'multiple_notes',
             note_count: notes.length,
-            title: quizTitle
+            title: generatedQuizTitle,
+            note_title: generatedQuizTitle
           })
 
           if (quizResponse.data.success) {
@@ -1022,21 +1290,34 @@ export default {
               }
             })
 
+            // Set quiz title for display - use the generated title (which is now just the note title)
+            quizTitle.value = generatedQuizTitle
+
             // Reset quiz state
             quizCompleted.value = false
             quizScore.value = 0
             showResults.value = false
 
             console.log('Quiz generated successfully from', notes.length, 'note(s)')
-            alert(`Quiz generated successfully! Created ${generatedQuestions.length} questions from ${notes.length} selected note${notes.length > 1 ? 's' : ''}.`)
+
+            // Show success message and scroll to quiz
+            alert(`Quiz "${generatedQuizTitle}" generated successfully! Created ${generatedQuestions.length} questions from ${notes.length} selected note${notes.length > 1 ? 's' : ''}.`)
+
+            // Scroll to the quiz section
+            setTimeout(() => {
+              const quizSection = document.querySelector('.bg-gray-800.rounded-lg.p-6.mb-6')
+              if (quizSection) {
+                quizSection.scrollIntoView({ behavior: 'smooth', block: 'start' })
+              }
+            }, 100)
           } else {
             alert('Failed to save quiz: ' + (quizResponse.data.error || 'Unknown error'))
           }
         } else {
           const errorMessage = gptResponse.data?.error || 'Failed to generate quiz questions'
-          if (errorMessage.includes('API key') || errorMessage.includes('authentication')) {
-            alert('AI service is not configured. Using basic quiz generation instead.')
-            // Fallback logic would go here
+          if (errorMessage.includes('API key') || errorMessage.includes('authentication') || errorMessage.includes('Gemini')) {
+            alert('AI service is not configured properly. Please check your Google Gemini API key in the .env file.\n\nUsing basic fallback quiz generation instead.')
+            // The backend should handle fallback, so this should still work
           } else {
             alert('Failed to generate quiz questions: ' + errorMessage)
           }
@@ -1080,6 +1361,10 @@ export default {
       resetQuiz()
     }
 
+    const toggleShowAnswers = () => {
+      showCorrectAnswers.value = !showCorrectAnswers.value
+    }
+
     const saveQuiz = async () => {
       if (!quizQuestions.value.length) {
         alert('No quiz to save. Please generate a quiz first.')
@@ -1114,7 +1399,9 @@ export default {
           note_id: noteIdToUse,
           questions: quizQuestions.value,
           difficulty: 'medium',
-          score: quizScore.value
+          score: quizScore.value,
+          title: noteTitle.value,
+          note_title: noteTitle.value
         }
 
         console.log('Saving quiz with data:', quizData)
@@ -1137,6 +1424,34 @@ export default {
       }
     }
 
+    const debugQuizStatus = () => {
+      console.log('=== QUIZ STATUS DEBUG ===')
+      console.log('Total quizzes:', savedQuizzes.value.length)
+      savedQuizzes.value.forEach((quiz, index) => {
+        console.log(`Quiz ${index + 1} (ID: ${quiz.id}):`, {
+          score: quiz.score,
+          scoreType: typeof quiz.score,
+          questionCount: quiz.questionCount,
+          accuracy: quiz.accuracy,
+          isCompleted: quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0,
+          title: quiz.title
+        })
+      })
+
+      const completedQuizzes = savedQuizzes.value.filter(q => q.score !== null && q.score !== undefined && q.questionCount > 0)
+      const notTakenQuizzes = savedQuizzes.value.filter(q => !(q.score !== null && q.score !== undefined && q.questionCount > 0))
+
+      console.log('Completed quizzes:', completedQuizzes.length)
+      console.log('Not taken quizzes:', notTakenQuizzes.length)
+
+      alert(`Debug Info:
+Total Quizzes: ${savedQuizzes.value.length}
+Completed: ${completedQuizzes.length}
+Not Taken: ${notTakenQuizzes.length}
+
+Check console for detailed quiz data.`)
+    }
+
     const loadSavedQuizzes = async () => {
       console.log('=== LOAD SAVED QUIZZES START ===')
       try {
@@ -1155,16 +1470,37 @@ export default {
             let accuracy = 0
 
             try {
-              // Backend already returns parsed questions, no need to JSON.parse
-              questions = quiz.questions || []
-              questionCount = questions.length
-              accuracy = quiz.score && questionCount > 0 ? Math.round((quiz.score / questionCount) * 100) : 0
-              console.log('Quiz', quiz.id, '- questionCount:', questionCount, 'accuracy:', accuracy)
+              // Parse questions JSON if it's a string (from index method)
+              if (typeof quiz.questions === 'string') {
+                questions = JSON.parse(quiz.questions) || []
+              } else {
+                questions = quiz.questions || []
+              }
+              questionCount = Array.isArray(questions) ? questions.length : 0
+
+              // Ensure score is a valid number (including 0)
+              const validScore = (quiz.score !== null && quiz.score !== undefined && !isNaN(quiz.score)) ? Number(quiz.score) : null
+
+              if (validScore !== null && questionCount > 0) {
+                accuracy = Math.round((validScore / questionCount) * 100)
+                // Ensure accuracy is within valid range
+                accuracy = Math.max(0, Math.min(100, accuracy))
+              } else {
+                accuracy = 0
+              }
+
+              console.log(`Quiz ${quiz.id} stats: score=${validScore}, questionCount=${questionCount}, accuracy=${accuracy}%, isCompleted=${validScore !== null && questionCount > 0}`)
             } catch (parseError) {
               console.warn('Error parsing questions for quiz', quiz.id, parseError)
               console.warn('Quiz data:', quiz)
               questionCount = 0
               accuracy = 0
+            }
+
+            // Use note title as the primary display title
+            let displayTitle = quiz.note_title || quiz.title
+            if (!displayTitle) {
+              displayTitle = `Quiz #${quiz.id}`
             }
 
             const processedQuiz = {
@@ -1176,7 +1512,9 @@ export default {
               created_at: quiz.created_at,
               updated_at: quiz.updated_at,
               questionCount: questionCount,
-              accuracy: accuracy
+              accuracy: accuracy,
+              title: displayTitle,
+              note_title: quiz.note_title
             }
             console.log('Processed quiz:', processedQuiz)
             return processedQuiz
@@ -1257,6 +1595,9 @@ export default {
             originalCorrectIndex: q.correct_answer || q.correctAnswer || 0
           }))
 
+          // Set quiz title for display - use note title as the quiz title
+          quizTitle.value = quizData.note_title || quizData.title || `Quiz #${quizId}`
+
           // Reset quiz state
           quizCompleted.value = false
           quizScore.value = 0
@@ -1312,6 +1653,7 @@ export default {
     return {
       noteId,
       noteTitle,
+      quizTitle,
       isLoading,
       error,
       sidebarOpen,
@@ -1321,6 +1663,8 @@ export default {
       quizCompleted,
       quizScore,
       showResults,
+      showCorrectAnswers,
+      toggleShowAnswers,
       allQuestionsAnswered,
       answeredQuestionsCount,
       improvementAdvice,
@@ -1376,6 +1720,7 @@ export default {
       showInfo,
       showWarning,
       loadUserProfile,
+      debugQuizStatus,
       themeClasses,
       store
     }

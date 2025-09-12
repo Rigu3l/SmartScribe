@@ -1,308 +1,381 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-900 text-white overflow-x-hidden">
+  <div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
     <!-- Header -->
-    <header class="p-3 sm:p-4 bg-gray-800 flex justify-between items-center">
-      <div class="text-lg sm:text-xl font-bold">SmartScribe - Quiz</div>
-      <div class="flex items-center space-x-2 sm:space-x-4">
-        <button class="text-gray-400 hover:text-white p-2">
-          <font-awesome-icon :icon="['fas', 'bell']" class="text-sm sm:text-base" />
-        </button>
-        <div class="w-6 h-6 sm:w-8 sm:h-8 bg-gray-600 rounded-full"></div>
+    <header class="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700/50 sticky top-0 z-10">
+      <div class="max-w-4xl mx-auto px-4 py-4">
+        <div class="flex items-center justify-between">
+          <div class="flex items-center space-x-4">
+            <router-link
+              to="/quizzes"
+              class="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
+            >
+              <font-awesome-icon :icon="['fas', 'angle-left']" />
+              <span>Back to Quizzes</span>
+            </router-link>
+          </div>
+
+          <div class="text-center">
+            <h1 class="text-xl font-bold text-white">{{ quizTitle }}</h1>
+          </div>
+
+          <div class="flex items-center space-x-4">
+            <div class="text-sm text-gray-400">
+              Question {{ currentQuestionIndex + 1 }} of {{ quizQuestions.length }}
+            </div>
+            <div class="text-sm text-gray-400">
+              • {{ correctAnswersCount }} ✓ • {{ incorrectAnswersCount }} ✗ • {{ currentAccuracy }}%
+            </div>
+          </div>
+        </div>
       </div>
     </header>
 
     <!-- Main Content -->
-    <div class="flex flex-grow">
-      <!-- Mobile Menu Button -->
-      <button
-        @click="sidebarOpen = !sidebarOpen"
-        class="md:hidden fixed top-20 left-4 z-50 bg-gray-800 p-2 rounded-md shadow-lg"
-      >
-        <span v-if="!sidebarOpen" class="text-lg font-bold">☰</span>
-        <font-awesome-icon v-else :icon="['fas', 'times']" />
-      </button>
+    <div class="max-w-4xl mx-auto px-4 py-8">
+      <!-- Loading State -->
+      <div v-if="isLoading" class="flex flex-col items-center justify-center min-h-96">
+        <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
+        <p class="text-gray-400">Loading quiz...</p>
+      </div>
 
-      <!-- Sidebar Overlay for Mobile -->
-      <div
-        v-if="sidebarOpen"
-        @click="sidebarOpen = false"
-        class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-      ></div>
-
-      <!-- Sidebar -->
-      <aside
-        :class="[
-          'bg-gray-800 p-4 transition-all duration-300 ease-in-out',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-          'fixed md:relative z-50 md:z-auto',
-          'w-64 md:w-64 max-w-full',
-          'min-h-screen md:min-h-0',
-          'top-0 left-0 md:top-auto md:left-auto',
-          'overflow-hidden'
-        ]"
-      >
-        <nav class="mt-16 md:mt-0">
-          <ul class="space-y-2">
-            <li>
-              <router-link
-                to="/dashboard"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'home']" />
-                <span>Dashboard</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/notes"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>My Notes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/quizzes"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md bg-gray-700"
-              >
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>Quizzes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/progress"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'chart-line']" />
-                <span>Progress</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/settings"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'cog']" />
-                <span>Settings</span>
-              </router-link>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
-      <!-- Quiz Taking Content -->
-      <main class="flex-grow p-4 sm:p-6 ml-0 md:ml-0" style="width: 100vw; max-width: 100vw;">
-        <div v-if="isLoading" class="flex justify-center items-center h-full">
-          <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-3xl sm:text-4xl text-blue-500" />
+      <!-- Error State -->
+      <div v-else-if="error" class="flex flex-col items-center justify-center min-h-96">
+        <div class="text-red-400 mb-4">
+          <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="text-4xl" />
         </div>
+        <h2 class="text-xl font-semibold text-white mb-2">Error Loading Quiz</h2>
+        <p class="text-gray-400 mb-6 text-center">{{ error }}</p>
+        <router-link
+          to="/quizzes"
+          class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
+        >
+          Return to Quizzes
+        </router-link>
+      </div>
 
-        <div v-else-if="error" class="flex flex-col items-center justify-center h-full">
-          <font-awesome-icon :icon="['fas', 'times']" class="text-4xl text-red-400 mb-4" />
-          <h2 class="text-xl font-medium mb-2">Error Loading Quiz</h2>
-          <p class="text-gray-400 mb-4">{{ error }}</p>
-          <router-link to="/quizzes" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
-            Back to Quizzes
-          </router-link>
-        </div>
-
-        <div v-else>
-          <!-- Quiz Header -->
-          <div class="mb-6">
-            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
-              <div>
-                <h1 class="text-2xl sm:text-3xl font-bold mb-2">{{ quizTitle }}</h1>
-                <p class="text-gray-400">{{ noteTitle }}</p>
-              </div>
-              <div class="flex space-x-3 mt-4 sm:mt-0">
-                <router-link to="/quizzes" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700 transition">
-                  <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-2" />
-                  Back to Quizzes
-                </router-link>
-              </div>
+      <!-- Quiz Content -->
+      <div v-else>
+        <!-- Progress Bar -->
+        <div class="mb-8">
+          <!-- Real-time Statistics -->
+          <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-6">
+            <div class="text-center">
+              <div class="text-xl font-bold text-green-400">{{ correctAnswersCount }}</div>
+              <div class="text-xs text-gray-400">Correct</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-red-400">{{ incorrectAnswersCount }}</div>
+              <div class="text-xs text-gray-400">Incorrect</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-blue-400">{{ currentAccuracy }}%</div>
+              <div class="text-xs text-gray-400">Accuracy</div>
+            </div>
+            <div class="text-center">
+              <div class="text-xl font-bold text-yellow-400">{{ unansweredQuestionsCount }}</div>
+              <div class="text-xs text-gray-400">Remaining</div>
             </div>
           </div>
 
-          <!-- Quiz Results -->
-          <div v-if="showResults" class="mb-8 bg-gray-800 rounded-lg p-6">
-            <div class="text-center">
-              <h3 class="text-xl font-semibold mb-4">Quiz Results</h3>
+          <div class="flex justify-between items-center mb-2">
+            <span class="text-sm font-medium text-gray-300">Progress</span>
+            <span class="text-sm text-gray-400">{{ answeredQuestionsCount }}/{{ quizQuestions.length }} answered</span>
+          </div>
+          <div class="w-full bg-gray-700 rounded-full h-2">
+            <div
+              class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500 ease-out"
+              :style="{ width: `${(answeredQuestionsCount / quizQuestions.length) * 100}%` }"
+            ></div>
+          </div>
+        </div>
 
-              <!-- Score Display -->
-              <div class="mb-6">
-                <div class="text-5xl font-bold mb-2" :class="quizScore === quizQuestions.length ? 'text-green-400' : quizScore >= quizQuestions.length * 0.7 ? 'text-yellow-400' : 'text-red-400'">
-                  {{ quizScore }}/{{ quizQuestions.length }}
+        <!-- Question Card -->
+        <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-8 mb-8">
+          <!-- Question Header -->
+          <div class="flex items-start justify-between mb-6">
+            <div class="flex-1">
+              <div class="flex items-center space-x-3 mb-4">
+                <div class="flex items-center justify-center w-8 h-8 bg-blue-600 rounded-full text-white font-bold text-sm">
+                  {{ currentQuestionIndex + 1 }}
+                </div>
+                <div class="text-sm text-gray-400">
+                  {{ getQuestionType(quizQuestions[currentQuestionIndex]) }}
+                </div>
+              </div>
+              <h2 class="text-xl font-semibold text-white leading-relaxed">
+                {{ quizQuestions[currentQuestionIndex].text }}
+              </h2>
+            </div>
+          </div>
+
+          <!-- Answer Options -->
+          <div class="space-y-3 mb-8">
+            <div
+              v-for="(option, optionIndex) in quizQuestions[currentQuestionIndex].options"
+              :key="`option-${currentQuestionIndex}-${optionIndex}`"
+              class="relative"
+            >
+              <label
+                :for="`q${currentQuestionIndex}-o${optionIndex}`"
+                class="flex items-center space-x-4 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer group"
+                :class="{
+                  'border-blue-500 bg-blue-500/10 text-blue-100': quizQuestions[currentQuestionIndex].selectedAnswer === optionIndex,
+                  'border-gray-600 hover:border-gray-500 bg-gray-700/30 text-gray-300 hover:bg-gray-700/50': quizQuestions[currentQuestionIndex].selectedAnswer !== optionIndex
+                }"
+              >
+                <input
+                  type="radio"
+                  :id="`q${currentQuestionIndex}-o${optionIndex}`"
+                  :name="`question-${currentQuestionIndex}`"
+                  :value="optionIndex"
+                  v-model.number="quizQuestions[currentQuestionIndex].selectedAnswer"
+                  class="text-blue-600 focus:ring-blue-500"
+                  :disabled="quizCompleted"
+                  @change="onAnswerSelected(currentQuestionIndex, optionIndex)"
+                />
+
+                <div class="flex items-center space-x-3 flex-1">
+                  <div
+                    class="flex items-center justify-center w-6 h-6 rounded-full border-2 text-xs font-bold"
+                    :class="{
+                      'border-blue-500 bg-blue-500 text-white': quizQuestions[currentQuestionIndex].selectedAnswer === optionIndex,
+                      'border-gray-400 text-gray-400': quizQuestions[currentQuestionIndex].selectedAnswer !== optionIndex
+                    }"
+                  >
+                    {{ String.fromCharCode(65 + optionIndex) }}
+                  </div>
+                  <span class="text-sm leading-relaxed">{{ option }}</span>
+                </div>
+              </label>
+            </div>
+          </div>
+        </div>
+
+        <!-- Navigation and Controls -->
+        <div class="flex items-center justify-between">
+          <!-- Previous Button -->
+          <button
+            @click="previousQuestion"
+            :disabled="currentQuestionIndex === 0"
+            class="flex items-center space-x-2 px-6 py-3 rounded-lg transition-colors"
+            :class="currentQuestionIndex === 0
+              ? 'bg-gray-700 text-gray-500 cursor-not-allowed'
+              : 'bg-gray-700 hover:bg-gray-600 text-white'"
+          >
+            <font-awesome-icon :icon="['fas', 'chevron-left']" />
+            <span>Previous</span>
+          </button>
+
+          <!-- Question Navigation -->
+          <div class="flex space-x-2">
+            <button
+              v-for="(question, index) in quizQuestions"
+              :key="`nav-${index}`"
+              @click="goToQuestion(index)"
+              class="w-10 h-10 rounded-lg border-2 transition-all duration-200 flex items-center justify-center text-sm font-medium"
+              :class="{
+                'border-blue-500 bg-blue-500/20 text-blue-400': currentQuestionIndex === index,
+                'border-gray-600 bg-gray-700/30 text-gray-400 hover:border-gray-500': currentQuestionIndex !== index && question.selectedAnswer === null,
+                'bg-green-500/20 border-green-500 text-green-400': question.selectedAnswer !== null && question.selectedAnswer === question.correctAnswer,
+                'bg-red-500/20 border-red-500 text-red-400': question.selectedAnswer !== null && question.selectedAnswer !== question.correctAnswer
+              }"
+            >
+              {{ index + 1 }}
+            </button>
+          </div>
+
+          <!-- Next/Submit Button -->
+          <button
+            v-if="currentQuestionIndex < quizQuestions.length - 1"
+            @click="nextQuestion"
+            class="flex items-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white"
+          >
+            <span>Next</span>
+            <font-awesome-icon :icon="['fas', 'chevron-right']" />
+          </button>
+
+          <button
+            v-else-if="!quizCompleted"
+            @click="checkAnswers"
+            :disabled="!allQuestionsAnswered"
+            class="flex items-center space-x-2 px-6 py-3 rounded-lg transition-colors text-white"
+            :class="allQuestionsAnswered
+              ? 'bg-green-600 hover:bg-green-700'
+              : 'bg-gray-700 text-gray-500 cursor-not-allowed'"
+          >
+            <font-awesome-icon :icon="['fas', 'check']" />
+            <span>Submit Quiz</span>
+          </button>
+
+          <button
+            v-else
+            @click="viewResults"
+            class="flex items-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors text-white"
+          >
+            <font-awesome-icon :icon="['fas', 'chart-bar']" />
+            <span>View Results</span>
+          </button>
+
+          <!-- Debug button for testing reactivity -->
+          <button
+            @click="debugStats"
+            class="flex items-center space-x-2 px-3 py-2 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors text-white text-sm"
+            title="Debug Statistics"
+          >
+            <font-awesome-icon :icon="['fas', 'info-circle']" />
+          </button>
+        </div>
+
+        <!-- Results Modal -->
+        <div v-if="showResults" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
+          <div class="bg-gray-800 rounded-xl max-w-2xl w-full max-h-90vh overflow-y-auto">
+            <div class="p-6">
+              <div class="flex items-center justify-between mb-6">
+                <h2 class="text-2xl font-bold text-white">Quiz Results</h2>
+                <button
+                  @click="showResults = false"
+                  class="text-gray-400 hover:text-white transition-colors"
+                >
+                  <font-awesome-icon :icon="['fas', 'times']" />
+                </button>
+              </div>
+
+              <!-- Score Overview -->
+              <div class="text-center mb-8">
+                <div class="text-6xl font-bold mb-2" :class="quizScore === quizQuestions.length ? 'text-green-400' : quizScore >= quizQuestions.length * 0.7 ? 'text-yellow-400' : 'text-red-400'">
+                  {{ Math.round((quizScore / quizQuestions.length) * 100) }}%
                 </div>
                 <p class="text-gray-300 text-lg">
-                  {{ Math.round((quizScore / quizQuestions.length) * 100) }}% Correct
-                </p>
-                <p class="text-sm text-gray-400 mt-2">
-                  You got {{ quizScore }} out of {{ quizQuestions.length }} questions correct
+                  {{ quizScore }} out of {{ quizQuestions.length }} correct
                 </p>
               </div>
 
-              <!-- Performance Analysis -->
-              <div class="bg-gray-700 rounded-lg p-4 mb-6">
-                <h4 class="text-lg font-semibold mb-3">Performance Analysis</h4>
-                <div class="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
-                  <div>
-                    <div class="text-2xl font-bold text-blue-400">{{ quizScore }}</div>
-                    <div class="text-sm text-gray-400">Correct Answers</div>
-                  </div>
-                  <div>
-                    <div class="text-2xl font-bold text-red-400">{{ quizQuestions.length - quizScore }}</div>
-                    <div class="text-sm text-gray-400">Incorrect Answers</div>
-                  </div>
-                  <div>
-                    <div class="text-2xl font-bold text-yellow-400">{{ Math.round((quizScore / quizQuestions.length) * 100) }}%</div>
-                    <div class="text-sm text-gray-400">Accuracy Rate</div>
-                  </div>
+              <!-- Performance Stats -->
+              <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
+                <div class="bg-gray-700/50 rounded-lg p-4 text-center">
+                  <div class="text-2xl font-bold text-green-400 mb-1">{{ quizScore }}</div>
+                  <div class="text-sm text-gray-400">Correct</div>
                 </div>
-              </div>
-
-              <!-- Improvement Advice -->
-              <div class="bg-gray-700 rounded-lg p-4 mb-6">
-                <h4 class="text-lg font-semibold mb-3">📚 Study Recommendations</h4>
-                <div class="text-left space-y-2">
-                  <div v-for="advice in improvementAdvice" :key="advice.id" class="flex items-start space-x-3">
-                    <font-awesome-icon :icon="advice.icon" class="text-blue-400 mt-1 flex-shrink-0" />
-                    <div>
-                      <p class="font-medium">{{ advice.title }}</p>
-                      <p class="text-sm text-gray-300">{{ advice.description }}</p>
-                    </div>
-                  </div>
+                <div class="bg-gray-700/50 rounded-lg p-4 text-center">
+                  <div class="text-2xl font-bold text-red-400 mb-1">{{ quizQuestions.length - quizScore }}</div>
+                  <div class="text-sm text-gray-400">Incorrect</div>
+                </div>
+                <div class="bg-gray-700/50 rounded-lg p-4 text-center">
+                  <div class="text-2xl font-bold text-blue-400 mb-1">{{ Math.round((quizScore / quizQuestions.length) * 100) }}%</div>
+                  <div class="text-sm text-gray-400">Accuracy</div>
+                </div>
+                <div class="bg-gray-700/50 rounded-lg p-4 text-center">
+                  <div class="text-2xl font-bold text-purple-400 mb-1">{{ quizQuestions.length }}</div>
+                  <div class="text-sm text-gray-400">Total Questions</div>
                 </div>
               </div>
 
               <!-- Action Buttons -->
-              <div class="flex justify-center space-x-4">
-                <button @click="saveQuiz" class="px-6 py-3 bg-purple-600 rounded-md hover:bg-purple-700 transition" :disabled="isSavingQuiz">
-                  <font-awesome-icon :icon="['fas', 'save']" class="mr-2" />
-                  {{ isSavingQuiz ? 'Saving...' : 'Save Quiz' }}
+              <div class="flex space-x-4">
+                <button
+                  @click="retakeQuiz"
+                  class="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white"
+                >
+                  <font-awesome-icon :icon="['fas', 'redo']" />
+                  <span>Retake Quiz</span>
                 </button>
-                <button @click="retakeQuiz" class="px-6 py-3 bg-blue-600 rounded-md hover:bg-blue-700 transition">
-                  <font-awesome-icon :icon="['fas', 'redo-alt']" class="mr-2" />
-                  Retake Quiz
+
+                <button
+                  @click="saveQuiz"
+                  :disabled="isSavingQuiz"
+                  class="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-purple-600 hover:bg-purple-700 rounded-lg transition-colors text-white disabled:opacity-50"
+                >
+                  <font-awesome-icon :icon="['fas', 'save']" :spin="isSavingQuiz" />
+                  <span>{{ isSavingQuiz ? 'Saving...' : 'Save Results' }}</span>
                 </button>
-                <router-link to="/quizzes" class="px-6 py-3 bg-gray-600 rounded-md hover:bg-gray-700 transition">
-                  <font-awesome-icon :icon="['fas', 'arrow-left']" class="mr-2" />
-                  Back to Quizzes
+
+                <router-link
+                  to="/quizzes"
+                  class="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors text-white text-center"
+                >
+                  <font-awesome-icon :icon="['fas', 'angle-left']" />
+                  <span>Back to Quizzes</span>
                 </router-link>
               </div>
             </div>
           </div>
+        </div>
 
-          <!-- Quiz Questions -->
-          <div v-if="quizQuestions.length > 0 && !showResults" class="space-y-6">
-            <div v-for="(question, qIndex) in quizQuestions" :key="`question-${qIndex}`" class="bg-gray-800 rounded-lg p-6">
-              <div class="mb-4">
-                <h3 class="text-lg font-semibold mb-3">{{ qIndex + 1 }}. {{ question.text }}</h3>
-                <div class="space-y-3">
-                  <div
-                    v-for="(option, oIndex) in question.options"
-                    :key="`option-${qIndex}-${oIndex}`"
-                    class="flex items-center space-x-3 p-3 rounded-lg transition-colors"
-                    :class="{
-                      'bg-green-900 border border-green-500': quizCompleted && oIndex === question.correctAnswer,
-                      'bg-red-900 border border-red-500': quizCompleted && question.selectedAnswer === oIndex && oIndex !== question.correctAnswer,
-                      'bg-gray-700 hover:bg-gray-600 border border-gray-600': !quizCompleted && question.selectedAnswer === oIndex,
-                      'bg-gray-700 hover:bg-gray-600 border border-transparent': !quizCompleted && question.selectedAnswer !== oIndex
-                    }"
-                  >
-                    <input
-                      type="radio"
-                      :id="`q${qIndex}-o${oIndex}`"
-                      :name="`question-${qIndex}`"
-                      :value="oIndex"
-                      v-model="question.selectedAnswer"
-                      class="text-blue-600 focus:ring-blue-500"
-                      :disabled="quizCompleted"
-                    />
-                    <label :for="`q${qIndex}-o${oIndex}`" class="cursor-pointer flex-1 text-gray-200">
-                      <span class="font-medium mr-2">{{ String.fromCharCode(65 + oIndex) }}.</span>
-                      {{ option }}
-                    </label>
-                  </div>
+        <!-- Completion Popup Modal -->
+        <div v-if="showCompletionPopup" class="fixed inset-0 bg-black bg-opacity-60 flex items-center justify-center z-50 p-4">
+          <div class="bg-gradient-to-br from-gray-800 to-gray-900 rounded-2xl max-w-md w-full mx-4 shadow-2xl border border-gray-700">
+            <div class="p-8 text-center">
+              <!-- Celebration Icon -->
+              <div class="mb-6">
+                <div class="w-20 h-20 mx-auto bg-gradient-to-br from-yellow-400 to-orange-500 rounded-full flex items-center justify-center shadow-lg">
+                  <font-awesome-icon :icon="['fas', 'trophy']" class="text-white text-3xl" />
                 </div>
               </div>
 
-              <!-- Answer Explanation (shown after completion) -->
-              <div v-if="quizCompleted" class="mt-4 p-4 bg-gray-700 rounded-lg">
-                <div class="flex items-start space-x-3">
-                  <font-awesome-icon
-                    :icon="question.selectedAnswer === question.correctAnswer ? ['fas', 'check-circle'] : ['fas', 'times-circle']"
-                    :class="question.selectedAnswer === question.correctAnswer ? 'text-green-400' : 'text-red-400'"
-                    class="mt-1"
-                  />
-                  <div class="flex-1">
-                    <p class="font-medium mb-2">
-                      <span class="text-green-400">Correct Answer:</span>
-                      {{ question.originalOptions ? question.originalOptions[question.originalCorrectIndex] : question.options[question.correctAnswer] }}
-                    </p>
-                    <div v-if="question.selectedAnswer !== null && question.selectedAnswer !== question.correctAnswer">
-                      <p class="text-red-400 mb-2">
-                        <span class="font-medium">Your Answer:</span>
-                        {{ question.options[question.selectedAnswer] }}
-                      </p>
-                      <p class="text-sm text-gray-300">
-                        💡 <strong>Tip:</strong> Review the material related to this topic for better understanding.
-                      </p>
-                    </div>
-                    <div v-if="question.selectedAnswer !== null && question.selectedAnswer === question.correctAnswer">
-                      <p class="text-green-400">
-                        <span class="font-medium">Your Answer:</span>
-                        {{ question.options[question.selectedAnswer] }} ✓
-                      </p>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
+              <!-- Title -->
+              <h2 class="text-2xl font-bold text-white mb-2">Quiz Completed!</h2>
+              <p class="text-gray-300 mb-6">Great job! Here's your performance summary.</p>
 
-            <!-- Quiz Controls -->
-            <div class="flex justify-between items-center bg-gray-800 rounded-lg p-6">
-              <div class="text-sm text-gray-400">
-                {{ answeredQuestionsCount }}/{{ quizQuestions.length }} questions answered
+              <!-- Score Display -->
+              <div class="mb-6">
+                <div class="text-5xl font-bold mb-2" :class="quizScore / quizQuestions.length >= 0.8 ? 'text-green-400' : quizScore / quizQuestions.length >= 0.6 ? 'text-yellow-400' : 'text-red-400'">
+                  {{ Math.round((quizScore / quizQuestions.length) * 100) }}%
+                </div>
+                <p class="text-gray-300 text-lg">
+                  {{ quizScore }} out of {{ quizQuestions.length }} correct
+                </p>
               </div>
-              <div class="flex space-x-4">
-                <button
-                  v-if="!quizCompleted"
-                  @click="checkAnswers"
-                  class="px-6 py-3 bg-green-600 rounded-md hover:bg-green-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-                  :disabled="!allQuestionsAnswered"
-                >
-                  <font-awesome-icon :icon="['fas', 'check']" class="mr-2" />
-                  Check Answers
-                </button>
-                <button
-                  v-if="quizCompleted"
-                  @click="showResults = true"
-                  class="px-6 py-3 bg-blue-600 rounded-md hover:bg-blue-700 transition"
-                >
+
+              <!-- Performance Message -->
+              <div class="mb-6 p-4 rounded-lg" :class="quizScore / quizQuestions.length >= 0.8 ? 'bg-green-500/10 border border-green-500/20' : quizScore / quizQuestions.length >= 0.6 ? 'bg-yellow-500/10 border border-yellow-500/20' : 'bg-red-500/10 border border-red-500/20'">
+                <p class="text-sm" :class="quizScore / quizQuestions.length >= 0.8 ? 'text-green-300' : quizScore / quizQuestions.length >= 0.6 ? 'text-yellow-300' : 'text-red-300'">
+                  {{ quizScore / quizQuestions.length >= 0.8 ? '🎉 Excellent work! You have a strong understanding of this material.' :
+                     quizScore / quizQuestions.length >= 0.6 ? '👍 Good job! You\'re on the right track with some room for improvement.' :
+                     '📚 Keep studying! Review the material and try again to improve your score.' }}
+                </p>
+              </div>
+
+              <!-- Action Buttons -->
+              <div class="flex space-x-3">
+                <button @click="showCompletionPopup = false; showResults = true"
+                        class="flex-1 px-4 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white font-medium">
                   <font-awesome-icon :icon="['fas', 'chart-bar']" class="mr-2" />
-                  View Results
+                  View Details
                 </button>
-                <button @click="resetQuiz" class="px-6 py-3 bg-gray-600 rounded-md hover:bg-gray-700 transition">
-                  <font-awesome-icon :icon="['fas', 'redo']" class="mr-2" />
-                  Reset
+                <button @click="showCompletionPopup = false"
+                        class="flex-1 px-4 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors text-white font-medium">
+                  <font-awesome-icon :icon="['fas', 'times']" class="mr-2" />
+                  Close
                 </button>
+              </div>
+
+              <!-- Quick Stats -->
+              <div class="mt-6 pt-4 border-t border-gray-700">
+                <div class="grid grid-cols-3 gap-4 text-center">
+                  <div>
+                    <div class="text-lg font-bold text-green-400">{{ quizScore }}</div>
+                    <div class="text-xs text-gray-400">Correct</div>
+                  </div>
+                  <div>
+                    <div class="text-lg font-bold text-red-400">{{ quizQuestions.length - quizScore }}</div>
+                    <div class="text-xs text-gray-400">Incorrect</div>
+                  </div>
+                  <div>
+                    <div class="text-lg font-bold text-blue-400">{{ Math.round((quizScore / quizQuestions.length) * 100) }}%</div>
+                    <div class="text-xs text-gray-400">Accuracy</div>
+                  </div>
+                </div>
               </div>
             </div>
           </div>
         </div>
-      </main>
+      </div>
     </div>
   </div>
 </template>
 
 <script>
-import { ref, onMounted, computed } from 'vue'
+import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
 import api from '@/services/api'
 
@@ -317,90 +390,157 @@ export default {
     const noteTitle = ref('')
     const isLoading = ref(true)
     const error = ref(null)
-    const sidebarOpen = ref(false)
-
-    // Quiz state
     const quizQuestions = ref([])
     const quizCompleted = ref(false)
     const quizScore = ref(0)
     const showResults = ref(false)
+    const showCompletionPopup = ref(false)
     const isSavingQuiz = ref(false)
+    const currentQuestionIndex = ref(0)
 
     // Computed properties
     const allQuestionsAnswered = computed(() => {
       return quizQuestions.value.length > 0 &&
-            quizQuestions.value.every(question => question.selectedAnswer !== null)
+             quizQuestions.value.every(question => question.selectedAnswer !== null && question.selectedAnswer !== undefined)
     })
 
     const answeredQuestionsCount = computed(() => {
-      return quizQuestions.value.filter(question => question.selectedAnswer !== null).length
+      return quizQuestions.value.filter(question => question.selectedAnswer !== null && question.selectedAnswer !== undefined).length
     })
 
-    const improvementAdvice = computed(() => {
-      const score = quizScore.value
-      const total = quizQuestions.value.length
-      const percentage = (score / total) * 100
+    // Real-time statistics methods (called on demand for better reactivity)
+    const getCorrectAnswersCount = () => {
+      const count = quizQuestions.value.filter(question => {
+        return question.selectedAnswer !== null &&
+               question.selectedAnswer !== undefined &&
+               question.selectedAnswer === question.correctAnswer
+      }).length
+      console.log('Correct answers count:', count)
+      return count
+    }
 
-      const advice = []
+    const getIncorrectAnswersCount = () => {
+      const count = quizQuestions.value.filter(question => {
+        return question.selectedAnswer !== null &&
+               question.selectedAnswer !== undefined &&
+               question.selectedAnswer !== question.correctAnswer
+      }).length
+      console.log('Incorrect answers count:', count)
+      return count
+    }
 
-      if (percentage >= 90) {
-        advice.push({
-          id: 1,
-          icon: ['fas', 'trophy'],
-          title: 'Excellent Performance!',
-          description: 'You have a strong grasp of this material. Consider moving to more advanced topics.'
-        })
-      } else if (percentage >= 80) {
-        advice.push({
-          id: 1,
-          icon: ['fas', 'thumbs-up'],
-          title: 'Great Job!',
-          description: 'You\'re doing well. Focus on the few areas where you made mistakes for even better results.'
-        })
-      } else if (percentage >= 70) {
-        advice.push({
-          id: 1,
-          icon: ['fas', 'book-open'],
-          title: 'Good Progress',
-          description: 'You\'re on the right track. Review the incorrect answers and try again.'
-        })
-      } else if (percentage >= 60) {
-        advice.push({
-          id: 1,
-          icon: ['fas', 'lightbulb'],
-          title: 'Keep Studying',
-          description: 'Focus on understanding the core concepts. Consider breaking down complex topics into smaller parts.'
-        })
-      } else {
-        advice.push({
-          id: 1,
-          icon: ['fas', 'graduation-cap'],
-          title: 'Time for Review',
-          description: 'Take time to thoroughly review the material. Consider creating flashcards or mind maps for key concepts.'
-        })
+    const getCurrentAccuracy = () => {
+      const answered = answeredQuestionsCount.value
+      const correct = getCorrectAnswersCount()
+      const accuracy = answered === 0 ? 0 : Math.round((correct / answered) * 100)
+      console.log('Current accuracy:', accuracy, 'Answered:', answered, 'Correct:', correct)
+      return accuracy
+    }
+
+    const getUnansweredQuestionsCount = () => {
+      const unanswered = quizQuestions.value.length - answeredQuestionsCount.value
+      console.log('Unanswered questions count:', unanswered)
+      return unanswered
+    }
+
+    // Computed properties that call the methods (for template use)
+    const correctAnswersCount = computed(() => getCorrectAnswersCount())
+    const incorrectAnswersCount = computed(() => getIncorrectAnswersCount())
+    const currentAccuracy = computed(() => getCurrentAccuracy())
+    const unansweredQuestionsCount = computed(() => getUnansweredQuestionsCount())
+
+    // Helper functions
+    const shuffleArray = (array) => {
+      const shuffled = [...array]
+      for (let i = shuffled.length - 1; i > 0; i--) {
+        const j = Math.floor(Math.random() * (i + 1))
+        ;[shuffled[i], shuffled[j]] = [shuffled[j], shuffled[i]]
       }
+      return shuffled
+    }
 
-      // Add specific advice based on wrong answers
-      const wrongAnswers = total - score
-      if (wrongAnswers > 0) {
-        advice.push({
-          id: 2,
-          icon: ['fas', 'search'],
-          title: 'Review Incorrect Answers',
-          description: `Focus on understanding why ${wrongAnswers} answer${wrongAnswers > 1 ? 's were' : ' was'} incorrect.`
-        })
+    const isQuestionCorrect = (question) => {
+      if (question.selectedAnswer === null || question.selectedAnswer === undefined) {
+        return false
       }
+      if (!question.options || question.options.length === 0) {
+        return false
+      }
+      if (question.correctAnswer < 0 || question.correctAnswer >= question.options.length) {
+        return false
+      }
+      return Number(question.selectedAnswer) === Number(question.correctAnswer)
+    }
 
-      // Add general study tips
-      advice.push({
-        id: 3,
-        icon: ['fas', 'clock'],
-        title: 'Study Tip',
-        description: 'Spaced repetition helps retain information better. Review this material again in a few days.'
+    const getQuestionType = (question) => {
+      // You can extend this to detect different question types based on question data
+      if (question && question.options) {
+        return `Multiple Choice (${question.options.length} options)`
+      }
+      return 'Multiple Choice'
+    }
+
+    // Navigation functions
+    const nextQuestion = () => {
+      if (currentQuestionIndex.value < quizQuestions.value.length - 1) {
+        currentQuestionIndex.value++
+      }
+    }
+
+    const previousQuestion = () => {
+      if (currentQuestionIndex.value > 0) {
+        currentQuestionIndex.value--
+      }
+    }
+
+    const goToQuestion = (index) => {
+      if (index >= 0 && index < quizQuestions.value.length) {
+        currentQuestionIndex.value = index
+      }
+    }
+
+    const onAnswerSelected = async (questionIndex, optionIndex) => {
+      console.log(`Answer selected for question ${questionIndex + 1}: option ${optionIndex}`)
+      console.log('Question data:', quizQuestions.value[questionIndex])
+      console.log('Correct answer:', quizQuestions.value[questionIndex].correctAnswer)
+      console.log('Is correct:', optionIndex === quizQuestions.value[questionIndex].correctAnswer)
+
+      // Force reactivity update using nextTick
+      await nextTick()
+      quizQuestions.value = [...quizQuestions.value]
+
+      // Log updated statistics
+      console.log('Updated statistics after answer selection:')
+      console.log('- Correct answers:', getCorrectAnswersCount())
+      console.log('- Incorrect answers:', getIncorrectAnswersCount())
+      console.log('- Current accuracy:', getCurrentAccuracy() + '%')
+    }
+
+    const debugStats = () => {
+      console.log('=== DEBUG STATISTICS ===')
+      console.log('Total questions:', quizQuestions.value.length)
+      console.log('Answered questions:', answeredQuestionsCount.value)
+      console.log('Correct answers:', getCorrectAnswersCount())
+      console.log('Incorrect answers:', getIncorrectAnswersCount())
+      console.log('Current accuracy:', getCurrentAccuracy() + '%')
+      console.log('Unanswered questions:', getUnansweredQuestionsCount())
+
+      console.log('Question details:')
+      quizQuestions.value.forEach((q, i) => {
+        console.log(`Question ${i + 1}: Selected=${q.selectedAnswer}, Correct=${q.correctAnswer}, IsCorrect=${q.selectedAnswer === q.correctAnswer}`)
       })
 
-      return advice
-    })
+      // Force reactivity update
+      quizQuestions.value = [...quizQuestions.value]
+
+      alert(`Debug Stats:
+Total: ${quizQuestions.value.length}
+Answered: ${answeredQuestionsCount.value}
+Correct: ${getCorrectAnswersCount()}
+Incorrect: ${getIncorrectAnswersCount()}
+Accuracy: ${getCurrentAccuracy()}%
+Unanswered: ${getUnansweredQuestionsCount()}`)
+    }
 
     // Methods
     const loadQuiz = async () => {
@@ -415,33 +555,82 @@ export default {
         if (response.data.success && response.data.data) {
           const quizData = response.data.data
 
-          // Set quiz title
-          quizTitle.value = quizData.title || `Quiz #${quizId.value}`
-
           // Load the quiz questions
           const questions = quizData.questions || []
-          quizQuestions.value = questions.map(q => ({
-            text: q.question || q.text,
-            options: q.options || [],
-            correctAnswer: q.correct_answer || q.correctAnswer || 0,
-            selectedAnswer: null,
-            originalOptions: q.options || [],
-            originalCorrectIndex: q.correct_answer || q.correctAnswer || 0
-          }))
+          if (!Array.isArray(questions) || questions.length === 0) {
+            throw new Error('No questions found in quiz data')
+          }
 
-          // Try to get note title if available
+          quizQuestions.value = questions.map(q => {
+            // Handle correct answer conversion from letter to index
+            let correctAnswer = q.correct_answer || q.correctAnswer || 0
+
+            // If correct answer is a letter (A, B, C, D), convert to index (0, 1, 2, 3)
+            if (typeof correctAnswer === 'string' && /^[A-D]$/.test(correctAnswer.toUpperCase())) {
+              correctAnswer = correctAnswer.toUpperCase().charCodeAt(0) - 65 // A=0, B=1, C=2, D=3
+            } else {
+              correctAnswer = Number(correctAnswer) || 0
+            }
+
+            // Ensure we have valid options array
+            const originalOptions = Array.isArray(q.options) ? q.options : []
+
+            // Validate that we have options
+            if (originalOptions.length === 0) {
+              throw new Error('Question has no options')
+            }
+
+            // Shuffle the options
+            const shuffledOptions = shuffleArray(originalOptions)
+
+            // Find the new index of the correct answer after shuffling
+            const correctAnswerText = originalOptions[correctAnswer]
+            const newCorrectAnswerIndex = shuffledOptions.indexOf(correctAnswerText)
+
+            const processedQuestion = {
+              text: q.question || q.text || 'Untitled Question',
+              options: shuffledOptions,
+              originalOptions: originalOptions, // Store original for reshuffling
+              correctAnswer: Math.max(0, Math.min(newCorrectAnswerIndex, shuffledOptions.length - 1)), // Ensure valid index
+              selectedAnswer: null
+            }
+
+            // Debug logging
+            console.log('Processed question:', {
+              text: processedQuestion.text,
+              optionsCount: processedQuestion.options.length,
+              correctAnswer: processedQuestion.correctAnswer,
+              correctAnswerText: processedQuestion.options[processedQuestion.correctAnswer],
+              originalCorrectAnswer: q.correct_answer || q.correctAnswer,
+              shuffled: true,
+              originalOptions: originalOptions,
+              shuffledOptions: shuffledOptions
+            })
+
+            return processedQuestion
+          })
+
+          // Try to get note title if available and use it as quiz title
           if (quizData.note_id) {
             try {
               const noteResponse = await api.getNote(quizData.note_id)
               if (noteResponse.data.success && noteResponse.data.data) {
-                noteTitle.value = noteResponse.data.data.title || 'Unknown Note'
+                const fetchedNoteTitle = noteResponse.data.data.title || 'Unknown Note'
+                noteTitle.value = fetchedNoteTitle
+                // Use note title as the quiz title
+                quizTitle.value = fetchedNoteTitle
+              } else {
+                noteTitle.value = 'Quiz from Notes'
+                quizTitle.value = quizData.title || `Quiz #${quizId.value}`
               }
             } catch (noteError) {
               console.warn('Could not load note title:', noteError)
               noteTitle.value = 'Quiz from Notes'
+              quizTitle.value = quizData.title || `Quiz #${quizId.value}`
             }
           } else {
             noteTitle.value = 'Generated Quiz'
+            quizTitle.value = quizData.title || `Quiz #${quizId.value}`
           }
         } else {
           error.value = response.data?.error || 'Quiz not found'
@@ -455,33 +644,73 @@ export default {
     }
 
     const checkAnswers = () => {
+      console.log('checkAnswers called')
       if (!allQuestionsAnswered.value) {
-        alert('Please answer all questions before checking your results.')
+        console.log('Not all questions answered')
+        alert('Please answer all questions before submitting.')
         return
       }
 
       let correctCount = 0
-      quizQuestions.value.forEach(question => {
-        if (question.selectedAnswer === question.correctAnswer) {
-          correctCount++
+      let totalValidQuestions = 0
+
+      quizQuestions.value.forEach((question, index) => {
+        // Only count questions that have valid data
+        if (question.options && question.options.length > 0 &&
+            question.correctAnswer >= 0 && question.correctAnswer < question.options.length) {
+          totalValidQuestions++
+          const isCorrect = isQuestionCorrect(question)
+          console.log(`Question ${index + 1}: Correct=${isCorrect}, Selected=${question.selectedAnswer}, CorrectAnswer=${question.correctAnswer}`)
+          if (isCorrect) {
+            correctCount++
+          }
+        } else {
+          console.warn(`Question ${index + 1} has invalid data and will be skipped`)
         }
       })
 
-      quizScore.value = correctCount
+      // Ensure score is within valid range
+      const validatedScore = Math.max(0, Math.min(totalValidQuestions, correctCount))
+
+      quizScore.value = validatedScore
       quizCompleted.value = true
+      console.log(`Quiz completed. Valid questions: ${totalValidQuestions}, Correct: ${validatedScore}, Score: ${validatedScore}/${totalValidQuestions}`)
+
+      // Show completion popup immediately
+      showCompletionPopup.value = true
     }
 
-    const resetQuiz = () => {
+    const retakeQuiz = () => {
       quizQuestions.value.forEach(question => {
         question.selectedAnswer = null
+        // Re-shuffle options for this attempt using original options
+        const shuffledOptions = shuffleArray(question.originalOptions || question.options)
+        const correctAnswerText = question.originalOptions ?
+          question.originalOptions[question.correctAnswer] :
+          question.options[question.correctAnswer]
+        question.options = shuffledOptions
+        question.correctAnswer = shuffledOptions.indexOf(correctAnswerText)
       })
       quizCompleted.value = false
       quizScore.value = 0
       showResults.value = false
+      showCompletionPopup.value = false
+      currentQuestionIndex.value = 0
+      // Ensure all reactive state is properly reset
+      quizQuestions.value = [...quizQuestions.value]
     }
 
-    const retakeQuiz = () => {
-      resetQuiz()
+    const viewResults = () => {
+      console.log('View Results clicked')
+      console.log('Quiz questions with answers:', quizQuestions.value.map((q, i) => ({
+        question: i + 1,
+        text: q.text,
+        selected: q.selectedAnswer,
+        correct: q.correctAnswer,
+        isCorrect: isQuestionCorrect(q)
+      })))
+      showCompletionPopup.value = false
+      showResults.value = true
     }
 
     const saveQuiz = async () => {
@@ -490,23 +719,79 @@ export default {
         return
       }
 
+      // Validate quiz score before saving
+      if (!quizCompleted.value) {
+        alert('Please complete the quiz before saving results.')
+        return
+      }
+
+      // Ensure score is valid
+      const validatedScore = Math.max(0, Math.min(quizQuestions.value.length, quizScore.value || 0))
+
       try {
         isSavingQuiz.value = true
 
-        const quizData = {
-          note_id: null, // This is a standalone quiz
-          questions: quizQuestions.value,
-          difficulty: 'medium',
-          score: quizScore.value,
-          title: quizTitle.value
+        // Find or create a note to associate with this quiz
+        let noteIdToUse = null
+
+        // First, try to use the original note if available
+        if (quizId.value) {
+          try {
+            const quizResponse = await api.getQuiz(quizId.value)
+            if (quizResponse.data.success && quizResponse.data.data.note_id) {
+              noteIdToUse = quizResponse.data.data.note_id
+              console.log('Using original note ID:', noteIdToUse)
+            }
+          } catch (error) {
+            console.warn('Could not get original quiz data:', error)
+          }
         }
 
-        console.log('Saving quiz with data:', quizData)
+        // If no original note, try to find user's first note
+        if (!noteIdToUse) {
+          try {
+            const notesResponse = await api.getNotes()
+            if (notesResponse.data.success && notesResponse.data.data && notesResponse.data.data.length > 0) {
+              noteIdToUse = notesResponse.data.data[0].id
+              console.log('Using first available note ID:', noteIdToUse)
+            }
+          } catch (error) {
+            console.error('Error fetching notes for quiz save:', error)
+          }
+        }
+
+        // If still no note, we can't save the quiz
+        if (!noteIdToUse) {
+          alert('Unable to save quiz: No notes available. Please create a note first.')
+          return
+        }
+
+        const quizData = {
+          note_id: noteIdToUse,
+          questions: quizQuestions.value,
+          difficulty: 'medium',
+          score: validatedScore,
+          title: noteTitle.value || quizTitle.value,
+          note_title: noteTitle.value
+        }
+
+        console.log('Saving quiz with accurate data:', {
+          noteId: noteIdToUse,
+          originalScore: quizScore.value,
+          validatedScore: validatedScore,
+          totalQuestions: quizQuestions.value.length,
+          accuracy: quizQuestions.value.length > 0 ? Math.round((validatedScore / quizQuestions.value.length) * 100) : 0,
+          questionsData: quizQuestions.value.map(q => ({
+            selected: q.selectedAnswer,
+            correct: q.correctAnswer,
+            isCorrect: q.selectedAnswer === q.correctAnswer
+          }))
+        })
 
         const response = await api.saveQuiz(quizData)
 
         if (response.data.success) {
-          alert('Quiz progress saved successfully!')
+          alert(`Quiz saved successfully! Score: ${validatedScore}/${quizQuestions.value.length} (${Math.round((validatedScore / quizQuestions.value.length) * 100)}%)`)
         } else {
           alert('Failed to save quiz: ' + (response.data.error || 'Unknown error'))
         }
@@ -529,19 +814,35 @@ export default {
       noteTitle,
       isLoading,
       error,
-      sidebarOpen,
       quizQuestions,
       quizCompleted,
       quizScore,
       showResults,
+      showCompletionPopup,
+      currentQuestionIndex,
       allQuestionsAnswered,
       answeredQuestionsCount,
-      improvementAdvice,
+      correctAnswersCount,
+      incorrectAnswersCount,
+      currentAccuracy,
+      unansweredQuestionsCount,
       isSavingQuiz,
+      isQuestionCorrect,
+      getQuestionType,
+      nextQuestion,
+      previousQuestion,
+      goToQuestion,
+      onAnswerSelected,
+      debugStats,
+      getCorrectAnswersCount,
+      getIncorrectAnswersCount,
+      getCurrentAccuracy,
+      getUnansweredQuestionsCount,
       checkAnswers,
-      resetQuiz,
+      viewResults,
       retakeQuiz,
-      saveQuiz
+      saveQuiz,
+      shuffleArray
     }
   }
 }

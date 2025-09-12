@@ -458,7 +458,8 @@ export default {
     const {
       user: userProfile,
       loading: loadingUser,
-      loadUserProfile
+      loadUserProfile,
+      getProfilePictureUrl
     } = useUserProfile();
 
     // =====================================
@@ -600,14 +601,6 @@ export default {
       console.log('ProgressView mounted and data loaded');
     });
     
-    // Get profile picture URL
-    const getProfilePictureUrl = (profilePicturePath) => {
-      if (!profilePicturePath) return null;
-      // Since the backend stores relative paths from public directory, construct the full URL
-      // Add timestamp to prevent caching issues
-      const timestamp = Date.now();
-      return `/${profilePicturePath}?t=${timestamp}`;
-    };
 
     // Handle image loading errors
     const handleImageError = (event) => {

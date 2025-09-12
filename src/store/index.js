@@ -1,6 +1,11 @@
 // src/store/index.js
 import { createStore } from 'vuex'
 
+// Import modules
+import auth from './modules/auth'
+import notes from './modules/notes'
+import app from './modules/app'
+
 export default createStore({
   state: {
     user: null,
@@ -66,5 +71,8 @@ export default createStore({
     }
   },
   modules: {
+    auth,
+    notes,
+    app
   }
 })

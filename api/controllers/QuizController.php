@@ -1,27 +1,22 @@
 <?php
+require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Quiz.php';
 
-class QuizController {
-    private $db;
+class QuizController extends BaseController {
     private $quiz;
 
     public function __construct() {
-        global $db;
-        $this->db = $db;
-        $this->quiz = new Quiz($db);
+        parent::__construct();
+        $this->quiz = new Quiz($this->db);
     }
 
     public function index() {
-        $userId = $this->getUserIdFromHeader();
-
-        if (!$userId) {
-            http_response_code(401);
-            echo json_encode([
-                "success" => false,
-                "error" => "Unauthorized"
-            ]);
+        if (!$this->authenticateUser()) {
+            $this->unauthorizedResponse();
             return;
         }
+
+        $userId = $this->getUserId();
 
         $query = "SELECT q.*
                   FROM quizzes q
@@ -33,26 +28,20 @@ class QuizController {
         $stmt->bindParam(':user_id', $userId);
         $stmt->execute();
 
-        echo json_encode([
-            "success" => true,
-            "data" => $stmt->fetchAll()
-        ]);
+        $this->successResponse($stmt->fetchAll());
     }
 
     public function store() {
         error_log("=== QUIZ STORE START ===");
-        $userId = $this->getUserIdFromHeader();
-        error_log("QUIZ STORE: User ID from header: " . ($userId ?: 'null'));
 
-        if (!$userId) {
-            error_log("QUIZ STORE: Unauthorized - no user ID");
-            http_response_code(401);
-            echo json_encode([
-                "success" => false,
-                "error" => "Unauthorized"
-            ]);
+        if (!$this->authenticateUser()) {
+            error_log("QUIZ STORE: Unauthorized - authentication failed");
+            $this->unauthorizedResponse();
             return;
         }
+
+        $userId = $this->getUserId();
+        error_log("QUIZ STORE: User ID: " . ($userId ?: 'null'));
 
         $rawInput = file_get_contents('php://input');
         error_log("QUIZ STORE: Raw input length: " . strlen($rawInput));
@@ -67,8 +56,7 @@ class QuizController {
 
         if (!isset($data['note_id']) || !isset($data['questions'])) {
             error_log("QUIZ STORE: Missing note_id or questions");
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Missing note_id or questions']);
+            $this->badRequestResponse('Missing note_id or questions');
             return;
         }
 
@@ -87,15 +75,16 @@ class QuizController {
 
         if (!$noteResult) {
             error_log("QUIZ STORE: Access denied - note doesn't belong to user");
-            http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Access denied']);
+            $this->errorResponse('Access denied', 403);
             return;
         }
 
         $this->quiz->note_id = $data['note_id'];
+        $this->quiz->user_id = $userId;
         $this->quiz->questions = json_encode($data['questions']);
-        $this->quiz->difficulty = $data['difficulty'] ?? 'medium';
         $this->quiz->score = $data['score'] ?? null;
+        $this->quiz->title = $data['title'] ?? 'Generated Quiz';
+        $this->quiz->total_questions = is_array($data['questions']) ? count($data['questions']) : 0;
 
         // Optional metadata for multi-note quizzes
         if (isset($data['source'])) {
@@ -104,40 +93,37 @@ class QuizController {
         if (isset($data['note_count'])) {
             error_log("QUIZ STORE: Note count: " . $data['note_count']);
         }
+        if (isset($data['title'])) {
+            error_log("QUIZ STORE: Quiz title: " . $data['title']);
+        }
+        if (isset($data['note_title'])) {
+            error_log("QUIZ STORE: Note title: " . $data['note_title']);
+        }
 
-        error_log("QUIZ STORE: Quiz object prepared - note_id: {$this->quiz->note_id}, difficulty: {$this->quiz->difficulty}");
+        error_log("QUIZ STORE: Quiz object prepared - note_id: {$this->quiz->note_id}");
 
         $quizId = $this->quiz->create();
         error_log("QUIZ STORE: Quiz creation result: " . ($quizId ? "success (ID: $quizId)" : 'failed'));
 
         if ($quizId) {
             error_log("QUIZ STORE: Quiz created successfully with ID: $quizId");
-            echo json_encode([
-                "success" => true,
-                "message" => "Quiz created successfully",
+            $this->successResponse([
                 "quiz_id" => $quizId
-            ]);
+            ], 'Quiz created successfully', 201);
         } else {
             error_log("QUIZ STORE: Failed to create quiz");
-            echo json_encode([
-                "success" => false,
-                "error" => "Failed to create quiz"
-            ]);
+            $this->errorResponse('Failed to create quiz');
         }
         error_log("=== QUIZ STORE END ===");
     }
 
     public function show($id) {
-        $userId = $this->getUserIdFromHeader();
-
-        if (!$userId) {
-            http_response_code(401);
-            echo json_encode([
-                "success" => false,
-                "error" => "Unauthorized"
-            ]);
+        if (!$this->authenticateUser()) {
+            $this->unauthorizedResponse();
             return;
         }
+
+        $userId = $this->getUserId();
 
         $query = "SELECT q.*
                   FROM quizzes q
@@ -154,27 +140,19 @@ class QuizController {
         if ($quiz) {
             // Decode questions JSON
             $quiz['questions'] = json_decode($quiz['questions'], true);
-            echo json_encode([
-                "success" => true,
-                "data" => $quiz
-            ]);
+            $this->successResponse($quiz);
         } else {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'error' => 'Quiz not found']);
+            $this->notFoundResponse('Quiz not found');
         }
     }
 
     public function update($id) {
-        $userId = $this->getUserIdFromHeader();
-
-        if (!$userId) {
-            http_response_code(401);
-            echo json_encode([
-                "success" => false,
-                "error" => "Unauthorized"
-            ]);
+        if (!$this->authenticateUser()) {
+            $this->unauthorizedResponse();
             return;
         }
+
+        $userId = $this->getUserId();
 
         $data = json_decode(file_get_contents('php://input'), true);
 
@@ -188,8 +166,7 @@ class QuizController {
         $stmt->execute();
 
         if (!$stmt->fetch()) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Access denied']);
+            $this->errorResponse('Access denied', 403);
             return;
         }
 
@@ -207,8 +184,7 @@ class QuizController {
         }
 
         if (empty($updateFields)) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'No valid fields to update']);
+            $this->badRequestResponse('No valid fields to update');
             return;
         }
 
@@ -216,29 +192,19 @@ class QuizController {
         $stmt = $this->db->prepare($query);
 
         if ($stmt->execute($params)) {
-            echo json_encode([
-                "success" => true,
-                "message" => "Quiz updated successfully"
-            ]);
+            $this->successResponse(null, 'Quiz updated successfully');
         } else {
-            echo json_encode([
-                "success" => false,
-                "error" => "Failed to update quiz"
-            ]);
+            $this->errorResponse('Failed to update quiz');
         }
     }
 
     public function destroy($id) {
-        $userId = $this->getUserIdFromHeader();
-
-        if (!$userId) {
-            http_response_code(401);
-            echo json_encode([
-                "success" => false,
-                "error" => "Unauthorized"
-            ]);
+        if (!$this->authenticateUser()) {
+            $this->unauthorizedResponse();
             return;
         }
+
+        $userId = $this->getUserId();
 
         // Verify the quiz belongs to the authenticated user
         $quizQuery = "SELECT q.id FROM quizzes q
@@ -250,68 +216,14 @@ class QuizController {
         $stmt->execute();
 
         if (!$stmt->fetch()) {
-            http_response_code(403);
-            echo json_encode(['success' => false, 'error' => 'Access denied or quiz not found']);
+            $this->errorResponse('Access denied or quiz not found', 403);
             return;
         }
 
         if ($this->quiz->delete($id, $userId)) {
-            echo json_encode([
-                "success" => true,
-                "message" => "Quiz deleted successfully"
-            ]);
+            $this->successResponse(null, 'Quiz deleted successfully');
         } else {
-            http_response_code(500);
-            echo json_encode([
-                "success" => false,
-                "error" => "Failed to delete quiz"
-            ]);
-        }
-    }
-
-    private function getUserIdFromHeader() {
-        $headers = getallheaders();
-
-        // First try to validate token from Authorization header (case-insensitive)
-        $authHeader = null;
-        foreach ($headers as $key => $value) {
-            if (strtolower($key) === 'authorization') {
-                $authHeader = $value;
-                break;
-            }
-        }
-
-        if ($authHeader) {
-            if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-                $token = $matches[1];
-                $userId = $this->validateToken($token);
-                if ($userId) {
-                    return $userId;
-                }
-            }
-        }
-
-        // Fallback to X-User-ID header (for backward compatibility)
-        if (isset($headers['X-User-ID']) || isset($headers['x-user-id'])) {
-            $userIdHeader = $headers['X-User-ID'] ?? $headers['x-user-id'];
-            return intval($userIdHeader);
-        }
-
-        return null;
-    }
-
-    private function validateToken($token) {
-        if (!$token) return null;
-
-        try {
-            $stmt = $this->db->prepare("SELECT user_id FROM user_tokens WHERE token = ? AND expires_at > NOW()");
-            $stmt->execute([$token]);
-            $result = $stmt->fetch();
-
-            return $result ? $result['user_id'] : null;
-        } catch (Exception $e) {
-            error_log("Token validation error: " . $e->getMessage());
-            return null;
+            $this->errorResponse('Failed to delete quiz');
         }
     }
 }

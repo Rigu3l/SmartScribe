@@ -24,11 +24,15 @@ const actions = {
     try {
       commit('SET_LOADING', true);
       const response = await api.getNotes();
-      commit('SET_NOTES', response.data);
-      return response.data;
+      commit('SET_NOTES', response.data.data);
+      return response.data.data;
     } catch (error) {
       console.error('Fetch notes error:', error);
-      commit('SET_ERROR', 'Failed to fetch notes.');
+      // Handle new error response format
+      const errorMessage = error.response?.data?.error ||
+                          error.response?.data?.message ||
+                          'Failed to fetch notes.';
+      commit('SET_ERROR', errorMessage);
       throw error;
     } finally {
       commit('SET_LOADING', false);
@@ -39,11 +43,15 @@ const actions = {
     try {
       commit('SET_LOADING', true);
       const response = await api.getNote(noteId);
-      commit('SET_CURRENT_NOTE', response.data);
-      return response.data;
+      commit('SET_CURRENT_NOTE', response.data.data);
+      return response.data.data;
     } catch (error) {
       console.error('Fetch note error:', error);
-      commit('SET_ERROR', 'Failed to fetch note details.');
+      // Handle new error response format
+      const errorMessage = error.response?.data?.error ||
+                          error.response?.data?.message ||
+                          'Failed to fetch note details.';
+      commit('SET_ERROR', errorMessage);
       throw error;
     } finally {
       commit('SET_LOADING', false);
@@ -54,11 +62,17 @@ const actions = {
     try {
       commit('SET_LOADING', true);
       const response = await api.createNote(noteData);
-      commit('ADD_NOTE', response.data);
-      return response.data;
+      // Handle both old and new response formats
+      const noteDataResponse = response.data.data || response.data;
+      commit('ADD_NOTE', noteDataResponse);
+      return noteDataResponse;
     } catch (error) {
       console.error('Create note error:', error);
-      commit('SET_ERROR', 'Failed to create note.');
+      // Handle new error response format
+      const errorMessage = error.response?.data?.error ||
+                          error.response?.data?.message ||
+                          'Failed to create note.';
+      commit('SET_ERROR', errorMessage);
       throw error;
     } finally {
       commit('SET_LOADING', false);
@@ -69,11 +83,17 @@ const actions = {
     try {
       commit('SET_LOADING', true);
       const response = await api.updateNote(id, noteData);
-      commit('UPDATE_NOTE', response.data);
-      return response.data;
+      // Handle both old and new response formats
+      const noteDataResponse = response.data.data || response.data;
+      commit('UPDATE_NOTE', noteDataResponse);
+      return noteDataResponse;
     } catch (error) {
       console.error('Update note error:', error);
-      commit('SET_ERROR', 'Failed to update note.');
+      // Handle new error response format
+      const errorMessage = error.response?.data?.error ||
+                          error.response?.data?.message ||
+                          'Failed to update note.';
+      commit('SET_ERROR', errorMessage);
       throw error;
     } finally {
       commit('SET_LOADING', false);
@@ -87,7 +107,11 @@ const actions = {
       commit('REMOVE_NOTE', noteId);
     } catch (error) {
       console.error('Delete note error:', error);
-      commit('SET_ERROR', 'Failed to delete note.');
+      // Handle new error response format
+      const errorMessage = error.response?.data?.error ||
+                          error.response?.data?.message ||
+                          'Failed to delete note.';
+      commit('SET_ERROR', errorMessage);
       throw error;
     } finally {
       commit('SET_LOADING', false);

@@ -148,7 +148,7 @@
                   <font-awesome-icon :icon="['fas', 'sync-alt']" class="mr-1" :spin="generatingSummary" /> {{ generatingSummary ? 'Generating...' : 'Generate Summary' }}
                 </button>
               </div>
-              <div class="bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 h-64 sm:h-96 overflow-y-auto overflow-x-hidden text-sm sm:text-base break-words">
+              <div class="bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 h-64 sm:h-96 overflow-y-auto overflow-x-hidden text-sm sm:text-base break-words whitespace-pre-line">
                 {{ note.summary || 'No summary available. Click "Generate Summary" to create one.' }}
               </div>
             </div>
@@ -316,8 +316,13 @@ export default {
       generatingSummary.value = true;
       try {
         console.log('Starting summary generation for note:', note.value.id);
+        console.log('Making API call to createSummary...');
         const response = await api.createSummary(note.value.id, { length: 'auto' });
-        console.log('Summary API response:', response.data);
+        console.log('Summary API response received');
+        console.log('Response status:', response?.status);
+        console.log('Response data:', response?.data);
+        console.log('Response data type:', typeof response?.data);
+        console.log('Response data success:', response?.data?.success);
 
         if (response.data.success) {
           console.log('Summary created successfully, refreshing note data...');
@@ -335,12 +340,40 @@ export default {
           }
           alert('Summary generated successfully!');
         } else {
-          console.error('Summary generation failed:', response.data.error);
-          alert('Failed to generate summary: ' + (response.data.error || 'Unknown error'));
+          console.error('Summary generation failed:', response.data);
+          const errorMessage = response.data?.error || response.data?.message || 'Unknown error';
+          alert('Failed to generate summary: ' + errorMessage);
         }
       } catch (error) {
         console.error('Error generating summary:', error);
-        alert('Failed to generate summary. Please try again.');
+
+        // Handle different types of errors
+        let errorMessage = 'Failed to generate summary. Please try again.';
+
+        if (error.response) {
+          // Server responded with error status
+          console.error('Server error response:', error.response.data);
+          const serverError = error.response.data?.error || error.response.data?.message;
+          if (serverError) {
+            errorMessage = 'Failed to generate summary: ' + serverError;
+          } else if (error.response.status === 401) {
+            errorMessage = 'Authentication failed. Please log in again.';
+          } else if (error.response.status === 403) {
+            errorMessage = 'Access denied. You may not have permission to modify this note.';
+          } else if (error.response.status >= 500) {
+            errorMessage = 'Server error. Please try again later.';
+          }
+        } else if (error.request) {
+          // Request was made but no response received
+          console.error('Network error - no response received');
+          errorMessage = 'Network error. Please check your connection and try again.';
+        } else {
+          // Something else happened
+          console.error('Request setup error:', error.message);
+          errorMessage = 'Request error: ' + error.message;
+        }
+
+        alert(errorMessage);
       } finally {
         generatingSummary.value = false;
       }

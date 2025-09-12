@@ -1,8 +1,9 @@
 // src/services/api.js
 import axios from 'axios'
+import { isTokenExpired } from '../utils/authUtils'
 
 const api = axios.create({
-  baseURL: '/api/index.php/',
+  baseURL: process.env.NODE_ENV === 'production' ? '/' : '/SmartScribe/api/',
   timeout: 10000,
   headers: {
     'Content-Type': 'application/json'
@@ -12,7 +13,7 @@ const api = axios.create({
 // Add auth token to requests
 api.interceptors.request.use(config => {
   const token = localStorage.getItem('token')
-  if (token) {
+  if (token && !isTokenExpired(token)) {
     config.headers.Authorization = `Bearer ${token}`
   }
 
@@ -79,6 +80,27 @@ export default {
       }
     })
   },
+  googleLogin(accessToken) {
+    return api.post('?resource=auth&action=google', JSON.stringify({ access_token: accessToken }), {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
+  },
+  requestPasswordReset(email) {
+    const formData = new FormData()
+    formData.append('email', email)
+    return api.post('?resource=auth&action=request-password-reset', formData)
+  },
+  resetPassword(token, newPassword) {
+    const formData = new FormData()
+    formData.append('token', token)
+    formData.append('password', newPassword)
+    return api.post('?resource=auth&action=reset-password', formData)
+  },
+  validateResetToken(token) {
+    return api.get(`?resource=auth&action=validate-reset-token&token=${encodeURIComponent(token)}`)
+  },
   register(userData) {
     return api.post('?resource=auth&action=register', JSON.stringify(userData), {
       headers: {
@@ -88,6 +110,13 @@ export default {
   },
   logout() {
     return api.post('?resource=auth&action=logout')
+  },
+  updatePassword(passwordData) {
+    return api.put('?resource=auth&action=update-password', JSON.stringify(passwordData), {
+      headers: {
+        'Content-Type': 'application/json'
+      }
+    })
   },
   getUser() {
     return api.get('?resource=auth&action=profile')
@@ -131,8 +160,15 @@ export default {
   updateNote(id, noteData) {
     // Convert JSON data to FormData to match backend expectations
     const formData = new FormData()
-    formData.append('title', noteData.title)
-    formData.append('text', noteData.text)
+    if (noteData.title !== undefined) {
+      formData.append('title', noteData.title)
+    }
+    if (noteData.text !== undefined) {
+      formData.append('text', noteData.text)
+    }
+    if (noteData.is_favorite !== undefined) {
+      formData.append('is_favorite', noteData.is_favorite ? '1' : '0')
+    }
     if (noteData.summary) {
       formData.append('summary', noteData.summary)
     }
@@ -166,12 +202,23 @@ export default {
     return api.get(`?resource=summaries&id=${id}`)
   },
   createSummary(noteId, options) {
-    return api.post('?resource=summaries', { note_id: noteId, ...options })
+    return api.post('?resource=summaries', { note_id: noteId, format: 'paragraph', ...options })
   },
 
   // Progress
   getProgressStats() {
     return api.get('?resource=progress&action=stats')
+  },
+  progress: {
+    startStudySession(sessionData) {
+      return api.post('?resource=progress&action=startStudySession', sessionData)
+    },
+    endStudySession(sessionData) {
+      return api.post('?resource=progress&action=endStudySession', sessionData)
+    },
+    getStats() {
+      return api.get('?resource=progress&action=stats')
+    }
   },
 
   // Dashboard

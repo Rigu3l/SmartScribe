@@ -3,8 +3,10 @@
 class Summary {
     private $conn;
     public $note_id;
+    public $user_id;
     public $content;
     public $length;
+    public $format;
 
     public function __construct($db) {
         $this->conn = $db;

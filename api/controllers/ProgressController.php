@@ -1,10 +1,9 @@
 <?php
+require_once __DIR__ . '/BaseController.php';
 
-class ProgressController {
-    private $db;
-
-    public function __construct($db) {
-        $this->db = $db;
+class ProgressController extends BaseController {
+    public function __construct() {
+        parent::__construct();
     }
 
     public function getStats() {
@@ -232,19 +231,149 @@ class ProgressController {
         return null;
     }
 
-    private function validateToken($token) {
-        if (!$token) return null;
+    public function startStudySession() {
+        $userId = $this->getUserIdFromHeader();
+
+        if (!$userId) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            return;
+        }
 
         try {
-            $stmt = $this->db->prepare("SELECT user_id FROM user_tokens WHERE token = ? AND expires_at > NOW()");
-            $stmt->execute([$token]);
-            $result = $stmt->fetch();
+            // Get JSON input
+            $input = json_decode(file_get_contents('php://input'), true);
+            $activities = $input['activities'] ?? [];
+            $startTime = $input['startTime'] ?? date('Y-m-d H:i:s');
 
-            return $result ? $result['user_id'] : null;
+            // Check if user already has an active session
+            $checkQuery = "SELECT id FROM study_sessions WHERE user_id = :user_id AND end_time IS NULL";
+            $stmt = $this->db->prepare($checkQuery);
+            $stmt->bindParam(':user_id', $userId);
+            $stmt->execute();
+
+            if ($stmt->fetch()) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'User already has an active study session']);
+                return;
+            }
+
+            // Create new study session
+            $insertQuery = "
+                INSERT INTO study_sessions
+                (user_id, session_date, start_time, activities, notes_studied, quizzes_taken, created_at)
+                VALUES (:user_id, :session_date, :start_time, :activities, 0, 0, NOW())
+            ";
+
+            $stmt = $this->db->prepare($insertQuery);
+            $stmt->bindParam(':user_id', $userId);
+            $stmt->bindParam(':session_date', date('Y-m-d', strtotime($startTime)));
+            $stmt->bindParam(':start_time', $startTime);
+            $stmt->bindParam(':activities', json_encode($activities));
+
+            if ($stmt->execute()) {
+                $sessionId = $this->db->lastInsertId();
+                echo json_encode([
+                    'success' => true,
+                    'session_id' => $sessionId,
+                    'start_time' => $startTime,
+                    'message' => 'Study session started successfully'
+                ]);
+            } else {
+                throw new Exception('Failed to create study session');
+            }
+
         } catch (Exception $e) {
-            error_log("Token validation error: " . $e->getMessage());
-            return null;
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Failed to start study session: ' . $e->getMessage()
+            ]);
         }
     }
+
+    public function endStudySession() {
+        $userId = $this->getUserIdFromHeader();
+
+        if (!$userId) {
+            http_response_code(401);
+            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+            return;
+        }
+
+        try {
+            // Get JSON input
+            $input = json_decode(file_get_contents('php://input'), true);
+            $sessionId = $input['session_id'] ?? null;
+
+            if (!$sessionId) {
+                http_response_code(400);
+                echo json_encode(['success' => false, 'error' => 'Session ID is required']);
+                return;
+            }
+
+            // Get the active session
+            $selectQuery = "
+                SELECT id, start_time, activities, notes_studied, quizzes_taken
+                FROM study_sessions
+                WHERE id = :session_id AND user_id = :user_id AND end_time IS NULL
+            ";
+            $stmt = $this->db->prepare($selectQuery);
+            $stmt->bindParam(':session_id', $sessionId);
+            $stmt->bindParam(':user_id', $userId);
+            $stmt->execute();
+
+            $session = $stmt->fetch();
+            if (!$session) {
+                http_response_code(404);
+                echo json_encode(['success' => false, 'error' => 'Active study session not found']);
+                return;
+            }
+
+            // Calculate duration
+            $startTime = new DateTime($session['start_time']);
+            $endTime = new DateTime();
+            $duration = $startTime->diff($endTime);
+            $durationMinutes = ($duration->days * 24 * 60) + ($duration->h * 60) + $duration->i;
+
+            // Update the session with end time and duration
+            $updateQuery = "
+                UPDATE study_sessions
+                SET end_time = :end_time,
+                    duration_minutes = :duration_minutes,
+                    notes_studied = :notes_studied,
+                    quizzes_taken = :quizzes_taken
+                WHERE id = :session_id AND user_id = :user_id
+            ";
+
+            $stmt = $this->db->prepare($updateQuery);
+            $stmt->bindParam(':end_time', $endTime->format('Y-m-d H:i:s'));
+            $stmt->bindParam(':duration_minutes', $durationMinutes);
+            $stmt->bindParam(':notes_studied', $session['notes_studied']);
+            $stmt->bindParam(':quizzes_taken', $session['quizzes_taken']);
+            $stmt->bindParam(':session_id', $sessionId);
+            $stmt->bindParam(':user_id', $userId);
+
+            if ($stmt->execute()) {
+                echo json_encode([
+                    'success' => true,
+                    'session_id' => $sessionId,
+                    'duration_minutes' => $durationMinutes,
+                    'end_time' => $endTime->format('Y-m-d H:i:s'),
+                    'message' => 'Study session ended successfully'
+                ]);
+            } else {
+                throw new Exception('Failed to end study session');
+            }
+
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode([
+                'success' => false,
+                'error' => 'Failed to end study session: ' . $e->getMessage()
+            ]);
+        }
+    }
+
 }
 ?>

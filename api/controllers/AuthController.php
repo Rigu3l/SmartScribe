@@ -1,215 +1,387 @@
 <?php
 // api/controllers/AuthController.php
-require_once __DIR__ . '/../config/database.php';
+require_once __DIR__ . '/BaseController.php';
+require_once __DIR__ . '/../services/EmailService.php';
+require_once __DIR__ . '/../../vendor/autoload.php'; // For Composer autoload
 
-class AuthController {
-    private $db;
+use Firebase\JWT\JWT;
+use Firebase\JWT\Key;
 
-    public function __construct() {
-        $this->db = getDbConnection();
-    }
+class AuthController extends BaseController {
 
     public function register() {
-        $data = json_decode(file_get_contents('php://input'), true);
+        try {
+            $data = json_decode(file_get_contents('php://input'), true);
 
-        // Validate input
-        if (!isset($data['first_name']) || !isset($data['last_name']) || !isset($data['email']) || !isset($data['password'])) {
-            http_response_code(400);
-            echo json_encode(['error' => 'Missing required fields']);
-            return;
-        }
-        
-        // Check if email already exists
-        $stmt = $this->db->prepare("SELECT id FROM users WHERE email = ?");
-        $stmt->execute([$data['email']]);
-        if ($stmt->fetch()) {
-            http_response_code(409);
-            echo json_encode(['error' => 'Email already exists']);
-            return;
-        }
-        
-        // Hash password
-        $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
-        
-        // Insert user
-        $stmt = $this->db->prepare("INSERT INTO users (first_name, last_name, name, email, password) VALUES (?, ?, ?, ?, ?)");
-        $stmt->execute([$data['first_name'], $data['last_name'], $data['name'], $data['email'], $hashedPassword]);
-        
-        // Generate token (simple implementation)
-        $userId = $this->db->lastInsertId();
-        $token = bin2hex(random_bytes(32));
-        
-        // In a real app, you would store this token in a tokens table
-        // For simplicity, we'll just return it
-        
-        http_response_code(201);
-        echo json_encode([
-            'message' => 'User registered successfully',
-            'user' => [
+            // Validate input
+            $validationErrors = $this->validateRequired($data, ['first_name', 'last_name', 'email', 'password']);
+            if (!empty($validationErrors)) {
+                $this->validationErrorResponse($validationErrors);
+                return;
+            }
+
+            // Validate email format
+            $emailError = $this->validateEmail($data['email']);
+            if ($emailError) {
+                $this->validationErrorResponse(['email' => $emailError]);
+                return;
+            }
+
+            // Validate password length
+            $passwordError = $this->validateLength($data['password'], 'password', 6);
+            if ($passwordError) {
+                $this->validationErrorResponse(['password' => $passwordError]);
+                return;
+            }
+
+            // Check if email already exists
+            $stmt = $this->db->prepare("SELECT id FROM users WHERE email = ?");
+            $stmt->execute([$data['email']]);
+            if ($stmt->fetch()) {
+                $this->errorResponse('Email already exists', 409);
+                return;
+            }
+
+            // Hash password
+            $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+
+            // Insert user
+            $stmt = $this->db->prepare("INSERT INTO users (first_name, last_name, name, email, password) VALUES (?, ?, ?, ?, ?)");
+            $stmt->execute([$data['first_name'], $data['last_name'], $data['name'], $data['email'], $hashedPassword]);
+
+            // Generate JWT token
+            $userId = $this->db->lastInsertId();
+            $token = $this->generateJWT([
                 'id' => $userId,
                 'name' => $data['name'],
-                'email' => $data['email']
-            ],
-            'token' => $token
-        ]);
+                'email' => $data['email'],
+                'google_id' => null
+            ]);
+
+            $this->successResponse([
+                'user' => [
+                    'id' => $userId,
+                    'name' => $data['name'],
+                    'email' => $data['email'],
+                    'google_id' => null
+                ],
+                'token' => $token
+            ], 'User registered successfully', 201);
+
+        } catch (Exception $e) {
+            $this->errorResponse('Registration failed: ' . $e->getMessage());
+        }
     }
 
     public function login() {
-        error_log("Login method called");
-        error_log("REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
-        error_log("CONTENT_TYPE: " . ($_SERVER['CONTENT_TYPE'] ?? 'not set'));
+        try {
+            // Get input data
+            $data = json_decode(file_get_contents('php://input'), true);
 
-        // Get raw input data
-        $rawInput = file_get_contents('php://input');
-        error_log("Login raw input: " . $rawInput);
-
-        $data = null;
-
-        // Check content type to determine how to parse
-        $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
-
-        if (strpos($contentType, 'application/json') !== false) {
-            // Handle JSON data
-            $data = json_decode($rawInput, true);
-            error_log("Login JSON decoded data: " . json_encode($data));
-
-            if ($data === null && !empty($rawInput)) {
-                error_log("JSON decode failed, trying alternative parsing");
-                // Try to parse as form data if JSON fails
-                parse_str($rawInput, $data);
-                error_log("Login form parsed data: " . json_encode($data));
+            // Validate input
+            $validationErrors = $this->validateRequired($data, ['email', 'password']);
+            if (!empty($validationErrors)) {
+                $this->validationErrorResponse($validationErrors);
+                return;
             }
-        } else {
-            // Handle form data
-            $data = $_POST;
-            error_log("Login POST data: " . json_encode($data));
 
-            // If no POST data, try parsing raw input as form data
-            if (empty($data) && !empty($rawInput)) {
-                parse_str($rawInput, $data);
-                error_log("Login raw input parsed as form data: " . json_encode($data));
+            // Validate email format
+            $emailError = $this->validateEmail($data['email']);
+            if ($emailError) {
+                $this->validationErrorResponse(['email' => $emailError]);
+                return;
             }
-        }
 
-        // Validate input
-        if (!$data || !isset($data['email']) || !isset($data['password'])) {
-            error_log("Login validation failed - missing email or password. Data: " . json_encode($data));
-            http_response_code(400);
-            echo json_encode(['error' => 'Missing email or password']);
-            return;
-        }
+            // Find user
+            $stmt = $this->db->prepare("SELECT id, name, email, password FROM users WHERE email = ?");
+            $stmt->execute([$data['email']]);
+            $user = $stmt->fetch();
 
-        error_log("Login validation successful - Email: " . $data['email']);
+            if (!$user || !password_verify($data['password'], $user['password'])) {
+                $this->unauthorizedResponse('Invalid credentials');
+                return;
+            }
 
-        // Find user
-        $stmt = $this->db->prepare("SELECT id, name, email, password FROM users WHERE email = ?");
-        $stmt->execute([$data['email']]);
-        $user = $stmt->fetch();
-
-        if (!$user || !password_verify($data['password'], $user['password'])) {
-            http_response_code(401);
-            echo json_encode(['error' => 'Invalid credentials']);
-            return;
-        }
-
-        // Generate token
-        $token = bin2hex(random_bytes(32));
-
-        // Store token in database (create tokens table if needed)
-        $this->storeToken($user['id'], $token);
-
-        echo json_encode([
-            'message' => 'Login successful',
-            'user' => [
+            // Generate JWT token
+            $token = $this->generateJWT([
                 'id' => $user['id'],
                 'name' => $user['name'],
-                'email' => $user['email']
-            ],
-            'token' => $token
-        ]);
+                'email' => $user['email'],
+                'google_id' => $user['google_id'] ?? null
+            ]);
+
+            $this->successResponse([
+                'user' => [
+                    'id' => $user['id'],
+                    'name' => $user['name'],
+                    'email' => $user['email'],
+                    'google_id' => $user['google_id'] ?? null
+                ],
+                'token' => $token
+            ], 'Login successful');
+
+        } catch (Exception $e) {
+            $this->errorResponse('Login failed: ' . $e->getMessage());
+        }
+    }
+
+    public function googleLogin() {
+        try {
+            $data = json_decode(file_get_contents('php://input'), true);
+
+            // DEBUG: Log the incoming request data
+            error_log("DEBUG: Google login request data: " . json_encode($data));
+
+            // Validate input
+            $validationErrors = $this->validateRequired($data, ['access_token']);
+            if (!empty($validationErrors)) {
+                error_log("DEBUG: Validation errors: " . json_encode($validationErrors));
+                $this->validationErrorResponse($validationErrors);
+                return;
+            }
+
+            // Verify Google access token
+            error_log("DEBUG: Starting Google access token verification");
+            $googleUser = $this->verifyGoogleAccessToken($data['access_token']);
+            if (!$googleUser) {
+                error_log("DEBUG: Google access token verification failed");
+                $this->unauthorizedResponse('Invalid Google access token');
+                return;
+            }
+
+            error_log("DEBUG: Google user data received: " . json_encode($googleUser));
+
+            // Check if user exists with this Google ID
+            $stmt = $this->db->prepare("SELECT id, name, email FROM users WHERE google_id = ?");
+            $stmt->execute([$googleUser['sub']]);
+            $user = $stmt->fetch();
+
+            if ($user) {
+                // Existing Google user - update profile if needed
+                $this->updateGoogleUserProfile($user['id'], $googleUser);
+                $userId = $user['id'];
+            } else {
+                // Check if email already exists (traditional signup)
+                $stmt = $this->db->prepare("SELECT id FROM users WHERE email = ?");
+                $stmt->execute([$googleUser['email']]);
+                $existingUser = $stmt->fetch();
+
+                if ($existingUser) {
+                    // Link Google account to existing user
+                    $this->linkGoogleAccount($existingUser['id'], $googleUser);
+                    $userId = $existingUser['id'];
+                } else {
+                    // Create new user from Google data
+                    $userId = $this->createGoogleUser($googleUser);
+                }
+            }
+
+            // Get updated user data
+            $stmt = $this->db->prepare("SELECT id, name, email, profile_picture, google_id FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $userData = $stmt->fetch();
+
+            // Generate JWT token
+            $token = $this->generateJWT([
+                'id' => $userData['id'],
+                'name' => $userData['name'],
+                'email' => $userData['email'],
+                'profile_picture' => $userData['profile_picture'],
+                'google_id' => $userData['google_id'] ?? null
+            ]);
+
+            $this->successResponse([
+                'user' => [
+                    'id' => $userData['id'],
+                    'name' => $userData['name'],
+                    'email' => $userData['email'],
+                    'profile_picture' => $userData['profile_picture'],
+                    'google_id' => $userData['google_id'] ?? null
+                ],
+                'token' => $token
+            ], 'Google login successful');
+
+        } catch (Exception $e) {
+            $this->errorResponse('Google login failed: ' . $e->getMessage());
+        }
     }
 
     public function logout() {
-        $headers = getallheaders();
+        try {
+            $headers = getallheaders();
 
-        // Get token from Authorization header
-        if (isset($headers['Authorization'])) {
-            $authHeader = $headers['Authorization'];
-            if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-                $token = $matches[1];
-                // Remove token from database
-                $stmt = $this->db->prepare("DELETE FROM user_tokens WHERE token = ?");
-                $stmt->execute([$token]);
+            // Get token from Authorization header
+            if (isset($headers['Authorization'])) {
+                $authHeader = $headers['Authorization'];
+                if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                    $token = $matches[1];
+                    // Remove token from database
+                    $stmt = $this->db->prepare("DELETE FROM user_tokens WHERE token = ?");
+                    $stmt->execute([$token]);
+                }
             }
-        }
 
-        echo json_encode(['message' => 'Logged out successfully']);
+            $this->successResponse(null, 'Logged out successfully');
+
+        } catch (Exception $e) {
+            $this->errorResponse('Logout failed: ' . $e->getMessage());
+        }
     }
 
     public function profile() {
-        // Get user ID from header
-        $userId = $this->getUserIdFromHeader();
+        try {
+            // Debug logging - check headers
+            $headers = getallheaders();
+            error_log("Profile request headers: " . json_encode($headers));
 
-        if (!$userId) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-            return;
-        }
+            // Authenticate user first
+            if (!$this->authenticateUser()) {
+                error_log("Profile authentication failed");
+                $this->unauthorizedResponse();
+                return;
+            }
 
-        $stmt = $this->db->prepare("SELECT id, first_name, last_name, name, email, profile_picture, created_at FROM users WHERE id = ?");
-        $stmt->execute([$userId]);
-        $user = $stmt->fetch();
+            // Get user ID from header
+            $userId = $this->getUserId();
+            error_log("Profile user ID: " . $userId);
 
-        if ($user) {
-            echo json_encode([
-                'success' => true,
-                'user' => [
-                    'id' => $user['id'],
-                    'first_name' => $user['first_name'] ?? '',
-                    'last_name' => $user['last_name'] ?? '',
-                    'name' => $user['name'] ?? trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')),
-                    'email' => $user['email'],
-                    'profile_picture' => $user['profile_picture'] ?? null,
-                    'created_at' => $user['created_at']
-                ]
-            ]);
-        } else {
-            http_response_code(404);
-            echo json_encode(['success' => false, 'error' => 'User not found']);
+            if (!$userId) {
+                error_log("Profile user ID is null/empty");
+                $this->unauthorizedResponse();
+                return;
+            }
+
+            // Debug logging
+            error_log("Profile request for user ID: " . $userId);
+
+            $stmt = $this->db->prepare("SELECT id, first_name, last_name, name, email, profile_picture, google_id, created_at FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch();
+
+            if ($user) {
+                error_log("User found: " . json_encode($user));
+                $this->successResponse([
+                    'user' => [
+                        'id' => $user['id'],
+                        'first_name' => $user['first_name'] ?? '',
+                        'last_name' => $user['last_name'] ?? '',
+                        'name' => $user['name'] ?? trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')),
+                        'email' => $user['email'],
+                        'profile_picture' => $user['profile_picture'] ?? null,
+                        'google_id' => $user['google_id'] ?? null,
+                        'created_at' => $user['created_at']
+                    ]
+                ]);
+            } else {
+                error_log("User not found for ID: " . $userId);
+                // Try to find user by email if ID doesn't work (for Supabase users)
+                $headers = getallheaders();
+                $email = null;
+
+                // Extract email from JWT token payload if available
+                if (isset($headers['Authorization'])) {
+                    $authHeader = $headers['Authorization'];
+                    if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
+                        $token = $matches[1];
+                        try {
+                            $payload = $this->decodeJWT($token);
+                            if (isset($payload['email'])) {
+                                $email = $payload['email'];
+                                error_log("Trying to find user by email: " . $email);
+                                $stmt = $this->db->prepare("SELECT id, first_name, last_name, name, email, profile_picture, google_id, created_at FROM users WHERE email = ?");
+                                $stmt->execute([$email]);
+                                $user = $stmt->fetch();
+                                if ($user) {
+                                    error_log("User found by email: " . json_encode($user));
+                                    $this->successResponse([
+                                        'user' => [
+                                            'id' => $user['id'],
+                                            'first_name' => $user['first_name'] ?? '',
+                                            'last_name' => $user['last_name'] ?? '',
+                                            'name' => $user['name'] ?? trim(($user['first_name'] ?? '') . ' ' . ($user['last_name'] ?? '')),
+                                            'email' => $user['email'],
+                                            'profile_picture' => $user['profile_picture'] ?? null,
+                                            'google_id' => $user['google_id'] ?? null,
+                                            'created_at' => $user['created_at']
+                                        ]
+                                    ]);
+                                    return;
+                                }
+                            }
+                        } catch (Exception $e) {
+                            error_log("Failed to decode JWT: " . $e->getMessage());
+                        }
+                    }
+                }
+
+                $this->notFoundResponse('User not found');
+            }
+
+        } catch (Exception $e) {
+            error_log("Profile error: " . $e->getMessage());
+            $this->errorResponse('Failed to retrieve profile: ' . $e->getMessage());
         }
     }
 
     public function updateProfile() {
-        // Get user ID from header
-        $userId = $this->getUserIdFromHeader();
-
-        if (!$userId) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-            return;
-        }
-
-        $data = json_decode(file_get_contents('php://input'), true);
-
-        if (!$data) {
-            http_response_code(400);
-            echo json_encode(['success' => false, 'error' => 'Invalid JSON data']);
-            return;
-        }
-
         try {
+            // Authenticate user first
+            if (!$this->authenticateUser()) {
+                $this->unauthorizedResponse();
+                return;
+            }
+
+            // Get user ID from header
+            $userId = $this->getUserId();
+
+            if (!$userId) {
+                $this->unauthorizedResponse();
+                return;
+            }
+
+            // Get input data - handle both JSON and form data
+            $data = null;
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+            if (strpos($contentType, 'application/json') !== false) {
+                // Handle JSON data
+                $rawInput = file_get_contents('php://input');
+                $data = json_decode($rawInput, true);
+
+                if ($data === null && !empty($rawInput)) {
+                    $this->badRequestResponse('Invalid JSON data');
+                    return;
+                }
+            } else {
+                // Handle form data
+                $data = $_POST;
+
+                // If no POST data, try parsing raw input as form data
+                if (empty($data)) {
+                    $rawInput = file_get_contents('php://input');
+                    if (!empty($rawInput)) {
+                        parse_str($rawInput, $data);
+                    }
+                }
+            }
+
+            if (!$data) {
+                $this->badRequestResponse('No data provided');
+                return;
+            }
+
             // Build update query dynamically
             $updateFields = [];
             $params = [];
 
             if (isset($data['first_name'])) {
                 $updateFields[] = "first_name = ?";
-                $params[] = $data['first_name'];
+                $params[] = $this->sanitizeInput($data['first_name']);
             }
 
             if (isset($data['last_name'])) {
                 $updateFields[] = "last_name = ?";
-                $params[] = $data['last_name'];
+                $params[] = $this->sanitizeInput($data['last_name']);
             }
 
             // Update the combined name field when first_name or last_name is updated
@@ -223,16 +395,22 @@ class AuthController {
 
             if (isset($data['name'])) {
                 $updateFields[] = "name = ?";
-                $params[] = $data['name'];
+                $params[] = $this->sanitizeInput($data['name']);
             }
 
             if (isset($data['email'])) {
+                // Validate email format
+                $emailError = $this->validateEmail($data['email']);
+                if ($emailError) {
+                    $this->validationErrorResponse(['email' => $emailError]);
+                    return;
+                }
+
                 // Check if email is already taken by another user
                 $stmt = $this->db->prepare("SELECT id FROM users WHERE email = ? AND id != ?");
                 $stmt->execute([$data['email'], $userId]);
                 if ($stmt->fetch()) {
-                    http_response_code(409);
-                    echo json_encode(['success' => false, 'error' => 'Email already taken']);
+                    $this->errorResponse('Email already taken', 409);
                     return;
                 }
                 $updateFields[] = "email = ?";
@@ -240,8 +418,7 @@ class AuthController {
             }
 
             if (empty($updateFields)) {
-                http_response_code(400);
-                echo json_encode(['success' => false, 'error' => 'No valid fields to update']);
+                $this->badRequestResponse('No valid fields to update');
                 return;
             }
 
@@ -250,29 +427,31 @@ class AuthController {
             $stmt = $this->db->prepare($query);
 
             if ($stmt->execute($params)) {
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Profile updated successfully'
-                ]);
+                $this->successResponse(null, 'Profile updated successfully');
             } else {
-                http_response_code(500);
-                echo json_encode(['success' => false, 'error' => 'Failed to update profile']);
+                $this->errorResponse('Failed to update profile');
             }
+
         } catch (Exception $e) {
-            http_response_code(500);
-            echo json_encode(['success' => false, 'error' => 'Failed to update profile: ' . $e->getMessage()]);
+            $this->errorResponse('Failed to update profile: ' . $e->getMessage());
         }
     }
 
     public function uploadProfilePicture() {
-        // Get user ID from header
-        $userId = $this->getUserIdFromHeader();
+        try {
+            // Authenticate user first
+            if (!$this->authenticateUser()) {
+                $this->unauthorizedResponse();
+                return;
+            }
 
-        if (!$userId) {
-            http_response_code(401);
-            echo json_encode(['success' => false, 'error' => 'Unauthorized']);
-            return;
-        }
+            // Get user ID from header
+            $userId = $this->getUserId();
+
+            if (!$userId) {
+                $this->unauthorizedResponse();
+                return;
+            }
 
         // Debug: Log file upload info
         error_log('Upload debug - FILES: ' . json_encode($_FILES));
@@ -399,13 +578,187 @@ class AuthController {
                 ]
             ]);
         }
+
+        } catch (Exception $e) {
+            $this->errorResponse('Failed to upload profile picture: ' . $e->getMessage());
+        }
+    }
+
+    public function google() {
+        try {
+            // Placeholder for initiating Google OAuth flow
+            // In a full implementation, this would redirect to Google's authorization URL
+            // For now, just return a message indicating the endpoint is ready
+            $this->successResponse(['message' => 'Google OAuth initiation endpoint - redirect to Google auth URL here']);
+        } catch (Exception $e) {
+            $this->errorResponse('Failed to initiate Google OAuth: ' . $e->getMessage());
+        }
+    }
+
+    public function googleCallback() {
+        try {
+            // Get the ID token from the request
+            $data = json_decode(file_get_contents('php://input'), true);
+            $idToken = $data['id_token'] ?? null;
+
+            if (!$idToken) {
+                $this->badRequestResponse('ID token is required');
+                return;
+            }
+
+            // Create Google Client
+            $client = new Google_Client(['client_id' => getenv('GOOGLE_CLIENT_ID')]); // Assuming env var is set
+
+            // Verify the ID token
+            $payload = $client->verifyIdToken($idToken);
+
+            if (!$payload) {
+                $this->unauthorizedResponse('Invalid ID token');
+                return;
+            }
+
+            // Extract user profile information
+            $profile = [
+                'google_id' => $payload['sub'],
+                'email' => $payload['email'] ?? null,
+                'email_verified' => $payload['email_verified'] ?? false,
+                'name' => $payload['name'] ?? null,
+                'given_name' => $payload['given_name'] ?? null,
+                'family_name' => $payload['family_name'] ?? null,
+                'picture' => $payload['picture'] ?? null,
+                'locale' => $payload['locale'] ?? null
+            ];
+
+            // Check if user exists by google_id or email
+            $stmt = $this->db->prepare("SELECT id, first_name, last_name, name, email, profile_picture FROM users WHERE google_id = ? OR email = ?");
+            $stmt->execute([$profile['google_id'], $profile['email']]);
+            $existingUser = $stmt->fetch();
+
+            if ($existingUser) {
+                // User exists, update with new information
+                $updateFields = [];
+                $params = [];
+
+                if ($profile['name'] !== null && $profile['name'] !== $existingUser['name']) {
+                    $updateFields[] = "name = ?";
+                    $params[] = $profile['name'];
+                }
+
+                if ($profile['given_name'] !== null && $profile['given_name'] !== $existingUser['first_name']) {
+                    $updateFields[] = "first_name = ?";
+                    $params[] = $profile['given_name'];
+                }
+
+                if ($profile['family_name'] !== null && $profile['family_name'] !== $existingUser['last_name']) {
+                    $updateFields[] = "last_name = ?";
+                    $params[] = $profile['family_name'];
+                }
+
+                if ($profile['email'] !== null && $profile['email'] !== $existingUser['email']) {
+                    $updateFields[] = "email = ?";
+                    $params[] = $profile['email'];
+                }
+
+                if ($profile['google_id'] !== null) {
+                    $updateFields[] = "google_id = ?";
+                    $params[] = $profile['google_id'];
+                }
+
+                if ($profile['picture'] !== null && $profile['picture'] !== $existingUser['profile_picture']) {
+                    $updateFields[] = "profile_picture = ?";
+                    $params[] = $profile['picture'];
+                }
+
+                if (!empty($updateFields)) {
+                    $params[] = $existingUser['id'];
+                    $query = "UPDATE users SET " . implode(', ', $updateFields) . " WHERE id = ?";
+                    $stmt = $this->db->prepare($query);
+                    $stmt->execute($params);
+                }
+
+                $userId = $existingUser['id'];
+                $message = 'User record updated successfully';
+
+            } else {
+                // User does not exist, create new user
+                $firstName = $profile['given_name'] ?? '';
+                $lastName = $profile['family_name'] ?? '';
+                $fullName = $profile['name'] ?? trim($firstName . ' ' . $lastName);
+
+                $stmt = $this->db->prepare("INSERT INTO users (first_name, last_name, name, email, google_id, profile_picture) VALUES (?, ?, ?, ?, ?, ?)");
+                $stmt->execute([
+                    $firstName,
+                    $lastName,
+                    $fullName,
+                    $profile['email'],
+                    $profile['google_id'],
+                    $profile['picture']
+                ]);
+
+                $userId = $this->db->lastInsertId();
+                $message = 'New user created successfully';
+            }
+
+            // Get the updated user data
+            $stmt = $this->db->prepare("SELECT id, first_name, last_name, name, email, profile_picture FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch();
+
+            // Generate JWT token
+            $jwtToken = $this->generateJWT($user);
+
+            $this->successResponse([
+                'user' => [
+                    'id' => $user['id'],
+                    'first_name' => $user['first_name'] ?? '',
+                    'last_name' => $user['last_name'] ?? '',
+                    'name' => $user['name'] ?? '',
+                    'email' => $user['email'],
+                    'profile_picture' => $user['profile_picture'] ?? null
+                ],
+                'token' => $jwtToken,
+                'message' => $message
+            ]);
+
+        } catch (Exception $e) {
+            $this->errorResponse('Failed to handle Google OAuth callback: ' . $e->getMessage());
+        }
+    }
+
+    private function generateJWT($user) {
+        try {
+            $secretKey = getenv('JWT_SECRET') ?: 'your_default_secret_key_here';
+            $issuedAt = time();
+            $expirationTime = $issuedAt + (24 * 60 * 60); // 24 hours
+
+            $payload = [
+                'iat' => $issuedAt,
+                'exp' => $expirationTime,
+                'user_id' => $user['id'],
+                'email' => $user['email'],
+                'name' => $user['name']
+            ];
+
+            return JWT::encode($payload, $secretKey, 'HS256');
+        } catch (Exception $e) {
+            $this->debugLog("JWT generation error: " . $e->getMessage());
+            return null;
+        }
+    }
+
+    private function decodeJWT($token) {
+        try {
+            $secretKey = getenv('JWT_SECRET') ?: 'your_default_secret_key_here';
+            $payload = JWT::decode($token, new Key($secretKey, 'HS256'));
+            return (array) $payload;
+        } catch (Exception $e) {
+            $this->debugLog("JWT decode error: " . $e->getMessage());
+            return null;
+        }
     }
 
     private function storeToken($userId, $token) {
         try {
-            // Create tokens table if it doesn't exist
-            $this->createTokensTable();
-
             // Remove any existing tokens for this user
             $stmt = $this->db->prepare("DELETE FROM user_tokens WHERE user_id = ?");
             $stmt->execute([$userId]);
@@ -415,11 +768,11 @@ class AuthController {
             $stmt->execute([$userId, $token]);
 
         } catch (Exception $e) {
-            error_log("Token storage error: " . $e->getMessage());
+            $this->debugLog("Token storage error: " . $e->getMessage());
         }
     }
 
-    private function validateToken($token) {
+    protected function validateToken($token) {
         if (!$token) return null;
 
         try {
@@ -434,51 +787,427 @@ class AuthController {
         }
     }
 
-    private function createTokensTable() {
+    private function verifyGoogleToken($idToken) {
         try {
-            $this->db->exec("
-                CREATE TABLE IF NOT EXISTS user_tokens (
-                    id INT AUTO_INCREMENT PRIMARY KEY,
-                    user_id INT NOT NULL,
-                    token VARCHAR(64) NOT NULL UNIQUE,
-                    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                    expires_at TIMESTAMP NOT NULL,
-                    FOREIGN KEY (user_id) REFERENCES users(id) ON DELETE CASCADE
-                )
-            ");
+            // Get Google client ID from environment
+            $clientId = getenv('GOOGLE_OAUTH_CLIENT_ID');
+            error_log("DEBUG: GOOGLE_OAUTH_CLIENT_ID = '" . $clientId . "' (length: " . strlen($clientId) . ")");
+            if (!$clientId) {
+                error_log("Google OAuth client ID not configured");
+                return false;
+            }
+
+            if ($clientId === 'your_production_google_oauth_client_id') {
+                error_log("ERROR: Google OAuth client ID is still set to placeholder value");
+                return false;
+            }
+
+            // Verify token with Google's servers
+            $url = 'https://oauth2.googleapis.com/tokeninfo?id_token=' . urlencode($idToken);
+            $response = file_get_contents($url);
+
+            if (!$response) {
+                error_log("Failed to verify Google token");
+                return false;
+            }
+
+            $tokenData = json_decode($response, true);
+
+            // Validate token
+            if (!isset($tokenData['sub']) || $tokenData['aud'] !== $clientId) {
+                error_log("Invalid Google token data");
+                return false;
+            }
+
+            return $tokenData;
+
         } catch (Exception $e) {
-            error_log("Create tokens table error: " . $e->getMessage());
+            error_log("Google token verification error: " . $e->getMessage());
+            return false;
         }
     }
 
-    private function getUserIdFromHeader() {
-        $headers = getallheaders();
-
-        // First try to validate token from Authorization header (case-insensitive)
-        $authHeader = null;
-        foreach ($headers as $key => $value) {
-            if (strtolower($key) === 'authorization') {
-                $authHeader = $value;
-                break;
+    private function verifyGoogleAccessToken($accessToken) {
+        try {
+            // Get Google client ID from environment
+            $clientId = getenv('GOOGLE_OAUTH_CLIENT_ID');
+            error_log("DEBUG: GOOGLE_OAUTH_CLIENT_ID = " . $clientId);
+            if (!$clientId) {
+                error_log("Google OAuth client ID not configured");
+                return false;
             }
-        }
 
-        if ($authHeader) {
-            if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-                $token = $matches[1];
-                $userId = $this->validateToken($token);
-                if ($userId) {
-                    return $userId;
+            if ($clientId === 'your_production_google_oauth_client_id') {
+                error_log("ERROR: Google OAuth client ID is still set to placeholder value");
+                return false;
+            }
+
+            // DEBUG: Log the access token (first 20 chars for security)
+            error_log("DEBUG: Verifying access token: " . substr($accessToken, 0, 20) . "...");
+
+            // Use the access token to get user info from Google's userinfo endpoint
+            $url = 'https://www.googleapis.com/oauth2/v2/userinfo';
+            $context = stream_context_create([
+                'http' => [
+                    'method' => 'GET',
+                    'header' => 'Authorization: Bearer ' . $accessToken
+                ]
+            ]);
+
+            $response = file_get_contents($url, false, $context);
+
+            if (!$response) {
+                error_log("Failed to get user info from Google - no response");
+                return false;
+            }
+
+            $userData = json_decode($response, true);
+
+            if (!$userData || !isset($userData['id'])) {
+                error_log("Invalid user data from Google: " . json_encode($userData));
+                return false;
+            }
+
+            // Transform to match expected format
+            return [
+                'sub' => $userData['id'],
+                'email' => $userData['email'] ?? null,
+                'email_verified' => $userData['verified_email'] ?? false,
+                'name' => $userData['name'] ?? null,
+                'given_name' => $userData['given_name'] ?? null,
+                'family_name' => $userData['family_name'] ?? null,
+                'picture' => $userData['picture'] ?? null,
+                'locale' => $userData['locale'] ?? null
+            ];
+
+        } catch (Exception $e) {
+            error_log("Google access token verification error: " . $e->getMessage());
+            return false;
+        }
+    }
+
+    private function createGoogleUser($googleUser) {
+        try {
+            // Generate a unique name from Google data
+            $firstName = $googleUser['given_name'] ?? '';
+            $lastName = $googleUser['family_name'] ?? '';
+            $fullName = trim($firstName . ' ' . $lastName);
+
+            if (empty($fullName)) {
+                $fullName = $googleUser['name'] ?? 'Google User';
+            }
+
+            // Insert new user
+            $stmt = $this->db->prepare("INSERT INTO users (first_name, last_name, name, email, google_id, auth_provider, profile_picture_url, created_at) VALUES (?, ?, ?, ?, ?, 'google', ?, NOW())");
+
+            $stmt->execute([
+                $firstName,
+                $lastName,
+                $fullName,
+                $googleUser['email'],
+                $googleUser['sub'],
+                $googleUser['picture'] ?? null
+            ]);
+
+            return $this->db->lastInsertId();
+
+        } catch (Exception $e) {
+            error_log("Create Google user error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    private function updateGoogleUserProfile($userId, $googleUser) {
+        try {
+            // Update user profile with latest Google data
+            $stmt = $this->db->prepare("UPDATE users SET name = ?, profile_picture_url = ? WHERE id = ?");
+
+            $fullName = $googleUser['name'] ?? 'Google User';
+            $stmt->execute([$fullName, $googleUser['picture'] ?? null, $userId]);
+
+        } catch (Exception $e) {
+            error_log("Update Google user profile error: " . $e->getMessage());
+        }
+    }
+
+    private function linkGoogleAccount($userId, $googleUser) {
+        try {
+            // Link Google account to existing user
+            $stmt = $this->db->prepare("UPDATE users SET google_id = ?, auth_provider = 'google', profile_picture_url = ? WHERE id = ?");
+            $stmt->execute([$googleUser['sub'], $googleUser['picture'] ?? null, $userId]);
+
+        } catch (Exception $e) {
+            error_log("Link Google account error: " . $e->getMessage());
+            throw $e;
+        }
+    }
+
+    public function requestPasswordReset() {
+        try {
+            // Get input data - handle both JSON and form data
+            $data = null;
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+            if (strpos($contentType, 'application/json') !== false) {
+                // Handle JSON data
+                $rawInput = file_get_contents('php://input');
+                $data = json_decode($rawInput, true);
+
+                if ($data === null && !empty($rawInput)) {
+                    $this->badRequestResponse('Invalid JSON data');
+                    return;
+                }
+            } else {
+                // Handle form data
+                $data = $_POST;
+
+                // If no POST data, try parsing raw input as form data
+                if (empty($data)) {
+                    $rawInput = file_get_contents('php://input');
+                    if (!empty($rawInput)) {
+                        parse_str($rawInput, $data);
+                    }
                 }
             }
-        }
 
-        // Fallback to X-User-ID header (for backward compatibility)
-        if (isset($headers['X-User-ID']) || isset($headers['x-user-id'])) {
-            $userIdHeader = $headers['X-User-ID'] ?? $headers['x-user-id'];
-            return intval($userIdHeader);
-        }
+            if (!$data) {
+                $this->badRequestResponse('No data provided');
+                return;
+            }
 
-        return null;
+            // Validate input
+            $validationErrors = $this->validateRequired($data, ['email']);
+            if (!empty($validationErrors)) {
+                $this->validationErrorResponse($validationErrors);
+                return;
+            }
+
+            // Validate email format
+            $emailError = $this->validateEmail($data['email']);
+            if ($emailError) {
+                $this->validationErrorResponse(['email' => $emailError]);
+                return;
+            }
+
+            // Check if user exists
+            $stmt = $this->db->prepare("SELECT id, name FROM users WHERE email = ?");
+            $stmt->execute([$data['email']]);
+            $user = $stmt->fetch();
+
+            if (!$user) {
+                // Don't reveal if email exists or not for security
+                $this->successResponse(null, 'If an account with that email exists, a password reset link has been sent.');
+                return;
+            }
+
+            // Generate reset token
+            $resetToken = bin2hex(random_bytes(32));
+            $expiresAt = gmdate('Y-m-d H:i:s', strtotime('+1 hour'));
+
+            // Save reset token
+            $stmt = $this->db->prepare("INSERT INTO password_reset_tokens (user_id, token, email, expires_at) VALUES (?, ?, ?, ?)");
+            $stmt->execute([$user['id'], $resetToken, $data['email'], $expiresAt]);
+
+            // Send reset email
+            $resetLink = "http://localhost:8080/reset-password?token=" . $resetToken;
+
+            $emailService = new EmailService();
+            $emailResult = $emailService->sendPasswordResetEmail($data['email'], $resetLink, $user['name']);
+
+            if ($emailResult['success']) {
+                $this->successResponse([
+                    'reset_link' => $resetLink,
+                    'reset_token' => $resetToken,
+                    'message' => 'Password reset email sent successfully.'
+                ], 'Password reset link has been sent to your email.');
+            } else {
+                // Email failed, but token was created - return link for manual use
+                $this->successResponse([
+                    'reset_link' => $resetLink,
+                    'reset_token' => $resetToken,
+                    'email_error' => $emailResult['message'],
+                    'message' => 'Password reset link generated. Email sending failed, but you can use the link manually.'
+                ], 'Password reset link has been generated. Check your email or use the provided link.');
+            }
+
+        } catch (Exception $e) {
+            $this->errorResponse('Failed to request password reset: ' . $e->getMessage());
+        }
     }
+
+    public function resetPassword() {
+        try {
+            // Get input data - handle both JSON and form data
+            $data = null;
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+
+            if (strpos($contentType, 'application/json') !== false) {
+                // Handle JSON data
+                $rawInput = file_get_contents('php://input');
+                $data = json_decode($rawInput, true);
+
+                if ($data === null && !empty($rawInput)) {
+                    $this->badRequestResponse('Invalid JSON data');
+                    return;
+                }
+            } else {
+                // Handle form data
+                $data = $_POST;
+
+                // If no POST data, try parsing raw input as form data
+                if (empty($data)) {
+                    $rawInput = file_get_contents('php://input');
+                    if (!empty($rawInput)) {
+                        parse_str($rawInput, $data);
+                    }
+                }
+            }
+
+            if (!$data) {
+                $this->badRequestResponse('No data provided');
+                return;
+            }
+
+            // Validate input
+            $validationErrors = $this->validateRequired($data, ['token', 'password']);
+            if (!empty($validationErrors)) {
+                $this->validationErrorResponse($validationErrors);
+                return;
+            }
+
+            // Validate password length
+            $passwordError = $this->validateLength($data['password'], 'password', 6);
+            if ($passwordError) {
+                $this->validationErrorResponse(['password' => $passwordError]);
+                return;
+            }
+
+            // Find valid reset token
+            $stmt = $this->db->prepare("SELECT user_id, email FROM password_reset_tokens WHERE token = ? AND expires_at > UTC_TIMESTAMP() AND used = 0");
+            $stmt->execute([$data['token']]);
+            $resetToken = $stmt->fetch();
+
+            if (!$resetToken) {
+                $this->errorResponse('Invalid or expired reset token', 400);
+                return;
+            }
+
+            // Hash new password
+            $hashedPassword = password_hash($data['password'], PASSWORD_DEFAULT);
+
+            // Update user password
+            $stmt = $this->db->prepare("UPDATE users SET password = ? WHERE id = ?");
+            $stmt->execute([$hashedPassword, $resetToken['user_id']]);
+
+            // Mark token as used
+            $stmt = $this->db->prepare("UPDATE password_reset_tokens SET used = 1 WHERE token = ?");
+            $stmt->execute([$data['token']]);
+
+            // Clean up expired tokens
+            $stmt = $this->db->prepare("DELETE FROM password_reset_tokens WHERE expires_at < UTC_TIMESTAMP()");
+            $stmt->execute();
+
+            $this->successResponse(null, 'Password has been reset successfully. You can now log in with your new password.');
+
+        } catch (Exception $e) {
+            $this->errorResponse('Failed to reset password: ' . $e->getMessage());
+        }
+    }
+
+    public function updatePassword() {
+        try {
+            // Authenticate user first
+            if (!$this->authenticateUser()) {
+                $this->unauthorizedResponse();
+                return;
+            }
+
+            // Get user ID from header
+            $userId = $this->getUserId();
+
+            if (!$userId) {
+                $this->unauthorizedResponse();
+                return;
+            }
+
+            // Get input data
+            $data = json_decode(file_get_contents('php://input'), true);
+
+            // Validate input
+            $validationErrors = $this->validateRequired($data, ['current_password', 'new_password']);
+            if (!empty($validationErrors)) {
+                $this->validationErrorResponse($validationErrors);
+                return;
+            }
+
+            // Validate new password length
+            $passwordError = $this->validateLength($data['new_password'], 'new_password', 6);
+            if ($passwordError) {
+                $this->validationErrorResponse(['new_password' => $passwordError]);
+                return;
+            }
+
+            // Get current user data
+            $stmt = $this->db->prepare("SELECT password FROM users WHERE id = ?");
+            $stmt->execute([$userId]);
+            $user = $stmt->fetch();
+
+            if (!$user) {
+                $this->notFoundResponse('User not found');
+                return;
+            }
+
+            // Verify current password
+            if (!password_verify($data['current_password'], $user['password'])) {
+                $this->errorResponse('Current password is incorrect', 400);
+                return;
+            }
+
+            // Hash new password
+            $hashedPassword = password_hash($data['new_password'], PASSWORD_DEFAULT);
+
+            // Update password
+            $stmt = $this->db->prepare("UPDATE users SET password = ? WHERE id = ?");
+            $result = $stmt->execute([$hashedPassword, $userId]);
+
+            if ($result) {
+                $this->successResponse(null, 'Password updated successfully');
+            } else {
+                $this->errorResponse('Failed to update password');
+            }
+
+        } catch (Exception $e) {
+            $this->errorResponse('Failed to update password: ' . $e->getMessage());
+        }
+    }
+
+    public function validateResetToken() {
+        try {
+            $token = $_GET['token'] ?? '';
+
+            if (empty($token)) {
+                $this->errorResponse('Reset token is required', 400);
+                return;
+            }
+
+            // Check if token is valid and not expired (use UTC to avoid timezone issues)
+            $stmt = $this->db->prepare("SELECT email FROM password_reset_tokens WHERE token = ? AND expires_at > UTC_TIMESTAMP() AND used = 0");
+            $stmt->execute([$token]);
+            $resetToken = $stmt->fetch();
+
+            if (!$resetToken) {
+                $this->errorResponse('Invalid or expired reset token', 400);
+                return;
+            }
+
+            $this->successResponse([
+                'email' => $resetToken['email'],
+                'valid' => true
+            ], 'Reset token is valid');
+
+        } catch (Exception $e) {
+            $this->errorResponse('Failed to validate reset token: ' . $e->getMessage());
+        }
+    }
+
 }

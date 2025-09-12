@@ -1,20 +1,24 @@
 <?php
+require_once __DIR__ . '/BaseController.php';
 
-class DashboardController {
-    private $db;
-
-    public function __construct($db) {
-        $this->db = $db;
+class DashboardController extends BaseController {
+    public function __construct() {
+        parent::__construct();
     }
 
     public function getStats() {
         try {
+            // Authenticate user first
+            if (!$this->authenticateUser()) {
+                $this->unauthorizedResponse();
+                return;
+            }
+
             // Get user ID from header
-            $userId = $this->getUserIdFromHeader();
+            $userId = $this->getUserId();
 
             if (!$userId) {
-                http_response_code(401);
-                echo json_encode(['success' => false, 'error' => 'Unauthorized']);
+                $this->unauthorizedResponse();
                 return;
             }
 
@@ -54,26 +58,100 @@ class DashboardController {
             $totalQuizzes = $quizData['total_quizzes'] ?? 0;
             $averageScore = $quizData['average_score'] ? round($quizData['average_score'], 1) : 0;
 
-            // Estimate study time based on note creation patterns
-            // This is a simple estimation - in a real app you'd track actual study sessions
-            $studyTimeQuery = "
-                SELECT
-                    COUNT(*) as notes_today,
-                    TIMESTAMPDIFF(MINUTE, MIN(created_at), MAX(created_at)) as time_span_minutes
-                FROM notes
+            // Get real study time from study_sessions table
+            $totalStudyTimeQuery = "
+                SELECT SUM(duration_minutes) as total_minutes
+                FROM study_sessions
                 WHERE user_id = :user_id
-                AND DATE(created_at) = CURDATE()
             ";
-            $stmt = $this->db->prepare($studyTimeQuery);
+            $stmt = $this->db->prepare($totalStudyTimeQuery);
             $stmt->bindParam(':user_id', $userId);
             $stmt->execute();
-            $studyData = $stmt->fetch() ?: ['notes_today' => 0, 'time_span_minutes' => 0];
+            $totalStudyData = $stmt->fetch() ?: ['total_minutes' => 0];
+            $totalStudyMinutes = $totalStudyData['total_minutes'] ?? 0;
+            $totalStudyHours = round($totalStudyMinutes / 60, 1);
 
-            // Estimate study hours (simple calculation)
-            $estimatedHours = 0;
-            if ($studyData['notes_today'] > 0) {
-                // Assume 15 minutes per note on average
-                $estimatedHours = round(($studyData['notes_today'] * 15) / 60, 1);
+            // Get study time for this week
+            $weekAgo = date('Y-m-d', strtotime('-7 days'));
+            $weeklyStudyTimeQuery = "
+                SELECT SUM(duration_minutes) as weekly_minutes
+                FROM study_sessions
+                WHERE user_id = :user_id AND session_date >= :week_ago
+            ";
+            $stmt = $this->db->prepare($weeklyStudyTimeQuery);
+            $stmt->bindParam(':user_id', $userId);
+            $stmt->bindParam(':week_ago', $weekAgo);
+            $stmt->execute();
+            $weeklyStudyData = $stmt->fetch() ?: ['weekly_minutes' => 0];
+            $weeklyStudyMinutes = $weeklyStudyData['weekly_minutes'] ?? 0;
+            $weeklyStudyHours = round($weeklyStudyMinutes / 60, 1);
+
+            // Get additional study session statistics
+            $studySessionStatsQuery = "
+                SELECT
+                    COUNT(*) as total_sessions,
+                    AVG(duration_minutes) as avg_session_duration,
+                    MAX(duration_minutes) as longest_session,
+                    SUM(notes_studied) as total_notes_studied,
+                    SUM(quizzes_taken) as total_quizzes_taken
+                FROM study_sessions
+                WHERE user_id = :user_id
+            ";
+            $stmt = $this->db->prepare($studySessionStatsQuery);
+            $stmt->bindParam(':user_id', $userId);
+            $stmt->execute();
+            $sessionStats = $stmt->fetch() ?: [
+                'total_sessions' => 0,
+                'avg_session_duration' => 0,
+                'longest_session' => 0,
+                'total_notes_studied' => 0,
+                'total_quizzes_taken' => 0
+            ];
+
+            // Calculate study streak (consecutive days with study sessions)
+            $streakQuery = "
+                SELECT session_date
+                FROM study_sessions
+                WHERE user_id = :user_id
+                ORDER BY session_date DESC
+            ";
+            $stmt = $this->db->prepare($streakQuery);
+            $stmt->bindParam(':user_id', $userId);
+            $stmt->execute();
+            $sessionDates = $stmt->fetchAll(PDO::FETCH_COLUMN);
+
+            $studyStreak = 0;
+            if (!empty($sessionDates)) {
+                $today = date('Y-m-d');
+                $yesterday = date('Y-m-d', strtotime('-1 day'));
+                $currentStreak = 0;
+                $lastDate = null;
+
+                foreach ($sessionDates as $date) {
+                    $dateOnly = date('Y-m-d', strtotime($date));
+
+                    if ($lastDate === null) {
+                        // First date in the list
+                        $currentStreak = 1;
+                        $lastDate = $dateOnly;
+                    } elseif ($dateOnly === date('Y-m-d', strtotime($lastDate . ' -1 day'))) {
+                        // Consecutive day
+                        $currentStreak++;
+                        $lastDate = $dateOnly;
+                    } elseif ($dateOnly !== $lastDate) {
+                        // Gap in dates, streak broken
+                        break;
+                    }
+                }
+
+                // Check if today or yesterday has a session to continue the streak
+                $mostRecentDate = $sessionDates[0] ? date('Y-m-d', strtotime($sessionDates[0])) : null;
+
+                if ($mostRecentDate === $today || $mostRecentDate === $yesterday) {
+                    $studyStreak = $currentStreak;
+                } else {
+                    $studyStreak = 0; // Streak broken
+                }
             }
 
             // Get recent activity (last 5 notes)
@@ -116,24 +194,25 @@ class DashboardController {
             $stats = [
                 'totalNotes' => (int)$totalNotes,
                 'notesThisWeek' => (int)$notesThisWeek,
-                'studyHours' => (float)$estimatedHours,
-                'studyHoursThisWeek' => (float)$estimatedHours, // Simplified for now
+                'studyHours' => (float)$totalStudyHours,
+                'studyHoursThisWeek' => (float)$weeklyStudyHours,
                 'quizAverage' => (float)$averageScore,
                 'quizzesCompleted' => (int)$totalQuizzes,
+                'activeGoals' => 0, // Placeholder for now
+                'completedGoals' => 0, // Placeholder for now
+                'studyStreak' => (int)$studyStreak,
+                'avgSessionDuration' => round($sessionStats['avg_session_duration'] ?? 0, 1),
+                'longestSession' => (int)$sessionStats['longest_session'],
+                'totalNotesStudied' => (int)$sessionStats['total_notes_studied'],
+                'totalQuizzesTaken' => (int)$sessionStats['total_quizzes_taken'],
                 'recentActivity' => $recentActivity,
                 'lastUpdated' => date('Y-m-d H:i:s')
             ];
 
-            echo json_encode([
-                'success' => true,
-                'data' => $stats
-            ]);
+            $this->successResponse($stats);
 
         } catch (Exception $e) {
-            echo json_encode([
-                'success' => false,
-                'error' => 'Failed to fetch dashboard statistics: ' . $e->getMessage()
-            ]);
+            $this->errorResponse('Failed to fetch dashboard statistics: ' . $e->getMessage());
         }
     }
 
@@ -153,50 +232,5 @@ class DashboardController {
         }
     }
 
-    private function getUserIdFromHeader() {
-        $headers = getallheaders();
-
-        // First try to validate token from Authorization header (case-insensitive)
-        $authHeader = null;
-        foreach ($headers as $key => $value) {
-            if (strtolower($key) === 'authorization') {
-                $authHeader = $value;
-                break;
-            }
-        }
-
-        if ($authHeader) {
-            if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-                $token = $matches[1];
-                $userId = $this->validateToken($token);
-                if ($userId) {
-                    return $userId;
-                }
-            }
-        }
-
-        // Fallback to X-User-ID header (for backward compatibility)
-        if (isset($headers['X-User-ID']) || isset($headers['x-user-id'])) {
-            $userIdHeader = $headers['X-User-ID'] ?? $headers['x-user-id'];
-            return intval($userIdHeader);
-        }
-
-        return null;
-    }
-
-    private function validateToken($token) {
-        if (!$token) return null;
-
-        try {
-            $stmt = $this->db->prepare("SELECT user_id FROM user_tokens WHERE token = ? AND expires_at > NOW()");
-            $stmt->execute([$token]);
-            $result = $stmt->fetch();
-
-            return $result ? $result['user_id'] : null;
-        } catch (Exception $e) {
-            error_log("Token validation error: " . $e->getMessage());
-            return null;
-        }
-    }
 }
 ?>

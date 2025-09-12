@@ -1,46 +1,30 @@
-const { defineConfig } = require('@vue/cli-service')
-const webpack = require('webpack')
+const webpack = require('webpack');
 
-module.exports = defineConfig({
-  transpileDependencies: true,
+module.exports = {
   devServer: {
     proxy: {
       '/api': {
-        target: 'http://localhost',
+        target: 'http://localhost/',
         changeOrigin: true,
-        pathRewrite: {
-          '^/api': '/SmartScribe-main/public'
+        secure: false,
+        logLevel: 'debug',
+        pathRewrite: (path, req) => {
+          // Preserve query parameters when rewriting the path
+          const queryString = req.url.split('?')[1];
+          const newPath = '/SmartScribe-main/public/index.php';
+          return queryString ? `${newPath}?${queryString}` : newPath;
         },
-        onProxyReq: (proxyReq, req) => {
-          // Forward Authorization header
-          if (req.headers.authorization) {
-            proxyReq.setHeader('Authorization', req.headers.authorization);
-          }
-          // Forward other headers
-          if (req.headers['x-user-id']) {
-            proxyReq.setHeader('X-User-ID', req.headers['x-user-id']);
-          }
+        onProxyReq: (proxyReq, req, res) => {
+          console.log('🚀 PROXY:', req.method, req.url, '->', proxyReq.getHeader('host') + proxyReq.path);
         }
       }
-    },
-    headers: {
-      'Cache-Control': 'no-cache, no-store, must-revalidate',
-      'Pragma': 'no-cache',
-      'Expires': '0'
     }
   },
   configureWebpack: {
     plugins: [
       new webpack.DefinePlugin({
-        __VUE_OPTIONS_API__: JSON.stringify(true),
-        __VUE_PROD_DEVTOOLS__: JSON.stringify(false),
-        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
-        // Additional Vue 3 feature flags
-        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false),
-        __VUE_I18N_FULL_INSTALL__: JSON.stringify(false),
-        __VUE_I18N_LEGACY_API__: JSON.stringify(false),
-        __VUE_ROUTER_PROD_DEVTOOLS__: JSON.stringify(false)
+        __VUE_PROD_HYDRATION_MISMATCH_DETAILS__: JSON.stringify(false)
       })
     ]
   }
-})
+}

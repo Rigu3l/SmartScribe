@@ -3,6 +3,8 @@ import HomeView from '../views/HomeView.vue'
 import LoginView from '../views/LoginView.vue'
 import DashboardView from '../views/DashboardView.vue'
 import SignupView from '../views/SignupView.vue'
+import ForgotPasswordView from '../views/ForgotPasswordView.vue'
+import ResetPasswordView from '../views/ResetPasswordView.vue'
 import NotesView from '../views/NotesView.vue'
 import ProgressView from '../views/ProgressView.vue'
 import SettingsView from '../views/SettingsView.vue'
@@ -28,6 +30,16 @@ const routes = [
     path: '/signup',
     name: 'signup',
     component: SignupView
+  },
+  {
+    path: '/forgot-password',
+    name: 'forgot-password',
+    component: ForgotPasswordView
+  },
+  {
+    path: '/reset-password',
+    name: 'reset-password',
+    component: ResetPasswordView
   },
   {
     path: '/dashboard',

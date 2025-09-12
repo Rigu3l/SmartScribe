@@ -31,6 +31,14 @@
           <p class="text-gray-400 text-sm sm:text-base">Sign in to your SmartScribe account</p>
         </div>
 
+        <!-- Error Message -->
+        <div v-if="errorMessage" class="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-6">
+          <div class="flex items-center">
+            <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="mr-2" />
+            <span>{{ errorMessage }}</span>
+          </div>
+        </div>
+
         <!-- Login Form -->
         <form @submit.prevent="handleLogin" class="space-y-6">
           <!-- Email Field -->
@@ -80,6 +88,13 @@
             </div>
           </div>
 
+          <!-- Forgot Password Link -->
+          <div class="flex justify-end">
+            <router-link to="/forgot-password" class="text-sm text-blue-400 hover:text-blue-300 hover:underline transition-colors">
+              Forgot your password?
+            </router-link>
+          </div>
+
           <!-- Sign In Button -->
           <button
             type="submit"
@@ -109,10 +124,18 @@
 
         <!-- Social Login Buttons -->
         <div class="grid grid-cols-3 gap-3 mb-8">
-          <button class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200">
+          <button
+            @click="handleGoogleLogin"
+            class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200"
+            :disabled="isLoading"
+          >
             <font-awesome-icon :icon="['fab', 'google']" class="text-red-400 text-lg" />
           </button>
-          <button class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200">
+          <button
+            @click="handleFacebookLogin"
+            class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200"
+            :disabled="isLoading"
+          >
             <font-awesome-icon :icon="['fab', 'facebook-f']" class="text-blue-400 text-lg" />
           </button>
           <button class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200">
@@ -150,13 +173,14 @@
 import logo from '@/assets/image/logo.jpg'
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '@/services/api';
+import { useStore } from 'vuex';
 
 export default {
   name: 'LoginView',
   setup() {
     const router = useRouter();
-    
+    const store = useStore();
+
     const email = ref('');
     const password = ref('');
     const isLoading = ref(false);
@@ -169,28 +193,109 @@ export default {
         isLoading.value = true;
         errorMessage.value = '';
 
-        // Use the centralized API service
-        const response = await api.login({
+        console.log('🔐 LoginView handleLogin called with:', {
+          email: email.value,
+          passwordLength: password.value ? password.value.length : 0,
+          emailValid: /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.value),
+          hasCredentials: !!(email.value && password.value)
+        });
+
+        // Use Vuex store for authentication
+        await store.dispatch('auth/login', {
           email: email.value,
           password: password.value
         });
 
-        if (response.data && response.data.user) {
-          // Store user data in localStorage
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-          localStorage.setItem("token", response.data.token || '');
+        console.log('🔐 Login successful - Redirecting to dashboard');
 
-          console.log('🔐 Login successful - Token stored:', response.data.token);
-          console.log('👤 User data stored:', response.data.user);
-
-          router.push('/dashboard');
-        } else {
-          throw new Error('Invalid response from server');
-        }
+        // Redirect to dashboard on successful login
+        router.push('/dashboard');
 
       } catch (error) {
-        errorMessage.value = error.response?.data?.error || error.message || 'Failed to login. Please try again.';
+        console.error('❌ LoginView login failed:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        errorMessage.value = error.message || 'Failed to login. Please try again.';
       } finally {
+        isLoading.value = false;
+      }
+    };
+
+    const handleGoogleLogin = async () => {
+      try {
+        console.log('🔐 Attempting Google login with Google Identity Services');
+        isLoading.value = true;
+        errorMessage.value = '';
+
+        // Check if Google Identity Services is loaded
+        if (!window.google || !window.google.accounts) {
+          errorMessage.value = 'Google Sign-In is not available. Please refresh the page and try again.';
+          isLoading.value = false;
+          return;
+        }
+
+        // Initialize Google Sign-In
+        const clientId = process.env.VUE_APP_GOOGLE_OAUTH_CLIENT_ID || 'your_production_google_oauth_client_id';
+
+        if (clientId === 'your_production_google_oauth_client_id') {
+          errorMessage.value = 'Google OAuth client ID not configured. Please check your environment variables.';
+          isLoading.value = false;
+          return;
+        }
+
+        // Create Google Sign-In client
+        const googleClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'openid email profile',
+          callback: async (response) => {
+            if (response.error) {
+              console.error('❌ Google OAuth error:', response);
+              errorMessage.value = 'Google login failed. Please try again.';
+              isLoading.value = false;
+              return;
+            }
+
+            try {
+              console.log('🔐 Google OAuth successful, sending to backend');
+
+              // Send the access token to backend for verification
+              await store.dispatch('auth/googleLogin', response.access_token);
+
+              console.log('🔐 Google login successful - Redirecting to dashboard');
+              router.push('/dashboard');
+            } catch (error) {
+              console.error('❌ Backend Google login failed:', error);
+              errorMessage.value = error.message || 'Failed to authenticate with Google. Please try again.';
+            } finally {
+              isLoading.value = false;
+            }
+          }
+        });
+
+        // Request access token
+        googleClient.requestAccessToken();
+
+      } catch (error) {
+        console.error('❌ Google login failed:', error);
+        errorMessage.value = error.message || 'Google login failed. Please try again.';
+        isLoading.value = false;
+      }
+    };
+
+    const handleFacebookLogin = async () => {
+      try {
+        console.log('🔐 Attempting Facebook login');
+        isLoading.value = true;
+        errorMessage.value = '';
+
+        // Facebook login is not currently implemented
+        alert('Facebook login is not currently supported. Please use email/password login.');
+
+      } catch (error) {
+        console.error('❌ Facebook login failed:', error);
+        errorMessage.value = error.message || 'Facebook login failed. Please try again.';
         isLoading.value = false;
       }
     };
@@ -201,6 +306,8 @@ export default {
       isLoading,
       errorMessage,
       handleLogin,
+      handleGoogleLogin,
+      handleFacebookLogin,
       passwordVisible,
       logo
     };

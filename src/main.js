@@ -3,6 +3,7 @@ import App from './App.vue'
 import router from './router'
 import store from './store/modules'
 import './assets/css/main.css'
+import { isTokenExpired } from './utils/authUtils'
 
 // Font Awesome
 import { library } from '@fortawesome/fontawesome-svg-core'
@@ -11,7 +12,7 @@ import {
   faHome, faBook, faChartLine, faCog, faBell, faCamera,
   faEdit, faFileExport, faSave, faSyncAlt, faCopy, faTimes,
   faMagic, faQuestionCircle, faPlus, faSearch, faEllipsisV,
-  faStar, faStarHalfAlt, faPlayCircle, faRobot, faTags,
+  faStar, faStarHalfAlt, faPlayCircle, faPlay, faRobot, faTags,
   faCheckCircle, faClock, faFileAlt, faBullseye, faSpinner,
   faExclamationCircle, faUserPlus,
   faHighlighter,
@@ -20,11 +21,18 @@ import {
   faUser, faChevronDown, faUpload, faArrowRight, faBookOpen,
   faAlignLeft, faTrash,
   faEnvelope, faLock, faSignInAlt,
-  faRocket
+  faRocket,
+  faBars,
+  faFire,
+  faTimesCircle,
+  faAngleLeft,
+  faInfoCircle,
+  faPaperPlane,
+  faRedo
 } from '@fortawesome/free-solid-svg-icons'
-import { 
+import {
   faTwitter, faFacebook, faInstagram, faGithub,
-  faFacebookF, faGoogle, faApple 
+  faFacebookF, faGoogle, faApple
 } from '@fortawesome/free-brands-svg-icons'
 
 // Add all icons to the library
@@ -32,7 +40,7 @@ library.add(
   faHome, faBook, faChartLine, faCog, faBell, faCamera,
   faEdit, faFileExport, faSave, faSyncAlt, faCopy, faTimes,
   faMagic, faQuestionCircle, faPlus, faSearch, faEllipsisV,
-  faStar, faStarHalfAlt, faPlayCircle, faRobot, faTags,
+  faStar, faStarHalfAlt, faPlayCircle, faPlay, faRobot, faTags,
   faCheckCircle, faClock, faFileAlt, faBullseye, faSpinner,
   faExclamationCircle, faUserPlus,
   faTwitter, faFacebook, faInstagram, faGithub,
@@ -40,7 +48,14 @@ library.add(
   faUser, faChevronDown, faUpload, faArrowRight, faBookOpen,
   faAlignLeft, faTrash,
   faEnvelope, faLock, faSignInAlt,
-  faRocket
+  faRocket,
+  faBars,
+  faFire,
+  faTimesCircle,
+  faAngleLeft,
+  faInfoCircle,
+  faPaperPlane,
+  faRedo
 )
 
 
@@ -55,6 +70,9 @@ const app = createApp(App)
 app.use(store)
 app.use(router)
 app.component('font-awesome-icon', FontAwesomeIcon)
+
+// Make router globally accessible for auth redirects
+window.$router = router
 
 // Initialize app state and real-time services
 try {
@@ -76,3 +94,24 @@ setTimeout(() => {
 }, 100);
 
 app.mount('#app')
+
+// Check token expiration on app load and clear invalid tokens
+const token = localStorage.getItem('token');
+if (token && isTokenExpired(token)) {
+  // Token is invalid and has already been cleared by isTokenExpired
+  // Just clear the Vuex state without making API call
+  store.commit('auth/CLEAR_AUTH');
+}
+
+// Initialize Supabase Auth Listener
+const initializeSupabaseAuth = async () => {
+  try {
+    console.log('🔐 Initializing Supabase auth listener');
+    await store.dispatch('auth/initializeAuthListener');
+    console.log('🔐 Supabase auth listener initialized successfully');
+  } catch (error) {
+    console.error('❌ Failed to initialize Supabase auth listener:', error);
+  }
+};
+
+initializeSupabaseAuth();

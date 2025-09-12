@@ -2,19 +2,37 @@
 import { ref, computed, watch } from 'vue';
 import api from '@/services/api';
 
+// Global reactive state for user profile - shared across all components
+const globalUser = ref(null);
+const globalLoading = ref(false);
+const globalError = ref(null);
+
 export function useUserProfile() {
-  const user = ref(null);
-  const loading = ref(false);
-  const error = ref(null);
+  // Use global state instead of local state
+  const user = globalUser;
+  const loading = globalLoading;
+  const error = globalError;
 
   // Get profile picture URL
   const getProfilePictureUrl = (profilePicturePath) => {
     if (!profilePicturePath) return null;
-    // Since the backend stores relative paths from public directory, construct the full URL
-    // Add timestamp to prevent caching issues
+
+    console.log('🔍 getProfilePictureUrl called with:', profilePicturePath);
+
+    // FORCE FIX: If it's a Google URL, return it unchanged
+    if (profilePicturePath.includes('googleusercontent.com') ||
+        profilePicturePath.startsWith('https://lh3.googleusercontent.com') ||
+        profilePicturePath.startsWith('https://')) {
+      console.log('✅ GOOGLE URL DETECTED - RETURNING UNCHANGED:', profilePicturePath);
+      return profilePicturePath; // Return without modification
+    }
+
+    // Handle local paths normally - ensure they start with /
     const timestamp = Date.now();
-    // Use relative URL to avoid CORS issues and ensure proper path resolution
-    return `/${profilePicturePath}?t=${timestamp}`;
+    const cleanPath = profilePicturePath.startsWith('/') ? profilePicturePath : `/${profilePicturePath}`;
+    const result = `${cleanPath}?t=${timestamp}`;
+    console.log('📁 LOCAL PATH PROCESSED:', result);
+    return result;
   };
 
   // Load user profile from API
@@ -46,8 +64,8 @@ export function useUserProfile() {
       // Then try to fetch fresh data from API
       try {
         const response = await api.getUser();
-        if (response.data && response.data.success && response.data.user) {
-          const apiUser = response.data.user;
+        if (response.data && response.data.success && response.data.data && response.data.data.user) {
+          const apiUser = response.data.data.user;
           user.value = {
             id: apiUser.id,
             name: apiUser.name || 'User',
@@ -114,8 +132,8 @@ export function useUserProfile() {
 
   // Logout function
   const logout = () => {
-    user.value = null;
-    error.value = null;
+    globalUser.value = null;
+    globalError.value = null;
     localStorage.removeItem('user');
     localStorage.removeItem('token');
   };
@@ -136,7 +154,7 @@ export function useUserProfile() {
   });
 
   // Watch for user changes and update localStorage
-  watch(user, (newUser) => {
+  watch(globalUser, (newUser) => {
     if (newUser && newUser.id) {
       // Update localStorage when user data changes
       localStorage.setItem('user', JSON.stringify({

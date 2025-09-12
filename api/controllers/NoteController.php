@@ -1,140 +1,203 @@
 <?php
+require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Note.php';
 require_once __DIR__ . '/../helpers/FileUpload.php';
+require_once __DIR__ . '/../services/AIKeywordService.php';
 
-class NoteController {
-    private $db;
+class NoteController extends BaseController {
     private $note;
+    private $keywordService;
 
-    public function __construct($db) {
-        $this->db = $db;
-        $this->note = new Note($db);
+    public function __construct($db = null) {
+        error_log("NoteController::__construct() - Starting construction");
+        if ($db) {
+            $this->db = $db;
+            error_log("NoteController::__construct() - Database connection provided");
+        }
+        parent::__construct();
+        error_log("NoteController::__construct() - Parent constructor called");
+
+        try {
+            $this->note = new Note($this->db);
+            error_log("NoteController::__construct() - Note model instantiated");
+        } catch (Exception $e) {
+            error_log("NoteController::__construct() - Error instantiating Note model: " . $e->getMessage());
+            throw $e;
+        }
+
+        try {
+            $this->keywordService = new AIKeywordService();
+            error_log("NoteController::__construct() - AIKeywordService instantiated");
+        } catch (Exception $e) {
+            error_log("NoteController::__construct() - Error instantiating AIKeywordService: " . $e->getMessage());
+            throw $e;
+        }
+
+        error_log("NoteController::__construct() - Construction completed");
     }
 
     public function index() {
-        // Get user ID from header (now includes token validation)
-        $userId = $this->getUserIdFromHeader();
+        try {
+            error_log("NoteController::index() - ===== NOTES API REQUEST STARTED =====");
+            error_log("NoteController::index() - Request method: " . $_SERVER['REQUEST_METHOD']);
+            error_log("NoteController::index() - Request URI: " . $_SERVER['REQUEST_URI']);
+            error_log("NoteController::index() - Query string: " . ($_SERVER['QUERY_STRING'] ?? 'none'));
+            error_log("NoteController::index() - Headers: " . json_encode(getallheaders()));
+            error_log("NoteController::index() - Starting authentication");
 
-        // Debug logging
-        error_log("NoteController::index() - User ID: $userId");
-        error_log("NoteController::index() - All headers: " . json_encode(getallheaders()));
-        error_log("NoteController::index() - REQUEST_METHOD: " . $_SERVER['REQUEST_METHOD']);
-        error_log("NoteController::index() - REQUEST_URI: " . $_SERVER['REQUEST_URI']);
-        error_log("NoteController::index() - QUERY_STRING: " . $_SERVER['QUERY_STRING']);
+            // Authenticate user first
+            if (!$this->authenticateUser()) {
+                error_log("NoteController::index() - Authentication failed");
+                $this->unauthorizedResponse();
+                return;
+            }
 
-        if (!$userId) {
-            error_log("NoteController::index() - No valid authentication found");
-            http_response_code(401);
-            echo json_encode([
-                "success" => false,
-                "error" => "Unauthorized - Invalid or missing authentication"
-            ]);
-            return;
+            // Get user ID from header
+            $userId = $this->getUserId();
+            error_log("NoteController::index() - User ID: " . ($userId ?: 'null'));
+
+            if (!$userId) {
+                error_log("NoteController::index() - No user ID found");
+                $this->unauthorizedResponse();
+                return;
+            }
+
+            $query = "SELECT n.*
+                      FROM notes n
+                      WHERE user_id = :user_id
+                      ORDER BY created_at DESC";
+
+            error_log("NoteController::index() - Executing query: " . $query);
+            error_log("NoteController::index() - User ID for query: " . $userId);
+
+            $stmt = $this->db->prepare($query);
+            $stmt->bindParam(':user_id', $userId);
+            $stmt->execute();
+
+            $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            error_log("NoteController::index() - Query executed, found " . count($notes) . " notes");
+            error_log("NoteController::index() - About to call successResponse");
+
+            $this->successResponse($notes, 'Notes retrieved successfully');
+            error_log("NoteController::index() - successResponse called");
+
+        } catch (Exception $e) {
+            $this->errorResponse('Failed to retrieve notes: ' . $e->getMessage());
         }
-
-        $query = "SELECT n.*
-                  FROM notes n
-                  WHERE user_id = :user_id
-                  ORDER BY created_at DESC";
-
-        $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':user_id', $userId);
-        $stmt->execute();
-
-        $notes = $stmt->fetchAll();
-        error_log("NoteController::index() - Found " . count($notes) . " notes for user $userId");
-
-        // Also check total notes in database
-        $totalStmt = $this->db->query("SELECT COUNT(*) as total FROM notes");
-        $total = $totalStmt->fetch();
-        error_log("NoteController::index() - Total notes in database: " . $total['total']);
-
-        echo json_encode([
-            "success" => true,
-            "data" => $notes,
-            "debug" => [
-                "user_id" => $userId,
-                "notes_found" => count($notes),
-                "total_notes" => $total['total']
-            ]
-        ]);
     }
 
     public function store() {
-        // Get user ID from header
-        $userId = $this->getUserIdFromHeader();
-
-        if (!$userId) {
-            http_response_code(401);
-            echo json_encode([
-                "success" => false,
-                "error" => "Unauthorized - No user ID found in header"
-            ]);
-            return;
-        }
-
-        $title = $_POST['title'] ?? NULL;
-        $text = $_POST['text'] ?? NULL;
-        $files = $_FILES;
-
-        // Debug logging
-        error_log("NoteController::store() - User ID: $userId");
-        error_log("NoteController::store() - Title: $title");
-        error_log("NoteController::store() - Text: " . substr($text, 0, 100));
-        error_log("NoteController::store() - POST data: " . json_encode($_POST));
-        error_log("NoteController::store() - FILES data: " . json_encode($_FILES));
-        error_log("NoteController::store() - Request method: " . $_SERVER['REQUEST_METHOD']);
-        error_log("NoteController::store() - Content-Type: " . ($_SERVER['CONTENT_TYPE'] ?? 'not set'));
-        error_log("NoteController::store() - Raw input length: " . strlen(file_get_contents('php://input')));
-
-        if (!$title || !$text) {
-            error_log("NoteController::store() - Missing title or text");
-            echo json_encode(['success' => false, 'error' => 'Missing title or text']);
-            return;
-        }
-
-        $imagePath = null;
-
-        if (isset($files['image']) && $files['image']['error'] === UPLOAD_ERR_OK) {
-            $fileUpload = new FileUpload();
-            $uploadResult = $fileUpload->uploadImage($files['image']);
-            if (!$uploadResult['success']) {
-                echo json_encode($uploadResult);
+        try {
+            // Authenticate user first
+            if (!$this->authenticateUser()) {
+                $this->unauthorizedResponse();
                 return;
             }
-            $imagePath = $uploadResult['file_path'];
-        }
 
-        $this->note->user_id = $userId;
-        $this->note->title = $title;
-        $this->note->original_text = $text;
-        $this->note->image_path = $imagePath;
+            // Get user ID from header
+            $userId = $this->getUserId();
 
-        $noteId = $this->note->create();
+            if (!$userId) {
+                $this->unauthorizedResponse();
+                return;
+            }
 
-        if ($noteId) {
-            echo json_encode([
-                "success" => true,
-                "message" => "Note saved successfully",
-                "note_id" => $noteId
+            $title = null;
+            $text = null;
+
+            // Check if this is a JSON request (text-only notes) or FormData (with possible image)
+            $contentType = $_SERVER['CONTENT_TYPE'] ?? '';
+            if (strpos($contentType, 'application/json') !== false) {
+                // Handle JSON data
+                $jsonData = json_decode(file_get_contents('php://input'), true);
+                if ($jsonData) {
+                    $title = $jsonData['title'] ?? null;
+                    $text = $jsonData['text'] ?? null;
+                }
+            } else {
+                // Handle FormData
+                $title = $_POST['title'] ?? null;
+                $text = $_POST['text'] ?? null;
+            }
+
+            // Validate required fields
+            if (!$title || !$text) {
+                $this->badRequestResponse('Missing title or text');
+                return;
+            }
+
+            $imagePath = null;
+
+            if (isset($_FILES['image']) && $_FILES['image']['error'] === UPLOAD_ERR_OK) {
+                $fileUpload = new FileUpload();
+                $uploadResult = $fileUpload->uploadImage($_FILES['image']);
+                if (!$uploadResult['success']) {
+                    $this->errorResponse($uploadResult['error']);
+                    return;
+                }
+                $imagePath = $uploadResult['file_path'];
+            }
+
+            $this->note->user_id = $userId;
+            $this->note->title = $this->sanitizeInput($title);
+            $this->note->original_text = $this->sanitizeInput($text);
+            $this->note->image_path = $imagePath;
+
+            // Debug logging
+            error_log("NoteController::store() - About to create note");
+            error_log("NoteController::store() - User ID: $userId");
+            error_log("NoteController::store() - Title: " . $this->sanitizeInput($title));
+            error_log("NoteController::store() - Text length: " . strlen($this->sanitizeInput($text)));
+            error_log("NoteController::store() - Image path: " . ($imagePath ?: 'null'));
+
+            $noteId = $this->note->createNote([
+                'user_id' => $userId,
+                'title' => $this->sanitizeInput($title),
+                'original_text' => $this->sanitizeInput($text),
+                'image_path' => $imagePath
             ]);
-        } else {
-            echo json_encode([
-                "success" => false,
-                "error" => "Failed to save note"
-            ]);
+
+            error_log("NoteController::store() - Note creation result: " . ($noteId ? "Success (ID: $noteId)" : "Failed"));
+
+            if ($noteId) {
+                // Auto-extract keywords from the note content
+                $keywords = $this->keywordService->extractKeywords($this->sanitizeInput($text), 5);
+                $keywordsString = implode(',', $keywords);
+
+                // Update the note with extracted keywords
+                $updateQuery = "UPDATE notes SET keywords = :keywords WHERE id = :id AND user_id = :user_id";
+                $updateStmt = $this->db->prepare($updateQuery);
+                $updateStmt->bindParam(':keywords', $keywordsString);
+                $updateStmt->bindParam(':id', $noteId);
+                $updateStmt->bindParam(':user_id', $userId);
+                $updateStmt->execute();
+
+                error_log("NoteController::store() - Keywords extracted and saved: " . $keywordsString);
+
+                $this->successResponse([
+                    'note_id' => $noteId,
+                    'keywords' => $keywords
+                ], 'Note saved successfully with auto-extracted keywords', 201);
+            } else {
+                $this->errorResponse('Failed to save note');
+            }
+
+        } catch (Exception $e) {
+            $this->errorResponse('Failed to create note: ' . $e->getMessage());
         }
     }
 
     public function show($id) {
-        $userId = $this->getUserIdFromHeader();
+        // Authenticate user first
+        if (!$this->authenticateUser()) {
+            $this->unauthorizedResponse();
+            return;
+        }
+
+        $userId = $this->getUserId();
 
         if (!$userId) {
-            http_response_code(401);
-            echo json_encode([
-                "success" => false,
-                "error" => "Unauthorized - No user ID found"
-            ]);
+            $this->unauthorizedResponse();
             return;
         }
 
@@ -169,14 +232,22 @@ class NoteController {
     }
 
     public function update($id) {
-        $userId = $this->getUserIdFromHeader();
+        error_log("NoteController::update() - ===== UPDATE REQUEST STARTED =====");
+        error_log("NoteController::update() - Note ID: $id");
+
+        // Authenticate user first
+        if (!$this->authenticateUser()) {
+            error_log("NoteController::update() - Authentication failed");
+            $this->unauthorizedResponse();
+            return;
+        }
+
+        $userId = $this->getUserId();
+        error_log("NoteController::update() - User ID: $userId");
 
         if (!$userId) {
-            http_response_code(401);
-            echo json_encode([
-                "success" => false,
-                "error" => "Unauthorized - No user ID found"
-            ]);
+            error_log("NoteController::update() - No user ID found");
+            $this->unauthorizedResponse();
             return;
         }
 
@@ -184,8 +255,19 @@ class NoteController {
         $text = $_POST['text'] ?? NULL;
         $summary = $_POST['summary'] ?? NULL;
         $keywords = $_POST['keywords'] ?? NULL;
+        $isFavorite = isset($_POST['is_favorite']) ? (bool)$_POST['is_favorite'] : NULL;
 
-        if (!$title || !$text) {
+        error_log("NoteController::update() - Received data:");
+        error_log("NoteController::update() - Title: " . ($title ?: 'NULL'));
+        error_log("NoteController::update() - Text: " . ($text ? substr($text, 0, 50) . '...' : 'NULL'));
+        error_log("NoteController::update() - is_favorite: " . ($isFavorite !== NULL ? ($isFavorite ? 'true' : 'false') : 'NULL'));
+
+        // For favorite updates, we only need the is_favorite field
+        $isFavoriteOnly = ($title === NULL && $text === NULL && $isFavorite !== NULL);
+        error_log("NoteController::update() - Is favorite-only update: " . ($isFavoriteOnly ? 'YES' : 'NO'));
+
+        if (!$isFavoriteOnly && (!$title || !$text)) {
+            error_log("NoteController::update() - Validation failed: missing required fields");
             http_response_code(400);
             echo json_encode([
                 "success" => false,
@@ -210,20 +292,41 @@ class NoteController {
             return;
         }
 
-        // Update the note (only columns that exist in the table)
-        $query = "UPDATE notes SET
-                  title = :title,
-                  original_text = :text,
-                  updated_at = NOW()
-                  WHERE id = :id AND user_id = :user_id";
+        // Build dynamic UPDATE query based on provided fields
+        $updateFields = [];
+        $params = [];
+
+        if ($title !== NULL) {
+            $updateFields[] = "title = :title";
+            $params[':title'] = $title;
+        }
+
+        if ($text !== NULL) {
+            $updateFields[] = "original_text = :text";
+            $params[':text'] = $text;
+        }
+
+        if ($isFavorite !== NULL) {
+            $updateFields[] = "is_favorite = :is_favorite";
+            $params[':is_favorite'] = $isFavorite;
+        }
+
+        // Always update the updated_at timestamp
+        $updateFields[] = "updated_at = NOW()";
+
+        $query = "UPDATE notes SET " . implode(', ', $updateFields) . " WHERE id = :id AND user_id = :user_id";
+        error_log("NoteController::update() - Generated query: $query");
+        error_log("NoteController::update() - Query parameters: " . json_encode($params));
 
         $stmt = $this->db->prepare($query);
-        $stmt->bindParam(':title', $title);
-        $stmt->bindParam(':text', $text);
+        foreach ($params as $param => $value) {
+            $stmt->bindValue($param, $value);
+        }
         $stmt->bindParam(':id', $id);
         $stmt->bindParam(':user_id', $userId);
 
         if ($stmt->execute()) {
+            error_log("NoteController::update() - Database update successful");
             // If summary or keywords were provided, we could store them separately
             // For now, we'll just log them since the table doesn't support them
             if ($summary) {
@@ -238,6 +341,7 @@ class NoteController {
                 "message" => "Note updated successfully"
             ]);
         } else {
+            error_log("NoteController::update() - Database update failed");
             http_response_code(500);
             echo json_encode([
                 "success" => false,
@@ -247,14 +351,16 @@ class NoteController {
     }
 
     public function destroy($id) {
-        $userId = $this->getUserIdFromHeader();
+        // Authenticate user first
+        if (!$this->authenticateUser()) {
+            $this->unauthorizedResponse();
+            return;
+        }
+
+        $userId = $this->getUserId();
 
         if (!$userId) {
-            http_response_code(401);
-            echo json_encode([
-                "success" => false,
-                "error" => "Unauthorized"
-            ]);
+            $this->unauthorizedResponse();
             return;
         }
 
@@ -276,50 +382,6 @@ class NoteController {
         }
     }
 
-    private function getUserIdFromHeader() {
-        $headers = getallheaders();
 
-        // First try to validate token from Authorization header (case-insensitive)
-        $authHeader = null;
-        foreach ($headers as $key => $value) {
-            if (strtolower($key) === 'authorization') {
-                $authHeader = $value;
-                break;
-            }
-        }
-
-        if ($authHeader) {
-            if (preg_match('/Bearer\s+(.*)$/i', $authHeader, $matches)) {
-                $token = $matches[1];
-                $userId = $this->validateToken($token);
-                if ($userId) {
-                    return $userId;
-                }
-            }
-        }
-
-        // Fallback to X-User-ID header (for backward compatibility)
-        if (isset($headers['X-User-ID']) || isset($headers['x-user-id'])) {
-            $userIdHeader = $headers['X-User-ID'] ?? $headers['x-user-id'];
-            return intval($userIdHeader);
-        }
-
-        return null;
-    }
-
-    private function validateToken($token) {
-        if (!$token) return null;
-
-        try {
-            $stmt = $this->db->prepare("SELECT user_id FROM user_tokens WHERE token = ? AND expires_at > NOW()");
-            $stmt->execute([$token]);
-            $result = $stmt->fetch();
-
-            return $result ? $result['user_id'] : null;
-        } catch (Exception $e) {
-            error_log("Token validation error: " . $e->getMessage());
-            return null;
-        }
-    }
 }
 ?>

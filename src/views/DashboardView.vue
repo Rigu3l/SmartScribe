@@ -1,150 +1,10 @@
 <template>
   <div :class="themeClasses.main" class="min-h-screen flex flex-col">
-    <!-- Header -->
-    <header :class="themeClasses.header" class="p-4 flex justify-between items-center">
-      <div class="flex items-center space-x-3">
-        <!-- Classic Sidebar Toggle Button -->
-        <button @click="toggleSidebar"
-                class="group relative flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-slate-800 to-gray-900 hover:from-blue-600 hover:to-blue-700 text-gray-300 hover:text-white transition-all duration-300 ease-out transform hover:scale-105 active:scale-95 overflow-hidden shadow-lg hover:shadow-xl hover:shadow-blue-500/25"
-                :title="sidebarVisible ? 'Hide sidebar' : 'Show sidebar'">
-
-          <!-- Hamburger Menu Lines -->
-          <div class="flex flex-col space-y-1 relative z-10">
-            <!-- Top line -->
-            <div class="w-6 h-0.5 bg-current transition-all duration-300 ease-out group-hover:w-7 group-hover:bg-white rounded-full"></div>
-            <!-- Middle line -->
-            <div class="w-5 h-0.5 bg-current transition-all duration-300 ease-out group-hover:w-6 group-hover:bg-white rounded-full"></div>
-            <!-- Bottom line -->
-            <div class="w-4 h-0.5 bg-current transition-all duration-300 ease-out group-hover:w-5 group-hover:bg-white rounded-full"></div>
-          </div>
-
-          <!-- Subtle background glow -->
-          <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500/0 to-blue-600/0 group-hover:from-blue-500/10 group-hover:to-blue-600/10 transition-all duration-300"></div>
-
-          <!-- Tooltip -->
-          <div class="absolute -bottom-12 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap border border-gray-700">
-            {{ sidebarVisible ? 'Hide Menu' : 'Show Menu' }}
-            <div class="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 border-l border-t border-gray-700 rotate-45"></div>
-          </div>
-        </button>
-        <div class="text-lg md:text-xl font-bold">SmartScribe</div>
-      </div>
-      <div class="flex items-center space-x-2 md:space-x-4">
-
-        <div class="relative">
-          <button @click="toggleNotifications" class="text-gray-400 hover:text-white relative">
-            <font-awesome-icon :icon="['fas', 'bell']" />
-            <span v-if="unreadNotifications > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {{ unreadNotifications }}
-            </span>
-          </button>
-          <div v-if="showNotifications" class="absolute right-0 mt-2 w-80 bg-gray-800 rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
-            <div class="p-4 border-b border-gray-700">
-              <h3 class="text-lg font-semibold">Notifications</h3>
-            </div>
-            <div v-if="notifications.length > 0">
-              <div v-for="(notification, index) in notifications" :key="notification.id || index"
-                   class="p-4 border-b border-gray-700 hover:bg-gray-700 transition-colors"
-                   :class="{
-                     'bg-gray-700': !notification.read,
-                     'cursor-pointer': !notification.read
-                   }"
-                   @click="markAsRead(notification)">
-                <div class="flex items-start space-x-3">
-                  <div class="flex-shrink-0 mt-1">
-                    <div :class="[
-                      'w-8 h-8 rounded-full flex items-center justify-center',
-                      notification.bgColor
-                    ]">
-                      <font-awesome-icon :icon="notification.icon" class="text-white text-sm" />
-                    </div>
-                  </div>
-                  <div class="flex-grow">
-                    <div class="flex items-start justify-between">
-                      <div class="flex-grow">
-                        <p class="text-sm font-medium text-white">{{ notification.title }}</p>
-                        <p class="text-xs text-gray-300 mt-1">{{ notification.message }}</p>
-                        <p class="text-xs text-gray-500 mt-2">{{ notification.time }}</p>
-                      </div>
-                      <div class="flex items-center space-x-2 ml-2">
-                        <div v-if="!notification.read" class="flex-shrink-0">
-                          <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        </div>
-                        <button v-if="notification.persistent"
-                                @click.stop="removeNotification(notification.id)"
-                                class="text-gray-400 hover:text-red-400 text-xs">
-                          <font-awesome-icon :icon="['fas', 'times']" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Notification Actions -->
-                    <div v-if="notification.actions && notification.actions.length > 0" class="mt-3 flex space-x-2">
-                      <button v-for="(action, actionIndex) in notification.actions" :key="actionIndex"
-                              @click.stop="executeAction(notification, action)"
-                              class="px-2 py-1 text-xs rounded transition-colors"
-                              :class="{
-                                'bg-blue-600 text-white hover:bg-blue-700': action.action === 'navigate',
-                                'bg-gray-600 text-white hover:bg-gray-700': action.action === 'dismiss',
-                                'bg-green-600 text-white hover:bg-green-700': action.action === 'callback'
-                              }">
-                        {{ action.label }}
-                      </button>
-                    </div>
-
-                    <!-- Priority Indicator -->
-                    <div v-if="notification.priority === 'urgent'" class="mt-2 flex items-center">
-                      <div class="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
-                      <span class="text-xs text-red-400 font-medium">URGENT</span>
-                    </div>
-                    <div v-else-if="notification.priority === 'high'" class="mt-2 flex items-center">
-                      <div class="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                      <span class="text-xs text-orange-400 font-medium">HIGH PRIORITY</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-else class="p-4 text-center text-gray-400">
-              <font-awesome-icon :icon="['fas', 'bell-slash']" class="text-2xl mb-2" />
-              <p>No notifications yet</p>
-            </div>
-            <div v-if="notifications.length > 0" class="p-3 border-t border-gray-700">
-              <button @click="markAllAsRead" class="text-sm text-blue-400 hover:text-blue-300">
-                Mark all as read
-              </button>
-            </div>
-          </div>
-          <!-- Backdrop to close notifications when clicking outside -->
-          <div v-if="showNotifications" class="fixed inset-0 z-0" @click="closeNotifications"></div>
-        </div>
-        <div class="relative">
-          <button @click="toggleUserMenu" class="flex items-center space-x-2">
-            <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-600">
-              <img
-                v-if="user && user.profilePicture"
-                :key="user.profilePicture"
-                :src="getProfilePictureUrl(user.profilePicture)"
-                alt="Profile"
-                class="w-full h-full object-cover"
-                @error="handleImageError"
-                @load="handleImageLoad"
-              />
-              <div v-else class="w-full h-full bg-gray-600 flex items-center justify-center">
-                <font-awesome-icon :icon="['fas', 'user']" class="text-white text-sm" />
-              </div>
-            </div>
-            <span>{{ user?.name || 'User' }}</span>
-            <font-awesome-icon :icon="['fas', 'chevron-down']" class="text-xs" />
-          </button>
-          <div v-if="showUserMenu" class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-10">
-            <button @click="openProfileModal" class="w-full text-left block px-4 py-2 hover:bg-gray-700">Profile</button>
-            <router-link to="/settings" @click="closeUserMenu" class="block px-4 py-2 hover:bg-gray-700">Settings</router-link>
-            <button @click="logout" class="w-full text-left block px-4 py-2 hover:bg-gray-700 text-red-400 hover:text-red-300">Logout</button>
-          </div>
-        </div>
-      </div>
-    </header>
+    <!-- Reusable Header Component -->
+    <AppHeader
+      @toggle-sidebar="handleSidebarToggle"
+      @open-profile-modal="openProfileModal"
+    />
 
     <!-- Main Content -->
     <div class="flex flex-grow transition-all duration-300">
@@ -197,7 +57,9 @@
       <!-- Added title input modal -->
       <div v-if="showTitleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
         <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-          <h3 class="text-xl font-semibold mb-4">Add Note Title</h3>
+          <h3 class="text-xl font-semibold mb-4">
+            {{ pendingImageData && pendingImageData.type === 'quick_note' ? 'Save Quick Note' : 'Add Note Title' }}
+          </h3>
           <div class="mb-4">
             <label class="block text-sm font-medium mb-2">Title</label>
             <input 
@@ -214,6 +76,9 @@
               <div v-if="isProcessingFile" class="flex items-center space-x-2">
                 <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin" />
                 <span>Processing file...</span>
+              </div>
+              <div v-else-if="pendingImageData && pendingImageData.type === 'quick_note'">
+                {{ pendingImageData.content.substring(0, 200) }}{{ pendingImageData.content.length > 200 ? '...' : '' }}
               </div>
               <div v-else>
                 {{ ocrText ? ocrText.substring(0, 200) : 'No text extracted' }}{{ ocrText && ocrText.length > 200 ? '...' : '' }}
@@ -237,7 +102,7 @@
                 <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin" />
                 <span>Saving...</span>
               </span>
-              <span v-else>Save Note</span>
+              <span v-else>{{ pendingImageData && pendingImageData.type === 'quick_note' ? 'Save Quick Note' : 'Save Note' }}</span>
             </button>
           </div>
         </div>
@@ -328,7 +193,7 @@
         </div>
 
         <!-- Dashboard Statistics -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-6">
           <div :class="themeClasses.card" class="rounded-lg p-6">
             <div class="flex justify-between items-center mb-2">
               <h3 class="text-lg font-semibold">Total Notes</h3>
@@ -356,6 +221,7 @@
             <div v-else>
               <p class="text-3xl font-bold">{{ stats.studyHours }}h</p>
               <p :class="themeClasses.secondaryText" class="text-sm">{{ stats.studyHoursThisWeek }}h this week</p>
+              <p :class="themeClasses.secondaryText" class="text-xs mt-1">{{ stats.totalNotesStudied }} notes studied</p>
             </div>
           </div>
 
@@ -370,7 +236,7 @@
             </div>
             <div v-else>
               <p class="text-3xl font-bold">{{ stats.quizAverage }}%</p>
-              <p :class="themeClasses.secondaryText" class="text-sm">{{ stats.quizzesCompleted }} quizzes completed</p>
+              <p :class="themeClasses.secondaryText" class="text-sm">{{ stats.totalQuizzesTaken }} quizzes taken</p>
             </div>
           </div>
 
@@ -388,55 +254,83 @@
               <p :class="themeClasses.secondaryText" class="text-sm">{{ stats.completedGoals }} completed this month</p>
             </div>
           </div>
-        </div>
 
-        <!-- Quick Actions -->
-        <div :class="themeClasses.card" class="rounded-lg p-6 mb-6">
-          <h2 class="text-xl font-semibold mb-4">Quick Actions</h2>
-          <div class="grid grid-cols-2 lg:grid-cols-4 gap-3 md:gap-4">
-            <button @click="openCamera" :class="themeClasses.button" class="flex flex-col items-center p-4 rounded-lg transition">
-              <font-awesome-icon :icon="['fas', 'camera']" class="text-2xl text-blue-500 mb-2" />
-              <span class="text-sm font-medium">Scan Note</span>
-            </button>
-
-            <button @click="createNewNote" :class="themeClasses.button" class="flex flex-col items-center p-4 rounded-lg transition">
-              <font-awesome-icon :icon="['fas', 'plus']" class="text-2xl text-green-500 mb-2" />
-              <span class="text-sm font-medium">New Note</span>
-            </button>
-
-            <router-link to="/progress" :class="themeClasses.button" class="flex flex-col items-center p-4 rounded-lg transition">
-              <font-awesome-icon :icon="['fas', 'chart-line']" class="text-2xl text-purple-500 mb-2" />
-              <span class="text-sm font-medium">View Progress</span>
-            </router-link>
-
-            <button @click="openSettings" :class="themeClasses.button" class="flex flex-col items-center p-4 rounded-lg transition">
-              <font-awesome-icon :icon="['fas', 'cog']" class="text-2xl text-yellow-500 mb-2" />
-              <span class="text-sm font-medium">Settings</span>
-            </button>
+          <div :class="themeClasses.card" class="rounded-lg p-6">
+            <div class="flex justify-between items-center mb-2">
+              <h3 class="text-lg font-semibold">Study Streak</h3>
+              <font-awesome-icon :icon="['fas', 'fire']" class="text-orange-500 text-xl" />
+            </div>
+            <div v-if="loadingDashboard" class="animate-pulse">
+              <div :class="themeClasses.card" class="h-8 rounded mb-2"></div>
+              <div :class="themeClasses.card" class="h-4 rounded w-3/4"></div>
+            </div>
+            <div v-else>
+              <p class="text-3xl font-bold">{{ stats.studyStreak }}</p>
+              <p :class="themeClasses.secondaryText" class="text-sm">days in a row</p>
+            </div>
           </div>
         </div>
 
-        <!-- Scan New Notes Section -->
-        <div :class="themeClasses.card" class="rounded-lg p-6 mb-6">
-          <h2 class="text-xl font-semibold mb-4">Scan New Notes</h2>
-          <div class="border-2 border-dashed border-gray-600 rounded-lg p-8 text-center">
-            <div class="mb-4">
-              <font-awesome-icon :icon="['fas', 'camera']" class="text-4xl text-gray-400" />
+        <!-- Create New Note Section -->
+        <div :class="themeClasses.card" class="rounded-lg p-4 mb-4">
+          <div class="mb-4">
+            <h2 class="text-base font-medium" :class="themeClasses.text">Create New Note</h2>
+          </div>
+
+          <div class="space-y-4">
+            <!-- Text Input -->
+            <div>
+              <textarea
+                v-model="quickNoteContent"
+                placeholder="Type your notes here..."
+                :class="[
+                  'w-full h-24 px-3 py-2 border rounded focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-transparent resize-none text-sm transition-colors',
+                  themeClasses.input
+                ]"
+              ></textarea>
+              <div class="flex justify-between items-center mt-1">
+                <span class="text-xs" :class="themeClasses.secondaryText">{{ quickNoteContent.length }}</span>
+                <button
+                  @click="clearQuickNote"
+                  v-if="quickNoteContent.trim()"
+                  class="text-xs"
+                  :class="themeClasses.secondaryText"
+                >
+                  Clear
+                </button>
+              </div>
             </div>
-            <p class="mb-4 text-gray-400">Take a picture or upload your notes (images with OCR text extraction)</p>
-            <div class="flex justify-center space-x-4">
-              <button @click="openCamera" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
-                <font-awesome-icon :icon="['fas', 'camera']" class="mr-2" /> Take Photo
+
+            <!-- Separator -->
+            <div class="flex items-center">
+              <div class="flex-1 border-t" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'border-gray-600' : 'border-gray-300'"></div>
+              <span class="px-2 text-xs" :class="themeClasses.secondaryText">or</span>
+              <div class="flex-1 border-t" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'border-gray-600' : 'border-gray-300'"></div>
+            </div>
+
+            <!-- Image Options -->
+            <div class="flex justify-center space-x-2">
+              <button
+                @click="openCamera"
+                class="px-3 py-2 border rounded text-sm transition-colors"
+                :class="[
+                  store.getters['app/getCurrentTheme'] === 'dark'
+                    ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                    : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                ]"
+              >
+                <font-awesome-icon :icon="['fas', 'camera']" class="mr-1" />
+                Photo
               </button>
-              <label :class="[
-                'px-4 py-2 rounded-md transition cursor-pointer flex items-center space-x-2',
-                isProcessingFile
-                  ? 'bg-gray-600 cursor-not-allowed opacity-50'
-                  : 'bg-gray-700 hover:bg-gray-600'
-              ]">
-                <font-awesome-icon v-if="isProcessingFile" :icon="['fas', 'spinner']" class="animate-spin" />
-                <font-awesome-icon v-else :icon="['fas', 'upload']" />
-                <span>{{ isProcessingFile ? 'Processing...' : 'Upload Image' }}</span>
+              <label class="px-3 py-2 border rounded text-sm transition-colors cursor-pointer"
+                     :class="[
+                       store.getters['app/getCurrentTheme'] === 'dark'
+                         ? 'border-gray-600 text-gray-300 hover:bg-gray-700'
+                         : 'border-gray-300 text-gray-700 hover:bg-gray-50'
+                     ]">
+                <font-awesome-icon v-if="isProcessingFile" :icon="['fas', 'spinner']" class="animate-spin mr-1" />
+                <font-awesome-icon v-else :icon="['fas', 'upload']" class="mr-1" />
+                <span>{{ isProcessingFile ? 'Processing...' : 'Upload' }}</span>
                 <input
                   type="file"
                   class="hidden"
@@ -447,17 +341,57 @@
               </label>
             </div>
 
-            <!-- Add this below the buttons -->
-            <div v-if="showCamera" class="mt-6">
-              <video ref="video" autoplay class="w-full rounded-md border border-gray-600"></video>
-              <div class="flex justify-center space-x-4 mt-4">
-                <button @click="capturePhoto" class="px-4 py-2 bg-green-600 rounded-md hover:bg-green-700 transition">
-                  <font-awesome-icon :icon="['fas', 'camera-retro']" class="mr-2" /> Capture
+            <!-- Camera Interface -->
+            <div v-if="showCamera" class="mt-3 p-3 rounded border"
+                 :class="[
+                   store.getters['app/getCurrentTheme'] === 'dark'
+                     ? 'bg-gray-800 border-gray-600'
+                     : 'bg-gray-50 border-gray-200'
+                 ]">
+              <video
+                ref="video"
+                autoplay
+                class="w-full rounded"
+              ></video>
+              <div class="flex justify-center space-x-2 mt-2">
+                <button
+                  @click="capturePhoto"
+                  class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
+                >
+                  Capture
                 </button>
-                <button @click="closeCamera" class="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 transition">
-                  <font-awesome-icon :icon="['fas', 'times']" class="mr-2" /> Cancel
+                <button
+                  @click="closeCamera"
+                  class="px-3 py-1 text-sm rounded transition-colors"
+                  :class="[
+                    store.getters['app/getCurrentTheme'] === 'dark'
+                      ? 'bg-gray-600 text-gray-300 hover:bg-gray-500'
+                      : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
+                  ]"
+                >
+                  Cancel
                 </button>
               </div>
+            </div>
+
+            <!-- Create Button -->
+            <div class="flex justify-center pt-2">
+              <button
+                @click="createQuickNote"
+                :disabled="!canCreateNote"
+                :class="[
+                  'px-4 py-2 rounded font-medium transition-colors text-sm',
+                  canCreateNote
+                    ? 'bg-blue-600 text-white hover:bg-blue-700'
+                    : (store.getters['app/getCurrentTheme'] === 'dark'
+                        ? 'bg-gray-600 text-gray-400 cursor-not-allowed'
+                        : 'bg-gray-200 text-gray-400 cursor-not-allowed')
+                ]"
+              >
+                <font-awesome-icon v-if="isProcessingFile" :icon="['fas', 'spinner']" class="animate-spin mr-2" />
+                <font-awesome-icon v-else :icon="['fas', 'plus']" class="mr-2" />
+                <span>{{ isProcessingFile ? 'Processing...' : 'Create' }}</span>
+              </button>
             </div>
           </div>
         </div>
@@ -599,9 +533,13 @@ import { nextTick } from 'vue';
 import { useNotifications } from '@/composables/useNotifications';
 import { useUserProfile } from '@/composables/useUserProfile';
 import api from '@/services/api';
+import AppHeader from '@/components/AppHeader.vue';
 
 export default {
   name: 'DashboardView',
+  components: {
+    AppHeader
+  },
   setup() {
     const router = useRouter();
     const store = useStore();
@@ -642,7 +580,8 @@ export default {
     const {
       user: userProfile,
       loading: loadingUser,
-      loadUserProfile
+      loadUserProfile,
+      getProfilePictureUrl
     } = useUserProfile();
 
     // =====================================
@@ -653,7 +592,7 @@ export default {
     const recentNotes = computed(() => {
       if (!notesResponse.value?.data) return [];
 
-      return notesResponse.value.data.slice(0, 5).map(note => {
+      return notesResponse.value.data.slice(0, 3).map(note => {
         const createdDate = new Date(note.created_at);
         const summary = note.original_text ? note.original_text.substring(0, 100) + (note.original_text.length > 100 ? '...' : '') : 'No content';
 
@@ -671,6 +610,11 @@ export default {
       });
     });
 
+    // Computed properties
+    const canCreateNote = computed(() => {
+      return quickNoteContent.value.trim().length > 0 || isProcessingFile.value;
+    });
+
     // Process stats data
     const stats = computed(() => {
       if (!statsResponse.value?.data) {
@@ -682,7 +626,12 @@ export default {
           quizAverage: 0,
           quizzesCompleted: 0,
           activeGoals: 0,
-          completedGoals: 0
+          completedGoals: 0,
+          studyStreak: 0,
+          avgSessionDuration: 0,
+          longestSession: 0,
+          totalNotesStudied: 0,
+          totalQuizzesTaken: 0
         };
       }
 
@@ -694,8 +643,13 @@ export default {
         studyHoursThisWeek: statsData.studyHoursThisWeek || 0,
         quizAverage: statsData.quizAverage || 0,
         quizzesCompleted: statsData.quizzesCompleted || 0,
-        activeGoals: 0,
-        completedGoals: 0
+        activeGoals: statsData.activeGoals || 0,
+        completedGoals: statsData.completedGoals || 0,
+        studyStreak: statsData.studyStreak || 0,
+        avgSessionDuration: statsData.avgSessionDuration || 0,
+        longestSession: statsData.longestSession || 0,
+        totalNotesStudied: statsData.totalNotesStudied || 0,
+        totalQuizzesTaken: statsData.totalQuizzesTaken || 0
       };
 
       return result;
@@ -755,7 +709,6 @@ export default {
     // =====================================
     // UI STATE
     // =====================================
-    const showUserMenu = ref(false);
     const showProfileModal = ref(false);
     const showCamera = ref(false);
     const video = ref(null);
@@ -767,6 +720,10 @@ export default {
     const showTitleModal = ref(false);
     const noteTitle = ref('');
     const pendingImageData = ref(null);
+
+    // Quick note creation state
+    const quickNoteContent = ref('');
+    const isCreatingQuickNote = ref(false);
 
     // Note deletion state
     const showDeleteModal = ref(false);
@@ -853,6 +810,30 @@ export default {
       router.push('/settings');
     };
 
+    /**
+     * Create quick note from text input
+     */
+    const createQuickNote = () => {
+      if (!quickNoteContent.value.trim()) return;
+
+      // Set the pending data for quick note
+      pendingImageData.value = {
+        type: 'quick_note',
+        content: quickNoteContent.value.trim()
+      };
+
+      // Show title modal
+      showTitleModal.value = true;
+      noteTitle.value = ''; // Reset title input
+    };
+
+    /**
+     * Clear quick note content
+     */
+    const clearQuickNote = () => {
+      quickNoteContent.value = '';
+    };
+
     // =====================================
     // SIMPLE API FUNCTIONS
     // =====================================
@@ -897,15 +878,6 @@ export default {
       await loadUserProfile();
     };
 
-    // Get profile picture URL
-    const getProfilePictureUrl = (profilePicturePath) => {
-      if (!profilePicturePath) return null;
-      // Since the backend stores relative paths from public directory, construct the full URL
-      // Add timestamp to prevent caching issues
-      const timestamp = Date.now();
-      // Use relative URL to avoid CORS issues and ensure proper path resolution
-      return `/${profilePicturePath}?t=${timestamp}`;
-    };
 
     // Handle image loading errors
     const handleImageError = () => {
@@ -976,7 +948,14 @@ export default {
     // =====================================
 
     /**
-     * Toggle sidebar visibility
+     * Handle sidebar toggle from AppHeader component
+     */
+    const handleSidebarToggle = () => {
+      store.dispatch('app/toggleSidebar');
+    };
+
+    /**
+     * Toggle sidebar visibility (legacy function for backward compatibility)
      */
     const toggleSidebar = () => {
       store.dispatch('app/toggleSidebar');
@@ -986,26 +965,13 @@ export default {
     // USER MENU FUNCTIONS
     // =====================================
 
-    /**
-     * Toggle user menu dropdown
-     */
-    const toggleUserMenu = () => {
-      showUserMenu.value = !showUserMenu.value;
-    };
-
-    /**
-     * Close user menu dropdown
-     */
-    const closeUserMenu = () => {
-      showUserMenu.value = false;
-    };
+    // User menu functions are now handled by AppHeader component
 
     /**
      * Open user profile modal
      */
     const openProfileModal = () => {
       showProfileModal.value = true;
-      showUserMenu.value = false; // Close the dropdown menu
     };
 
     /**
@@ -1015,16 +981,7 @@ export default {
       showProfileModal.value = false;
     };
 
-    /**
-     * Logout user and redirect to login
-     */
-    const logout = async () => {
-      try {
-        router.push('/login');
-      } catch (error) {
-        // Error logging out
-      }
-    };
+    // Logout function is now handled by AppHeader component
 
     // =====================================
     // CAMERA & OCR FUNCTIONS
@@ -1138,7 +1095,7 @@ export default {
     // =====================================
 
     /**
-     * Save note with title after OCR processing
+     * Save note with title after OCR processing or quick note creation
      */
     const saveNoteWithTitle = async () => {
       if (!noteTitle.value.trim()) {
@@ -1146,16 +1103,27 @@ export default {
       }
 
       try {
-        const noteData = {
-          title: noteTitle.value.trim(),
-          text: pendingImageData.value.type === 'upload' ? pendingImageData.value.text : pendingImageData.value.data,
-          ...(pendingImageData.value.type === 'upload' && pendingImageData.value.file && { image: pendingImageData.value.file })
-        };
+        let noteData;
 
-        // Check if file is valid
-        if (noteData.image && !(noteData.image instanceof File)) {
-          alert('File upload error: Invalid file object');
-          return;
+        if (pendingImageData.value.type === 'quick_note') {
+          // Handle quick note creation
+          noteData = {
+            title: noteTitle.value.trim(),
+            text: pendingImageData.value.content
+          };
+        } else {
+          // Handle OCR/upload content (existing logic)
+          noteData = {
+            title: noteTitle.value.trim(),
+            text: pendingImageData.value.type === 'upload' ? pendingImageData.value.text : pendingImageData.value.data,
+            ...(pendingImageData.value.type === 'upload' && pendingImageData.value.file && { image: pendingImageData.value.file })
+          };
+
+          // Check if file is valid
+          if (noteData.image && !(noteData.image instanceof File)) {
+            showWarning('File upload error', 'Invalid file object');
+            return;
+          }
         }
 
         try {
@@ -1169,6 +1137,11 @@ export default {
             refreshNotes(),
             refreshStats()
           ]);
+
+          // Clear quick note content if it was a quick note
+          if (pendingImageData.value.type === 'quick_note') {
+            quickNoteContent.value = '';
+          }
         } catch (error) {
           showWarning('Save failed', 'Failed to save the note. Please try again.');
         }
@@ -1179,7 +1152,7 @@ export default {
         ocrText.value = '';
 
       } catch (error) {
-        // Error saving note
+        showWarning('Save error', 'An error occurred while saving the note.');
       }
     };
 
@@ -1254,7 +1227,6 @@ export default {
 
     return {
       // UI State
-      showUserMenu,
       showProfileModal,
       showCamera,
       video,
@@ -1266,11 +1238,18 @@ export default {
       noteToDelete,
       isProcessingFile,
 
+      // Quick note state
+      quickNoteContent,
+      isCreatingQuickNote,
+
       // Data
       user,
       recentNotes,
       stats,
       sidebarVisible,
+
+      // Computed properties
+      canCreateNote,
 
       // Loading states
       loadingNotes,
@@ -1284,12 +1263,10 @@ export default {
       lastSync,
 
       // User interaction functions
+      handleSidebarToggle,
       toggleSidebar,
-      toggleUserMenu,
-      closeUserMenu,
       openProfileModal,
       closeProfileModal,
-      logout,
       openCamera,
       closeCamera,
       capturePhoto,
@@ -1305,6 +1282,8 @@ export default {
       deleteNote,
       createNewNote,
       openSettings,
+      createQuickNote,
+      clearQuickNote,
       getProfilePictureUrl,
       handleImageError,
       handleImageLoad,
@@ -1336,10 +1315,10 @@ export default {
 
       // OCR data
       ocrText,
-  
+
       // Theme classes
       themeClasses,
-  
+
       // Store for theme access
       store
     };

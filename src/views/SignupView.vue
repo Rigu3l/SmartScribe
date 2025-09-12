@@ -25,6 +25,14 @@
           <p class="text-gray-400 text-sm sm:text-base">Sign up for SmartScribe to start digitizing your notes</p>
         </div>
         
+        <!-- Error Message -->
+        <div v-if="errorMessage" class="bg-red-900 border border-red-700 text-red-200 px-4 py-3 rounded-lg mb-6">
+          <div class="flex items-center">
+            <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="mr-2" />
+            <span>{{ errorMessage }}</span>
+          </div>
+        </div>
+
         <!-- Signup Form -->
         <form @submit.prevent="handleSignup" class="space-y-6">
           <!-- Name Fields -->
@@ -161,10 +169,10 @@
 
         <!-- Social Login Buttons -->
         <div class="grid grid-cols-3 gap-3 mb-8">
-          <button class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200">
+          <button id="google-signup-btn" @click="handleGoogleSignup" class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200">
             <font-awesome-icon :icon="['fab', 'google']" class="text-red-400 text-lg" />
           </button>
-          <button class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200">
+          <button @click="handleFacebookSignup" class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200" :disabled="isLoading">
             <font-awesome-icon :icon="['fab', 'facebook-f']" class="text-blue-400 text-lg" />
           </button>
           <button class="w-full flex items-center justify-center px-4 py-3 border border-gray-600 rounded-lg hover:bg-gray-700 transition-colors duration-200">
@@ -215,12 +223,13 @@
 import logo from '@/assets/image/logo.jpg'
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
-import api from '@/services/api';
+import { useStore } from 'vuex';
 
 export default {
   name: 'SignupView',
   setup() {
     const router = useRouter();
+    const store = useStore();
 
     const firstName = ref('');
     const lastName = ref('');
@@ -250,6 +259,83 @@ export default {
       }
     };
 
+    const handleGoogleSignup = async () => {
+      try {
+        console.log('🔐 Attempting Google signup with Google Identity Services');
+        isLoading.value = true;
+        errorMessage.value = '';
+
+        // Check if Google Identity Services is loaded
+        if (!window.google || !window.google.accounts) {
+          errorMessage.value = 'Google Sign-In is not available. Please refresh the page and try again.';
+          isLoading.value = false;
+          return;
+        }
+
+        // Initialize Google Sign-In
+        const clientId = process.env.VUE_APP_GOOGLE_OAUTH_CLIENT_ID || 'your_production_google_oauth_client_id';
+
+        if (clientId === 'your_production_google_oauth_client_id') {
+          errorMessage.value = 'Google OAuth client ID not configured. Please check your environment variables.';
+          isLoading.value = false;
+          return;
+        }
+
+        // Create Google Sign-In client
+        const googleClient = window.google.accounts.oauth2.initTokenClient({
+          client_id: clientId,
+          scope: 'openid email profile',
+          callback: async (response) => {
+            if (response.error) {
+              console.error('❌ Google OAuth error:', response);
+              errorMessage.value = 'Google signup failed. Please try again.';
+              isLoading.value = false;
+              return;
+            }
+
+            try {
+              console.log('🔐 Google OAuth successful, sending to backend');
+
+              // Send the access token to backend for verification
+              await store.dispatch('auth/googleLogin', response.access_token);
+
+              console.log('🔐 Google signup successful - Redirecting to dashboard');
+              router.push('/dashboard');
+            } catch (error) {
+              console.error('❌ Backend Google signup failed:', error);
+              errorMessage.value = error.message || 'Failed to create account with Google. Please try again.';
+            } finally {
+              isLoading.value = false;
+            }
+          }
+        });
+
+        // Request access token
+        googleClient.requestAccessToken();
+
+      } catch (error) {
+        console.error('❌ Google signup failed:', error);
+        errorMessage.value = error.message || 'Google signup failed. Please try again.';
+        isLoading.value = false;
+      }
+    };
+
+    const handleFacebookSignup = async () => {
+      try {
+        console.log('🔐 Attempting Facebook signup');
+        isLoading.value = true;
+        errorMessage.value = '';
+
+        // Facebook signup is not currently implemented
+        alert('Facebook signup is not currently supported. Please use email/password registration.');
+
+      } catch (error) {
+        console.error('❌ Facebook signup failed:', error);
+        errorMessage.value = error.message || 'Facebook signup failed. Please try again.';
+        isLoading.value = false;
+      }
+    };
+
     const handleSignup = async () => {
       try {
         // Validate passwords match
@@ -257,12 +343,12 @@ export default {
           errorMessage.value = 'Passwords do not match';
           return;
         }
-        
+
         isLoading.value = true;
         errorMessage.value = '';
-        
-        // Use the centralized API service
-        const response = await api.register({
+
+        // Use Vuex store for registration
+        await store.dispatch('auth/register', {
           first_name: firstName.value,
           last_name: lastName.value,
           name: `${firstName.value} ${lastName.value}`,
@@ -270,23 +356,18 @@ export default {
           password: password.value
         });
 
-        if (response.data && response.data.user) {
-          // Store user data in localStorage
-          localStorage.setItem("user", JSON.stringify(response.data.user));
-          localStorage.setItem("token", response.data.token || '');
+        console.log('✅ Registration successful - Showing success modal');
 
-          showSuccessModal.value = true;
+        showSuccessModal.value = true;
 
-          // Auto-close modal and redirect after 2.5 seconds
-          setTimeout(() => {
-            redirectToLogin()
-          }, 2500)
-        } else {
-          throw new Error('Invalid response from server');
-        }
+        // Auto-close modal and redirect after 2.5 seconds
+        setTimeout(() => {
+          redirectToLogin()
+        }, 2500)
 
       } catch (error) {
-        errorMessage.value = error.response?.data?.error || error.message || 'Failed to create account. Please try again.';
+        console.error('❌ Registration failed:', error.message);
+        errorMessage.value = error.message || 'Failed to create account. Please try again.';
       } finally {
         isLoading.value = false;
       }
@@ -308,7 +389,9 @@ export default {
       redirectToLogin,
       logo,
       passwordVisible,
-      confirmPasswordVisible
+      confirmPasswordVisible,
+      handleGoogleSignup,
+      handleFacebookSignup
     };
   }
 }

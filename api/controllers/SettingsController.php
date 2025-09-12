@@ -1,10 +1,9 @@
 <?php
+require_once __DIR__ . '/BaseController.php';
 
-class SettingsController {
-    private $db;
-
-    public function __construct($db) {
-        $this->db = $db;
+class SettingsController extends BaseController {
+    public function __construct() {
+        parent::__construct();
     }
 
     public function getSettings() {
@@ -163,11 +162,11 @@ class SettingsController {
         return null;
     }
 
-    private function validateToken($token) {
+    protected function validateToken($token) {
         if (!$token) return null;
 
         try {
-            $stmt = $this->db->prepare("SELECT user_id FROM user_tokens WHERE token = ? AND expires_at > NOW()");
+            $stmt = $this->db->prepare("SELECT user_id FROM user_tokens WHERE token = ? AND expires_at > UTC_TIMESTAMP()");
             $stmt->execute([$token]);
             $result = $stmt->fetch();
 
