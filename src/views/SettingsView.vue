@@ -89,15 +89,6 @@
           >
             Notifications
           </button>
-          <button
-            @click="activeTab = 'api'"
-            :class="[
-              'px-4 py-2 font-medium',
-              activeTab === 'api' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-400 hover:text-white'
-            ]"
-          >
-            API Settings
-          </button>
         </div>
         
         <!-- Account Settings -->
@@ -396,77 +387,6 @@
           </div>
         </div>
         
-        <!-- API Settings -->
-        <div v-if="activeTab === 'api'" class="space-y-6">
-          <div class="rounded-lg p-6" :class="themeClasses.card">
-            <h2 class="font-semibold mb-4" :class="[themeClasses.text, fontSizeClasses.body]">OpenAI API Configuration</h2>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm mb-1" :class="themeClasses.secondaryText">API Key</label>
-                <input
-                  v-model="settings.api.openaiKey"
-                  type="password"
-                  class="w-full p-2 rounded border focus:outline-none focus:border-blue-500 transition-colors duration-300"
-                  :class="themeClasses.input"
-                  placeholder="sk-..."
-                />
-                <p class="mt-1 text-xs" :class="themeClasses.secondaryText">Your OpenAI API key is stored securely and used for AI-powered features.</p>
-              </div>
-              
-              <div>
-                <label class="block text-sm mb-1" :class="themeClasses.secondaryText">Model</label>
-                <select
-                  v-model="settings.api.openaiModel"
-                  class="w-full p-2 rounded border focus:outline-none focus:border-blue-500 transition-colors duration-300"
-                  :class="themeClasses.input"
-                >
-                  <option value="gpt-4">GPT-4 (Most Capable)</option>
-                  <option value="gpt-3.5-turbo">GPT-3.5 Turbo (Faster)</option>
-                </select>
-              </div>
-            </div>
-            <div class="mt-4">
-              <button @click="saveAPISettings" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
-                <font-awesome-icon :icon="['fas', 'save']" class="mr-2" />
-                Save API Settings
-              </button>
-            </div>
-          </div>
-          
-          <div class="rounded-lg p-6" :class="themeClasses.card">
-            <h2 class="font-semibold mb-4" :class="[themeClasses.text, fontSizeClasses.body]">OCR Configuration</h2>
-            <div class="space-y-4">
-              <div>
-                <label class="block text-sm mb-1" :class="themeClasses.secondaryText">OCR Engine</label>
-                <select
-                  v-model="settings.api.ocrEngine"
-                  class="w-full p-2 rounded border focus:outline-none focus:border-blue-500 transition-colors duration-300"
-                  :class="themeClasses.input"
-                >
-                  <option value="tesseract">Tesseract (Local)</option>
-                  <option value="google">Google Cloud Vision (Cloud)</option>
-                  <option value="azure">Azure Computer Vision (Cloud)</option>
-                </select>
-              </div>
-              
-              <div v-if="settings.api.ocrEngine !== 'tesseract'">
-                <label class="block text-sm mb-1" :class="themeClasses.secondaryText">API Key</label>
-                <input
-                  v-model="settings.api.ocrKey"
-                  type="password"
-                  class="w-full p-2 rounded border focus:outline-none focus:border-blue-500 transition-colors duration-300"
-                  :class="themeClasses.input"
-                />
-              </div>
-            </div>
-            <div class="mt-4">
-              <button @click="saveOCRSettings" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
-                <font-awesome-icon :icon="['fas', 'save']" class="mr-2" />
-                Save OCR Settings
-              </button>
-            </div>
-          </div>
-        </div>
       </main>
     </div>
   </div>
@@ -543,12 +463,6 @@ export default {
         quizResults: false,
         goalProgress: false
       },
-      api: {
-        openaiKey: '',
-        openaiModel: 'gpt-3.5-turbo',
-        ocrEngine: 'tesseract',
-        ocrKey: ''
-      }
     });
 
     // Use global theme classes from store
@@ -710,17 +624,6 @@ export default {
       showMessage('Notification settings saved!');
     };
 
-    // Save API settings
-    const saveAPISettings = () => {
-      saveSettings();
-      showMessage('API settings saved!');
-    };
-
-    // Save OCR settings
-    const saveOCRSettings = () => {
-      saveSettings();
-      showMessage('OCR settings saved!');
-    };
 
     // Delete account
     const deleteAccount = () => {
@@ -867,8 +770,6 @@ export default {
       saveProfile,
       updatePassword,
       saveNotificationSettings,
-      saveAPISettings,
-      saveOCRSettings,
       deleteAccount,
       fetchUserProfile,
       uploadProfilePicture,
