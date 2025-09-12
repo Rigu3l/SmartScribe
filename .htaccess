@@ -1,0 +1,26 @@
+# Production .htaccess for SmartScribe
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+  RewriteBase /
+
+
+  # Handle API requests - support both /api/ and /SmartScribe/api/
+  RewriteCond %{REQUEST_URI} ^/SmartScribe/api/.*
+  RewriteRule ^SmartScribe/api/(.*)$ api/index.php [L]
+
+  RewriteCond %{REQUEST_URI} ^/api/.*
+  RewriteRule ^api/(.*)$ api/index.php [L]
+
+  # Allow direct access to uploaded files
+  RewriteCond %{REQUEST_URI} ^/uploads/.*
+  RewriteRule . - [L]
+
+  # Allow direct access to PHP files in root
+  RewriteCond %{REQUEST_URI} \.php$
+  RewriteRule . - [L]
+
+  # Handle Vue Router (for SPA)
+  RewriteCond %{REQUEST_FILENAME} !-f
+  RewriteCond %{REQUEST_FILENAME} !-d
+  RewriteRule . index.html [L]
+</IfModule>
