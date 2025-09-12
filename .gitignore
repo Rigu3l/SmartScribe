@@ -21,6 +21,9 @@ node_modules/
 # Windows batch files
 *.bat
 
+# Database setup files
+*setup*.sql
+
 # Logs
 logs/
 *.log
