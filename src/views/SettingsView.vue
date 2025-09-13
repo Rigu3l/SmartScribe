@@ -1,51 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col transition-colors duration-300" :class="themeClasses.main">
-    <!-- Reusable Header Component -->
-    <AppHeader
-      @toggle-sidebar="handleSidebarToggle"
-      @open-profile-modal="openProfileModal"
-    />
-
-    <!-- Main Content -->
-    <div class="flex flex-grow transition-all duration-300">
-      <!-- Sidebar (same as other pages) -->
-      <aside v-if="sidebarVisible" class="w-64 p-4 transition-all duration-300 ease-in-out" :class="themeClasses.sidebar">
-        <nav>
-          <ul class="space-y-2">
-            <li>
-              <router-link to="/dashboard" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'home']" />
-                <span>Dashboard</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/notes" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>My Notes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>Quizzes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'chart-line']" />
-                <span>Progress</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/settings" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'cog']" />
-                <span>Settings</span>
-              </router-link>
-            </li>
-          </ul>
-
-        </nav>
-      </aside>
+  <Header @open-profile-modal="openProfileModal">
 
       <!-- Settings Main Content -->
       <main class="flex-1 p-6 transition-all duration-300 ease-in-out" :class="themeClasses.mainContent">
@@ -388,8 +342,7 @@
         </div>
         
       </main>
-    </div>
-  </div>
+</Header>
 </template>
 
 <script>
@@ -398,12 +351,12 @@ import { useStore } from 'vuex';
 import { useNotifications } from '@/composables/useNotifications';
 import { useUserProfile } from '@/composables/useUserProfile';
 import api from '@/services/api';
-import AppHeader from '@/components/AppHeader.vue';
+import Header from '@/components/Header.vue';
 
 export default {
   name: 'SettingsView',
   components: {
-    AppHeader
+    Header
   },
   setup() {
     const store = useStore();

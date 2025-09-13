@@ -898,7 +898,7 @@ class AuthController extends BaseController {
             }
 
             // Insert new user
-            $stmt = $this->db->prepare("INSERT INTO users (first_name, last_name, name, email, google_id, auth_provider, profile_picture_url, created_at) VALUES (?, ?, ?, ?, ?, 'google', ?, NOW())");
+            $stmt = $this->db->prepare("INSERT INTO users (first_name, last_name, name, email, google_id, profile_picture, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
 
             $stmt->execute([
                 $firstName,
@@ -920,7 +920,7 @@ class AuthController extends BaseController {
     private function updateGoogleUserProfile($userId, $googleUser) {
         try {
             // Update user profile with latest Google data
-            $stmt = $this->db->prepare("UPDATE users SET name = ?, profile_picture_url = ? WHERE id = ?");
+            $stmt = $this->db->prepare("UPDATE users SET name = ?, profile_picture = ? WHERE id = ?");
 
             $fullName = $googleUser['name'] ?? 'Google User';
             $stmt->execute([$fullName, $googleUser['picture'] ?? null, $userId]);
@@ -933,7 +933,7 @@ class AuthController extends BaseController {
     private function linkGoogleAccount($userId, $googleUser) {
         try {
             // Link Google account to existing user
-            $stmt = $this->db->prepare("UPDATE users SET google_id = ?, auth_provider = 'google', profile_picture_url = ? WHERE id = ?");
+            $stmt = $this->db->prepare("UPDATE users SET google_id = ?, profile_picture = ? WHERE id = ?");
             $stmt->execute([$googleUser['sub'], $googleUser['picture'] ?? null, $userId]);
 
         } catch (Exception $e) {
@@ -1008,8 +1008,9 @@ class AuthController extends BaseController {
             $stmt = $this->db->prepare("INSERT INTO password_reset_tokens (user_id, token, email, expires_at) VALUES (?, ?, ?, ?)");
             $stmt->execute([$user['id'], $resetToken, $data['email'], $expiresAt]);
 
-            // Send reset email
-            $resetLink = "http://localhost:8080/reset-password?token=" . $resetToken;
+            // Send reset email - use configurable frontend URL
+            $frontendUrl = getenv('FRONTEND_URL') ?: 'http://localhost:8080';
+            $resetLink = $frontendUrl . "/reset-password?token=" . $resetToken;
 
             $emailService = new EmailService();
             $emailResult = $emailService->sendPasswordResetEmail($data['email'], $resetLink, $user['name']);

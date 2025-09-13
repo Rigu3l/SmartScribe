@@ -15,10 +15,15 @@ class EmailService {
         $this->mailer->isSMTP();
         $this->mailer->Host = $_ENV['SMTP_HOST'] ?? 'smtp.gmail.com';
         $this->mailer->SMTPAuth = true;
-        $this->mailer->Username = $_ENV['SMTP_USERNAME'] ?? 'your-email@gmail.com';
-        $this->mailer->Password = $_ENV['SMTP_PASSWORD'] ?? 'your-app-password';
+        $this->mailer->Username = $_ENV['SMTP_USERNAME'] ?? '202211866@gordoncollege.edu.ph';
+        $this->mailer->Password = $_ENV['SMTP_PASSWORD'] ?? 'sysftsbjrdnutkgo';
         $this->mailer->SMTPSecure = PHPMailer::ENCRYPTION_STARTTLS;
         $this->mailer->Port = $_ENV['SMTP_PORT'] ?? 587;
+
+        // Additional Gmail-specific settings for better reliability
+        $this->mailer->SMTPKeepAlive = true;
+        $this->mailer->Timeout = 30;
+        $this->mailer->SMTPDebug = 0; // Set to 2 for debugging if needed
 
         // Default sender
         $this->mailer->setFrom(
@@ -46,8 +51,31 @@ class EmailService {
             return ['success' => true, 'message' => 'Password reset email sent successfully'];
 
         } catch (Exception $e) {
-            error_log("Email sending failed: " . $this->mailer->ErrorInfo);
-            return ['success' => false, 'message' => 'Failed to send email: ' . $e->getMessage()];
+            // Enhanced error logging
+            $errorMessage = $e->getMessage();
+            $smtpError = $this->mailer->ErrorInfo;
+
+            error_log("=== EMAIL SEND FAILURE ===");
+            error_log("Time: " . date('Y-m-d H:i:s'));
+            error_log("To: " . $toEmail);
+            error_log("Exception: " . $errorMessage);
+            error_log("SMTP Error: " . $smtpError);
+            error_log("SMTP Host: " . $this->mailer->Host);
+            error_log("SMTP Port: " . $this->mailer->Port);
+            error_log("SMTP Username: " . $this->mailer->Username);
+            error_log("From Email: " . $this->mailer->From);
+            error_log("==========================");
+
+            return [
+                'success' => false,
+                'message' => 'Failed to send email: ' . $errorMessage,
+                'smtp_error' => $smtpError,
+                'debug_info' => [
+                    'host' => $this->mailer->Host,
+                    'port' => $this->mailer->Port,
+                    'from' => $this->mailer->From
+                ]
+            ];
         }
     }
 

@@ -40,7 +40,7 @@ if (!$resource) {
 
 // Initialize database connection for controllers that need it
 $db = null;
-if (in_array($resource, ['notes', 'dashboard', 'progress', 'settings', 'export'])) {
+if (in_array($resource, ['notes', 'dashboard', 'progress', 'settings', 'export', 'quizzes', 'auth', 'summaries', 'gpt', 'ocr', 'study-sessions'])) {
     require_once __DIR__ . '/config/database.php';
     try {
         $db = getDbConnection();
@@ -331,6 +331,121 @@ try {
                         'success' => false,
                         'error' => 'GPT action not found'
                     ]);
+            }
+            break;
+
+        case 'study-sessions':
+            require_once __DIR__ . '/controllers/StudySessionController.php';
+            $controller = new StudySessionController();
+
+            switch ($action) {
+                case 'start':
+                    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $controller->startSession();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode([
+                            'success' => false,
+                            'error' => 'Method not allowed'
+                        ]);
+                    }
+                    break;
+                case 'end':
+                    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $controller->endSession();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode([
+                            'success' => false,
+                            'error' => 'Method not allowed'
+                        ]);
+                    }
+                    break;
+                case 'active':
+                    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                        $controller->getActiveSession();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode([
+                            'success' => false,
+                            'error' => 'Method not allowed'
+                        ]);
+                    }
+                    break;
+                case 'update-activity':
+                    if ($_SERVER['REQUEST_METHOD'] === 'POST') {
+                        $controller->updateActivity();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode([
+                            'success' => false,
+                            'error' => 'Method not allowed'
+                        ]);
+                    }
+                    break;
+                case 'stats':
+                    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                        $controller->getStats();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode([
+                            'success' => false,
+                            'error' => 'Method not allowed'
+                        ]);
+                    }
+                    break;
+                case 'daily-stats':
+                    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                        $controller->getDailyStats();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode([
+                            'success' => false,
+                            'error' => 'Method not allowed'
+                        ]);
+                    }
+                    break;
+                case 'streak':
+                    if ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                        $controller->getStreak();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode([
+                            'success' => false,
+                            'error' => 'Method not allowed'
+                        ]);
+                    }
+                    break;
+                default:
+                    // Handle ID-based routes
+                    if (isset($_GET['id'])) {
+                        $id = $_GET['id'];
+                        switch ($_SERVER['REQUEST_METHOD']) {
+                            case 'GET':
+                                $controller->getSession($id);
+                                break;
+                            case 'PUT':
+                                $controller->updateSession($id);
+                                break;
+                            case 'DELETE':
+                                $controller->deleteSession($id);
+                                break;
+                            default:
+                                http_response_code(405);
+                                echo json_encode([
+                                    'success' => false,
+                                    'error' => 'Method not allowed'
+                                ]);
+                        }
+                    } elseif ($_SERVER['REQUEST_METHOD'] === 'GET') {
+                        $controller->getUserSessions();
+                    } else {
+                        http_response_code(404);
+                        echo json_encode([
+                            'success' => false,
+                            'error' => 'Study sessions action not found'
+                        ]);
+                    }
             }
             break;
 

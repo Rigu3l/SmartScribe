@@ -1,103 +1,8 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-900 text-white overflow-x-hidden">
-    <!-- Header (same as other pages) -->
-    <header class="p-3 sm:p-4 bg-gray-800 flex justify-between items-center">
-      <div class="text-lg sm:text-xl font-bold">SmartScribe</div>
-      <div class="flex items-center space-x-2 sm:space-x-4">
-        <button class="text-gray-400 hover:text-white p-2">
-          <font-awesome-icon :icon="['fas', 'bell']" class="text-sm sm:text-base" />
-        </button>
-        <div class="w-6 h-6 sm:w-8 sm:h-8 bg-gray-600 rounded-full"></div>
-      </div>
-    </header>
-
-    <!-- Main Content -->
-    <div class="flex flex-grow">
-      <!-- Mobile Menu Button -->
-      <button
-        @click="sidebarOpen = !sidebarOpen"
-        class="md:hidden fixed top-20 left-4 z-50 bg-gray-800 p-2 rounded-md shadow-lg"
-      >
-        <font-awesome-icon :icon="['fas', sidebarOpen ? 'times' : 'bars']" />
-      </button>
-
-      <!-- Sidebar Overlay for Mobile -->
-      <div
-        v-if="sidebarOpen"
-        @click="sidebarOpen = false"
-        class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-      ></div>
-
-      <!-- Sidebar -->
-      <aside
-        :class="[
-          'bg-gray-800 p-4 transition-all duration-300 ease-in-out',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-          'fixed md:relative z-50 md:z-auto',
-          'w-64 md:w-64 max-w-full',
-          'min-h-screen md:min-h-0',
-          'top-0 left-0 md:top-auto md:left-auto',
-          'overflow-hidden'
-        ]"
-      >
-        <nav class="mt-16 md:mt-0">
-          <ul class="space-y-2">
-            <li>
-              <router-link
-                to="/dashboard"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'home']" />
-                <span>Dashboard</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/notes"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md bg-gray-700"
-              >
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>My Notes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                :to="`/quizzes/${$route.params.id}`"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>Quiz</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/progress"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'chart-line']" />
-                <span>Progress</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/settings"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'cog']" />
-                <span>Settings</span>
-              </router-link>
-            </li>
-          </ul>
-        </nav>
-      </aside>
+  <Header @open-profile-modal="openProfileModal">
 
       <!-- Note Detail Main Content -->
-      <main class="flex-grow p-4 sm:p-6 ml-0 md:ml-0" style="width: 100vw; max-width: 100vw;">
+      <main class="flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out">
         <div v-if="isLoading" class="flex justify-center items-center h-full">
           <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-3xl sm:text-4xl text-blue-500" />
         </div>
@@ -131,11 +36,56 @@
             </div>
           </div>
 
+          <!-- Study Time Tracker -->
+          <div class="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0">
+              <h2 class="text-base sm:text-lg font-semibold">Study Session</h2>
+              <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
+                <div class="flex items-center space-x-2 text-sm">
+                  <font-awesome-icon :icon="['fas', 'clock']" class="text-blue-400" />
+                  <span class="text-gray-300">{{ formattedElapsedTime }}</span>
+                </div>
+                <div class="flex space-x-2">
+                  <button
+                    v-if="!isTracking"
+                    @click="startStudySession"
+                    class="px-3 py-1 bg-green-600 rounded text-sm hover:bg-green-700 transition"
+                  >
+                    <font-awesome-icon :icon="['fas', 'play']" class="mr-1" /> Start Studying
+                  </button>
+                  <button
+                    v-else
+                    @click="pauseStudySession"
+                    class="px-3 py-1 bg-yellow-600 rounded text-sm hover:bg-yellow-700 transition"
+                  >
+                    <font-awesome-icon :icon="['fas', 'pause']" class="mr-1" /> Pause
+                  </button>
+                  <button
+                    v-if="isTracking"
+                    @click="endStudySession"
+                    class="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700 transition"
+                  >
+                    <font-awesome-icon :icon="['fas', 'stop']" class="mr-1" /> End Session
+                  </button>
+                </div>
+              </div>
+            </div>
+            <div v-if="isActiveSession" class="bg-green-900 border border-green-700 rounded-lg p-3 mb-4">
+              <div class="flex items-center space-x-2 text-sm text-green-300">
+                <font-awesome-icon :icon="['fas', 'circle']" class="text-green-400 animate-pulse" />
+                <span>Study session active - Tracking your reading time</span>
+              </div>
+            </div>
+          </div>
+
           <div class="grid grid-cols-1 gap-4 sm:gap-6 mb-6" style="grid-template-columns: 1fr;">
             <!-- Original Text -->
             <div class="bg-gray-800 rounded-lg p-4 sm:p-6">
               <h2 class="text-base sm:text-lg font-semibold mb-4">Original Text</h2>
-              <div class="bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 h-64 sm:h-96 overflow-y-auto overflow-x-hidden text-sm sm:text-base break-words">
+              <div
+                class="bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 h-64 sm:h-96 overflow-y-auto overflow-x-hidden text-sm sm:text-base break-words"
+                @scroll="onNoteScroll"
+              >
                 {{ note.originalText }}
               </div>
             </div>
@@ -188,22 +138,68 @@
            </router-link>
          </div>
       </main>
-    </div>
-  </div>
+  </Header>
 </template>
 
 <script>
 import { ref, onMounted, computed } from 'vue';
-// import { useStore } from 'vuex';
+import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
+import { useNotifications } from '@/composables/useNotifications';
+import { useUserProfile } from '@/composables/useUserProfile';
+import { useStudyTime } from '@/composables/useStudyTime';
 import api from '@/services/api';
+import Header from '@/components/Header.vue';
 
 export default {
   name: 'NoteDetailView',
+  components: {
+    Header
+  },
   setup() {
-    // const store = useStore();
+    const store = useStore();
     const router = useRouter();
     const route = useRoute();
+
+    // =====================================
+    // NOTIFICATION SYSTEM
+    // =====================================
+    const {
+      showNotifications,
+      notifications,
+      unreadNotifications,
+      toggleNotifications,
+      closeNotifications,
+      markAsRead,
+      markAllAsRead,
+      showSuccess,
+      showInfo,
+      showWarning,
+      showError
+    } = useNotifications();
+
+    // =====================================
+    // USER PROFILE SYSTEM
+    // =====================================
+    const {
+      user,
+      loadUserProfile,
+      getProfilePictureUrl
+    } = useUserProfile();
+
+    // =====================================
+    // STUDY TIME TRACKING SYSTEM
+    // =====================================
+    const {
+      currentSession,
+      isTracking,
+      formattedElapsedTime,
+      isActiveSession,
+      startStudySession: startSession,
+      endStudySession: endSession,
+      setCurrentActivity,
+      incrementNotesStudied
+    } = useStudyTime();
 
     const note = ref(null);
     const isLoading = ref(true);
@@ -211,12 +207,125 @@ export default {
     const error = ref(null);
     const generatingSummary = ref(false);
     const sidebarOpen = ref(false);
+    const showUserMenu = ref(false);
 
     // Computed property to safely access generatingSummary state
     const isGeneratingSummary = computed(() => generatingSummary.value);
 
+    // Sidebar visibility from store
+    const sidebarVisible = computed(() => store.getters['app/getSidebarVisible']);
+
+    // =====================================
+    // SIDEBAR FUNCTIONS
+    // =====================================
+
+    /**
+     * Toggle sidebar visibility
+     */
+    const toggleSidebar = () => {
+      store.dispatch('app/toggleSidebar');
+    };
+
+    // =====================================
+    // USER MENU FUNCTIONS
+    // =====================================
+
+    /**
+     * Toggle user menu dropdown
+     */
+    const toggleUserMenu = () => {
+      showUserMenu.value = !showUserMenu.value;
+    };
+
+    /**
+     * Close user menu dropdown
+     */
+    const closeUserMenu = () => {
+      showUserMenu.value = false;
+    };
+
+    /**
+     * Open user profile modal
+     */
+    const openProfileModal = () => {
+      showUserMenu.value = false;
+    };
+
+    /**
+     * Logout user and redirect to login
+     */
+    const logout = async () => {
+      try {
+        // Clear user data from store
+        store.dispatch('auth/logout');
+
+        // Clear localStorage
+        localStorage.removeItem('user');
+        localStorage.removeItem('token');
+
+        // Close menu
+        showUserMenu.value = false;
+
+        // Redirect to login
+        router.push('/login');
+      } catch (error) {
+        showWarning('Error logging out', 'Please try again');
+      }
+    };
+
+    // =====================================
+    // IMAGE HANDLING FUNCTIONS
+    // =====================================
+
+    /**
+     * Handle image loading errors
+     */
+    const handleImageError = () => {
+      // Profile picture failed to load
+    };
+
+    /**
+     * Handle successful image loading
+     */
+    const handleImageLoad = () => {
+      // Profile picture loaded successfully
+    };
+
+    // Use global theme classes from store
+    const themeClasses = computed(() => {
+      try {
+        const classes = store.getters['app/getThemeClasses'];
+        return classes && typeof classes === 'object' ? classes : {
+          main: 'bg-gray-900 text-white',
+          header: 'bg-gray-800',
+          sidebar: 'bg-gray-800',
+          mainContent: '',
+          card: 'bg-gray-800',
+          text: 'text-white',
+          secondaryText: 'text-gray-400',
+          input: 'bg-gray-700 border-gray-600 text-white',
+          button: 'bg-gray-700 hover:bg-gray-600'
+        };
+      } catch (error) {
+        return {
+          main: 'bg-gray-900 text-white',
+          header: 'bg-gray-800',
+          sidebar: 'bg-gray-800',
+          mainContent: '',
+          card: 'bg-gray-800',
+          text: 'text-white',
+          secondaryText: 'text-gray-400',
+          input: 'bg-gray-700 border-gray-600 text-white',
+          button: 'bg-gray-700 hover:bg-gray-600'
+        };
+      }
+    });
+
     onMounted(async () => {
       try {
+        // Load user profile data first
+        await loadUserProfile();
+
         const noteId = parseInt(route.params.id);
 
         if (!noteId || isNaN(noteId)) {
@@ -379,6 +488,57 @@ export default {
       }
     };
 
+    // =====================================
+    // STUDY SESSION FUNCTIONS
+    // =====================================
+
+    /**
+     * Start a study session for reading notes
+     */
+    const startStudySession = async () => {
+      const result = await startSession('reading_notes');
+      if (result.success) {
+        showSuccess('Study session started!', 'Your reading time is now being tracked.');
+        incrementNotesStudied();
+      } else {
+        showError('Failed to start study session', result.error);
+      }
+    };
+
+    /**
+     * Pause the current study session
+     */
+    const pauseStudySession = async () => {
+      // For now, we'll just stop the timer but keep the session active
+      // In a future enhancement, we could add pause/resume functionality
+      showInfo('Study session paused', 'Timer stopped but session remains active.');
+    };
+
+    /**
+     * End the current study session
+     */
+    const endStudySession = async () => {
+      const result = await endSession({
+        notesStudied: 1, // This note was studied
+        focusLevel: 'medium'
+      });
+
+      if (result.success) {
+        showSuccess('Study session ended!', `You studied for ${formattedElapsedTime.value}`);
+      } else {
+        showError('Failed to end study session', result.error);
+      }
+    };
+
+    /**
+     * Handle note scrolling to update activity
+     */
+    const onNoteScroll = () => {
+      if (isTracking.value) {
+        setCurrentActivity('reading_notes');
+      }
+    };
+
 
     return {
       note,
@@ -388,9 +548,42 @@ export default {
       generatingSummary,
       isGeneratingSummary,
       sidebarOpen,
+      themeClasses,
+      sidebarVisible,
+      showUserMenu,
       editNote,
       exportNote,
-      generateSummary
+      generateSummary,
+      toggleSidebar,
+      toggleUserMenu,
+      closeUserMenu,
+      openProfileModal,
+      logout,
+      handleImageError,
+      handleImageLoad,
+      showNotifications,
+      notifications,
+      unreadNotifications,
+      toggleNotifications,
+      closeNotifications,
+      markAsRead,
+      markAllAsRead,
+      showSuccess,
+      showInfo,
+      showWarning,
+      showError,
+      user,
+      loadUserProfile,
+      getProfilePictureUrl,
+      // Study time tracking
+      currentSession,
+      isTracking,
+      formattedElapsedTime,
+      isActiveSession,
+      startStudySession,
+      pauseStudySession,
+      endStudySession,
+      onNoteScroll
     };
   }
 }

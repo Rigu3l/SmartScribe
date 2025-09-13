@@ -30,9 +30,9 @@ export default {
     });
 
     onMounted(() => {
-      // Ensure theme is applied on mount
-      const currentTheme = store.getters['app/getTheme'];
-      store.dispatch('app/applyTheme', currentTheme);
+      // Theme is already applied during app initialization in main.js
+      // No need to apply it again here to avoid conflicts
+      console.log('🎨 App mounted - theme should already be applied from initialization');
     });
 
     return {

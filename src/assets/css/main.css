@@ -9,21 +9,86 @@ html, body {
 }
 
 body {
-  @apply bg-gray-900 text-white;
   font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif;
+  transition: background-color 0.3s ease, color 0.3s ease;
 }
 
-/* Force override any cached styles */
-html body {
-  background-color: #111827 !important; /* gray-900 */
-  color: white !important;
-  font-family: 'Inter', 'Segoe UI', Roboto, Helvetica, Arial, sans-serif !important;
+/* Theme-aware body styles - will be overridden by Vue theme classes */
+.theme-dark body {
+  background-color: #111827;
+  color: white;
 }
 
-/* Ensure HomeView styles take precedence */
-#app .flex.flex-col.min-h-screen {
-  background-color: #111827 !important;
-  color: white !important;
+.theme-light body {
+  background-color: #f8fafc; /* slate-50 */
+  color: #0f172a; /* slate-900 */
+}
+
+/* Enhanced light theme colors for better readability */
+.theme-light {
+  --bg-primary: #f8fafc; /* slate-50 */
+  --bg-secondary: #ffffff; /* white */
+  --bg-tertiary: #f1f5f9; /* slate-100 */
+  --text-primary: #0f172a; /* slate-900 */
+  --text-secondary: #475569; /* slate-600 */
+  --text-tertiary: #64748b; /* slate-500 */
+  --border-primary: #e2e8f0; /* slate-200 */
+  --border-secondary: #cbd5e1; /* slate-300 */
+  --accent-primary: #2563eb; /* blue-600 */
+  --accent-hover: #1d4ed8; /* blue-700 */
+}
+
+.theme-dark {
+  --bg-primary: #111827; /* gray-900 */
+  --bg-secondary: #1f2937; /* gray-800 */
+  --bg-tertiary: #374151; /* gray-700 */
+  --text-primary: #ffffff; /* white */
+  --text-secondary: #d1d5db; /* gray-300 */
+  --text-tertiary: #9ca3af; /* gray-400 */
+  --border-primary: #374151; /* gray-700 */
+  --border-secondary: #4b5563; /* gray-600 */
+  --accent-primary: #3b82f6; /* blue-500 */
+  --accent-hover: #2563eb; /* blue-600 */
+}
+
+/* Ensure smooth transitions for theme changes */
+* {
+  transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+/* Enhanced focus states for better accessibility */
+.theme-light .focus\:bg-slate-50:focus {
+  background-color: var(--bg-secondary);
+}
+
+.theme-light .focus\:border-blue-500:focus {
+  border-color: var(--accent-primary);
+}
+
+.theme-light .focus\:ring-blue-500\/20:focus {
+  box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
+}
+
+/* Improved button styles for light theme */
+.theme-light .bg-slate-200 {
+  background-color: var(--bg-tertiary);
+}
+
+.theme-light .hover\:bg-slate-300:hover {
+  background-color: #e2e8f0; /* slate-200 */
+}
+
+.theme-light .text-slate-700 {
+  color: var(--text-primary);
+}
+
+/* Enhanced card shadows for light theme */
+.theme-light .shadow-sm {
+  box-shadow: 0 1px 2px 0 rgba(0, 0, 0, 0.05);
+}
+
+.theme-light .hover\:shadow-md:hover {
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
 }
 
 /* Prevent horizontal scrolling on all devices */

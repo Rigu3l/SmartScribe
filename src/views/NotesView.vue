@@ -1,191 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-900 text-white">
-    <!-- Header (same as other pages) -->
-    <header class="p-4 bg-gray-800 flex justify-between items-center">
-      <div class="flex items-center space-x-3">
-        <!-- Classic Sidebar Toggle Button -->
-        <button @click="toggleSidebar"
-                class="group relative flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-slate-800 to-gray-900 hover:from-blue-600 hover:to-blue-700 text-gray-300 hover:text-white transition-all duration-300 ease-out transform hover:scale-105 active:scale-95 overflow-hidden shadow-lg hover:shadow-xl hover:shadow-blue-500/25"
-                :title="sidebarVisible ? 'Hide sidebar' : 'Show sidebar'">
-
-          <!-- Hamburger Menu Lines -->
-          <div class="flex flex-col space-y-1 relative z-10">
-            <!-- Top line -->
-            <div class="w-6 h-0.5 bg-current transition-all duration-300 ease-out group-hover:w-7 group-hover:bg-white rounded-full"></div>
-            <!-- Middle line -->
-            <div class="w-5 h-0.5 bg-current transition-all duration-300 ease-out group-hover:w-6 group-hover:bg-white rounded-full"></div>
-            <!-- Bottom line -->
-            <div class="w-4 h-0.5 bg-current transition-all duration-300 ease-out group-hover:w-5 group-hover:bg-white rounded-full"></div>
-          </div>
-
-          <!-- Subtle background glow -->
-          <div class="absolute inset-0 rounded-xl bg-gradient-to-br from-blue-500/0 to-blue-600/0 group-hover:from-blue-500/10 group-hover:to-blue-600/10 transition-all duration-300"></div>
-
-          <!-- Tooltip -->
-          <div class="absolute -bottom-12 left-1/2 transform -translate-x-1/2 px-2 py-1 bg-gray-900 text-white text-xs rounded opacity-0 group-hover:opacity-100 transition-opacity duration-200 whitespace-nowrap border border-gray-700">
-            {{ sidebarVisible ? 'Hide Menu' : 'Show Menu' }}
-            <div class="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 border-l border-t border-gray-700 rotate-45"></div>
-          </div>
-        </button>
-        <div class="text-lg md:text-xl font-bold">SmartScribe</div>
-      </div>
-      <div class="flex items-center space-x-2 md:space-x-4">
-
-        <div class="relative">
-          <button @click="toggleNotifications" class="text-gray-400 hover:text-white relative">
-            <font-awesome-icon :icon="['fas', 'bell']" />
-            <span v-if="unreadNotifications > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
-              {{ unreadNotifications }}
-            </span>
-          </button>
-          <div v-if="showNotifications" class="absolute right-0 mt-2 w-80 bg-gray-800 rounded-md shadow-lg z-50 max-h-96 overflow-y-auto">
-            <div class="p-4 border-b border-gray-700">
-              <h3 class="text-lg font-semibold">Notifications</h3>
-            </div>
-            <div v-if="notifications.length > 0">
-              <div v-for="(notification, index) in notifications" :key="notification.id || index"
-                   class="p-4 border-b border-gray-700 hover:bg-gray-700 transition-colors"
-                   :class="{
-                     'bg-gray-700': !notification.read,
-                     'cursor-pointer': !notification.read
-                   }"
-                   @click="markAsRead(notification)">
-                <div class="flex items-start space-x-3">
-                  <div class="flex-shrink-0 mt-1">
-                    <div :class="[
-                      'w-8 h-8 rounded-full flex items-center justify-center',
-                      notification.bgColor
-                    ]">
-                      <font-awesome-icon :icon="notification.icon" class="text-white text-sm" />
-                    </div>
-                  </div>
-                  <div class="flex-grow">
-                    <div class="flex items-start justify-between">
-                      <div class="flex-grow">
-                        <p class="text-sm font-medium text-white">{{ notification.title }}</p>
-                        <p class="text-xs text-gray-300 mt-1">{{ notification.message }}</p>
-                        <p class="text-xs text-gray-500 mt-2">{{ notification.time }}</p>
-                      </div>
-                      <div class="flex items-center space-x-2 ml-2">
-                        <div v-if="!notification.read" class="flex-shrink-0">
-                          <div class="w-2 h-2 bg-blue-500 rounded-full"></div>
-                        </div>
-                        <button v-if="notification.persistent"
-                                @click.stop="removeNotification(notification.id)"
-                                class="text-gray-400 hover:text-red-400 text-xs">
-                          <font-awesome-icon :icon="['fas', 'times']" />
-                        </button>
-                      </div>
-                    </div>
-
-                    <!-- Notification Actions -->
-                    <div v-if="notification.actions && notification.actions.length > 0" class="mt-3 flex space-x-2">
-                      <button v-for="(action, actionIndex) in notification.actions" :key="actionIndex"
-                              @click.stop="executeAction(notification, action)"
-                              class="px-2 py-1 text-xs rounded transition-colors"
-                              :class="{
-                                'bg-blue-600 text-white hover:bg-blue-700': action.action === 'navigate',
-                                'bg-gray-600 text-white hover:bg-gray-700': action.action === 'dismiss',
-                                'bg-green-600 text-white hover:bg-green-700': action.action === 'callback'
-                              }">
-                        {{ action.label }}
-                      </button>
-                    </div>
-
-                    <!-- Priority Indicator -->
-                    <div v-if="notification.priority === 'urgent'" class="mt-2 flex items-center">
-                      <div class="w-2 h-2 bg-red-500 rounded-full mr-2 animate-pulse"></div>
-                      <span class="text-xs text-red-400 font-medium">URGENT</span>
-                    </div>
-                    <div v-else-if="notification.priority === 'high'" class="mt-2 flex items-center">
-                      <div class="w-2 h-2 bg-orange-500 rounded-full mr-2"></div>
-                      <span class="text-xs text-orange-400 font-medium">HIGH PRIORITY</span>
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-            <div v-else class="p-4 text-center text-gray-400">
-              <font-awesome-icon :icon="['fas', 'bell-slash']" class="text-2xl mb-2" />
-              <p>No notifications yet</p>
-            </div>
-            <div v-if="notifications.length > 0" class="p-3 border-t border-gray-700">
-              <button @click="markAllAsRead" class="text-sm text-blue-400 hover:text-blue-300">
-                Mark all as read
-              </button>
-            </div>
-          </div>
-          <!-- Backdrop to close notifications when clicking outside -->
-          <div v-if="showNotifications" class="fixed inset-0 z-0" @click="closeNotifications"></div>
-        </div>
-        <div class="relative">
-          <button @click="toggleUserMenu" class="flex items-center space-x-2">
-            <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-600">
-              <img
-                v-if="user && user.profilePicture"
-                :key="user.profilePicture"
-                :src="getProfilePictureUrl(user.profilePicture)"
-                alt="Profile"
-                class="w-full h-full object-cover"
-                @error="handleImageError"
-                @load="handleImageLoad"
-              />
-              <div v-else class="w-full h-full bg-gray-600 flex items-center justify-center">
-                <font-awesome-icon :icon="['fas', 'user']" class="text-white text-sm" />
-              </div>
-            </div>
-            <span class="text-sm text-gray-300">{{ user?.name || 'User' }}</span>
-            <font-awesome-icon :icon="['fas', 'chevron-down']" class="text-xs" />
-          </button>
-          <div v-if="showUserMenu" class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-10">
-            <button @click="openProfileModal" class="w-full text-left block px-4 py-2 hover:bg-gray-700">Profile</button>
-            <router-link to="/settings" @click="closeUserMenu" class="block px-4 py-2 hover:bg-gray-700">Settings</router-link>
-            <button @click="logout" class="w-full text-left block px-4 py-2 hover:bg-gray-700 text-red-400 hover:text-red-300">Logout</button>
-          </div>
-        </div>
-      </div>
-    </header>
-
-    <!-- Main Content -->
-    <div class="flex flex-grow transition-all duration-300">
-      <!-- Sidebar (same as other pages) -->
-      <aside v-if="sidebarVisible" class="w-64 p-4 transition-all duration-300 ease-in-out" :class="themeClasses.sidebar">
-        <nav>
-          <ul class="space-y-2">
-            <li>
-              <router-link to="/dashboard" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'home']" />
-                <span>Dashboard</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/notes" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>My Notes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>Quizzes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'chart-line']" />
-                <span>Progress</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/settings" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'cog']" />
-                <span>Settings</span>
-              </router-link>
-            </li>
-          </ul>
-
-        </nav>
-      </aside>
+  <Header @open-profile-modal="openProfileModal">
 
       <!-- Notes Main Content -->
       <main class="flex-1 p-4 md:p-6 transition-all duration-300 ease-in-out">
@@ -198,14 +12,16 @@
               <input
                 type="text"
                 placeholder="Search notes..."
-                class="pl-10 pr-4 py-2 bg-gray-800 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+                :class="themeClasses.input"
+                class="pl-10 pr-4 py-2 rounded-md focus:outline-none"
               />
-              <font-awesome-icon :icon="['fas', 'search']" class="absolute left-3 top-3 text-gray-400" />
+              <font-awesome-icon :icon="['fas', 'search']" :class="themeClasses.secondaryText" class="absolute left-3 top-3" />
             </div>
             <button
               @click="refreshNotes()"
               :disabled="loadingNotes"
-              class="flex items-center space-x-1 px-3 py-1 bg-gray-700 rounded-md hover:bg-gray-600 transition disabled:opacity-50"
+              :class="themeClasses.button"
+              class="flex items-center space-x-1 px-3 py-1 rounded-md transition disabled:opacity-50"
             >
               <font-awesome-icon
                 :icon="['fas', loadingNotes ? 'spinner' : 'sync-alt']"
@@ -213,7 +29,7 @@
                 class="text-sm"
               />
             </button>
-            <button @click="openCamera" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
+            <button @click="openCamera" :class="themeClasses.buttonPrimary" class="px-4 py-2 rounded-md transition">
               <font-awesome-icon :icon="['fas', 'camera']" class="mr-2" /> Scan New
             </button>
           </div>
@@ -225,7 +41,7 @@
             @click="activeFilter = 'all'"
             :class="[
               'px-3 py-1 rounded-md transition-colors',
-              activeFilter === 'all' ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+              activeFilter === 'all' ? themeClasses.buttonPrimary : themeClasses.button
             ]"
           >
             All Notes
@@ -234,7 +50,7 @@
             @click="activeFilter = 'recent'"
             :class="[
               'px-3 py-1 rounded-md transition-colors flex items-center space-x-1',
-              activeFilter === 'recent' ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+              activeFilter === 'recent' ? themeClasses.buttonPrimary : themeClasses.button
             ]"
           >
             <font-awesome-icon :icon="['fas', 'clock']" class="text-xs" />
@@ -244,7 +60,7 @@
             @click="activeFilter = 'favorites'"
             :class="[
               'px-3 py-1 rounded-md transition-colors flex items-center space-x-1',
-              activeFilter === 'favorites' ? 'bg-blue-600 text-white' : 'bg-gray-700 hover:bg-gray-600 text-gray-300'
+              activeFilter === 'favorites' ? themeClasses.buttonPrimary : themeClasses.button
             ]"
           >
             <font-awesome-icon :icon="['fas', 'star']" class="text-xs text-yellow-500" />
@@ -280,45 +96,49 @@
         <div v-else-if="notes.length > 0" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4 md:gap-6">
           <div
             v-for="note in filteredNotes"
-            :key="`${note.id}-${note.isFavorite}`"
-            class="bg-gray-800 rounded-lg overflow-hidden hover:shadow-lg transition cursor-pointer relative"
+            :key="`${note.id}-${note.isFavorite}-${note._lastUpdated || 0}`"
+            :class="themeClasses.card"
+            class="rounded-lg overflow-hidden transition cursor-pointer relative"
             @click="viewNote(note.id)"
           >
             <div class="p-4">
               <div class="flex justify-between items-start mb-2">
-                <h3 class="font-medium">{{ note.title }}</h3>
+                <h3 :class="themeClasses.text" class="font-medium">{{ note.title }}</h3>
                 <div class="flex space-x-2">
-                  <button @click.stop="toggleFavorite(note.id)" class="text-gray-400 hover:text-yellow-500 transition-colors">
-                    <font-awesome-icon :icon="['fas', 'star']" :class="note.isFavorite ? 'text-yellow-500' : 'text-gray-400 opacity-50'" />
+                  <button @click.stop="toggleFavorite(note.id)" :class="themeClasses.secondaryText" class="hover:text-yellow-500 transition-colors">
+                    <font-awesome-icon :icon="['fas', 'star']" :class="note.isFavorite ? 'text-yellow-500' : themeClasses.secondaryText + ' opacity-50'" />
                   </button>
                   <div class="relative">
-                    <button @click.stop="showNoteMenu(note.id)" class="text-gray-400 hover:text-white">
+                    <button @click.stop="showNoteMenu(note.id)" :class="themeClasses.secondaryText" class="hover:text-white">
                       <font-awesome-icon :icon="['fas', 'ellipsis-v']" />
                     </button>
                     
                     <!-- Dropdown Menu -->
                     <div
                       v-if="activeMenu === note.id"
-                      class="absolute right-0 top-full mt-1 w-32 bg-gray-700 rounded-md shadow-lg z-10"
+                      :class="themeClasses.card"
+                      class="absolute right-0 top-full mt-1 w-32 rounded-md shadow-lg z-10"
                       @click.stop
                     >
                       <button
                         @click="editNote(note.id)"
-                        class="w-full text-left px-3 py-2 text-sm hover:bg-gray-600 rounded-t-md flex items-center space-x-2"
+                        :class="themeClasses.hover"
+                        class="w-full text-left px-3 py-2 text-sm rounded-t-md flex items-center space-x-2"
                       >
                         <font-awesome-icon :icon="['fas', 'edit']" class="text-xs" />
-                        <span>Edit</span>
+                        <span :class="themeClasses.text">Edit</span>
                       </button>
                       <button
                         @click="duplicateNote(note.id)"
-                        class="w-full text-left px-3 py-2 text-sm hover:bg-gray-600 flex items-center space-x-2"
+                        :class="themeClasses.hover"
+                        class="w-full text-left px-3 py-2 text-sm flex items-center space-x-2"
                       >
                         <font-awesome-icon :icon="['fas', 'copy']" class="text-xs" />
-                        <span>Duplicate</span>
+                        <span :class="themeClasses.text">Duplicate</span>
                       </button>
                       <button
                         @click="confirmDelete(note.id)"
-                        class="w-full text-left px-3 py-2 text-sm hover:bg-red-600 text-red-400 hover:text-white rounded-b-md flex items-center space-x-2"
+                        class="w-full text-left px-3 py-2 text-sm text-red-400 hover:text-white hover:bg-red-600 rounded-b-md flex items-center space-x-2"
                       >
                         <font-awesome-icon :icon="['fas', 'trash']" class="text-xs" />
                         <span>Delete</span>
@@ -327,15 +147,16 @@
                   </div>
                 </div>
               </div>
-              <p class="text-sm text-gray-400 mb-2">
+              <p :class="themeClasses.secondaryText" class="text-sm mb-2">
                 {{ activeFilter === 'recent' && (Date.now() - note.timestamp) < 604800000 ? getTimeAgo(note.createdAt) : note.date }}
               </p>
-              <p class="text-sm text-gray-300 line-clamp-3 mb-3">{{ note.original_text }}</p>
+              <p :class="themeClasses.secondaryText" class="text-sm line-clamp-3 mb-3">{{ note.original_text }}</p>
               <div class="flex flex-wrap gap-2">
                 <span
                   v-for="(tag, tagIndex) in note.tags"
                   :key="tagIndex"
-                  class="px-2 py-1 bg-gray-700 rounded-full text-xs"
+                  :class="themeClasses.button"
+                  class="px-2 py-1 rounded-full text-xs"
                 >
                   {{ tag }}
                 </span>
@@ -345,23 +166,22 @@
         </div>
 
         <!-- Empty State -->
-        <div v-else class="bg-gray-800 rounded-lg p-8 text-center">
+        <div v-else :class="themeClasses.card" class="rounded-lg p-8 text-center">
           <div class="mb-4">
-            <font-awesome-icon :icon="['fas', 'book']" class="text-4xl text-gray-400" />
+            <font-awesome-icon :icon="['fas', 'book']" :class="themeClasses.secondaryText" class="text-4xl" />
           </div>
-          <h3 class="text-xl font-medium mb-2">No Notes Yet</h3>
-          <p class="text-gray-400 mb-4">Start by scanning your study materials or creating a new note.</p>
+          <h3 :class="themeClasses.text" class="text-xl font-medium mb-2">No Notes Yet</h3>
+          <p :class="themeClasses.secondaryText" class="mb-4">Start by scanning your study materials or creating a new note.</p>
           <div class="flex justify-center space-x-4">
-            <button @click="openCamera" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
+            <button @click="openCamera" :class="themeClasses.buttonPrimary" class="px-4 py-2 rounded-md transition">
               <font-awesome-icon :icon="['fas', 'camera']" class="mr-2" /> Scan Notes
             </button>
-            <button @click="createNewNote" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
+            <button @click="createNewNote" :class="themeClasses.button" class="px-4 py-2 rounded-md transition">
               <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" /> Create New
             </button>
           </div>
         </div>
       </main>
-    </div>
 
     <!-- Delete Confirmation Modal -->
     <div
@@ -458,7 +278,7 @@
       class="fixed inset-0 z-0"
       @click="closeMenu"
     ></div>
-  </div>
+</Header>
 </template>
 
 <script>
@@ -468,9 +288,13 @@ import { useStore } from 'vuex';
 import { useNotifications } from '@/composables/useNotifications';
 import { useUserProfile } from '@/composables/useUserProfile';
 import api from '@/services/api';
+import Header from '@/components/Header.vue';
 
 export default {
   name: 'NotesView',
+  components: {
+    Header
+  },
   setup() {
     const store = useStore();
     const router = useRouter();
@@ -527,19 +351,35 @@ export default {
     // Process notes data
     const notes = computed(() => {
       if (!notesResponse.value?.data) {
+        console.log('🔄 Notes computed: No data in notesResponse');
         return [];
       }
 
-      return notesResponse.value.data.map(note => ({
-        id: note.id,
-        title: note.title || 'Untitled Note',
-        original_text: note.original_text || '',
-        date: new Date(note.created_at).toLocaleDateString(),
-        createdAt: new Date(note.created_at), // Keep original Date object for sorting
-        timestamp: new Date(note.created_at).getTime(), // Timestamp for precise sorting
-        isFavorite: note.is_favorite || false, // Load favorite state from database
-        tags: [] // You can add tags logic here
-      }));
+      console.log('🔄 Notes computed: Processing', notesResponse.value.data.length, 'notes from database');
+
+      const processedNotes = notesResponse.value.data.map(note => {
+        const rawFavorite = note.is_favorite;
+        const processedFavorite = note.is_favorite === null || note.is_favorite === undefined
+          ? false
+          : Boolean(note.is_favorite && note.is_favorite !== '0' && note.is_favorite !== 0);
+
+        console.log('🔄 Notes processing - Note ID:', note.id, 'Raw is_favorite:', rawFavorite, '(type:', typeof rawFavorite, ') -> Processed:', processedFavorite);
+
+        return {
+          id: note.id,
+          title: note.title || 'Untitled Note',
+          original_text: note.original_text || '',
+          date: new Date(note.created_at).toLocaleDateString(),
+          createdAt: new Date(note.created_at), // Keep original Date object for sorting
+          timestamp: new Date(note.created_at).getTime(), // Timestamp for precise sorting
+          isFavorite: processedFavorite, // Properly convert to boolean
+          _lastUpdated: note._lastUpdated || 0, // Preserve the update timestamp
+          tags: [] // You can add tags logic here
+        };
+      });
+
+      console.log('🔄 Notes computed: Final processed notes:', processedNotes.map(n => ({ id: n.id, isFavorite: n.isFavorite })));
+      return processedNotes;
     });
 
     // Use user from composable
@@ -584,17 +424,29 @@ export default {
     };
 
     const filteredNotes = computed(() => {
+      console.log('🔄 filteredNotes computed: Recalculating with activeFilter:', activeFilter.value);
+      console.log('🔄 filteredNotes computed: notes.value length:', notes.value.length);
+
+      let result;
       if (activeFilter.value === 'all') {
-        return notes.value;
+        result = notes.value;
+        console.log('🔄 filteredNotes computed: Returning all notes');
       } else if (activeFilter.value === 'recent') {
         // Sort by timestamp (most recent first) for better precision
         const sorted = [...notes.value].sort((a, b) => b.timestamp - a.timestamp);
-        return sorted;
+        result = sorted;
+        console.log('🔄 filteredNotes computed: Returning sorted recent notes');
       } else if (activeFilter.value === 'favorites') {
         const favorites = notes.value.filter(note => note.isFavorite);
-        return favorites;
+        result = favorites;
+        console.log('🔄 filteredNotes computed: Returning favorites, count:', favorites.length);
+      } else {
+        result = notes.value;
+        console.log('🔄 filteredNotes computed: Returning default (all notes)');
       }
-      return notes.value;
+
+      console.log('🔄 filteredNotes computed: Final result length:', result.length);
+      return result;
     });
 
     // =====================================
@@ -749,17 +601,40 @@ export default {
         const newFavoriteState = !note.isFavorite;
 
         // Optimistically update the local state - ensure Vue detects the change
-        const updatedNotes = [...notes.value];
-        updatedNotes[noteIndex] = { ...note, isFavorite: newFavoriteState };
+        // Create a completely new data structure to ensure Vue reactivity
+        const updatedNotes = notesResponse.value.data.map((n, index) => {
+          if (index === noteIndex) {
+            // Create a completely new object for the updated note
+            return {
+              ...n, // Spread the original note properties
+              is_favorite: newFavoriteState,
+              // Force Vue to see this as a new object by adding a timestamp
+              _lastUpdated: Date.now()
+            };
+          }
+          // Return unchanged notes as new objects to avoid shared references
+          return { ...n };
+        });
 
-        // Create a completely new object to ensure Vue reactivity is triggered
+        // Replace the entire notesResponse object to trigger reactivity
+        console.log('🔄 TOGGLE FAVORITE: About to update notesResponse');
+        console.log('🔄 TOGGLE FAVORITE: Old notesResponse.data length:', notesResponse.value.data.length);
+        console.log('🔄 TOGGLE FAVORITE: Updated notes length:', updatedNotes.length);
+
         notesResponse.value = {
           ...notesResponse.value,
-          data: [...updatedNotes] // Create new array reference
+          data: updatedNotes
         };
+
+        console.log('🔄 TOGGLE FAVORITE: notesResponse updated, new data length:', notesResponse.value.data.length);
 
         // Force DOM update with nextTick
         await nextTick();
+        console.log('🔄 TOGGLE FAVORITE: nextTick completed');
+
+        // Verify the change is reflected
+        const updatedNoteInNotes = notes.value.find(n => n.id === noteId);
+        console.log('🔄 TOGGLE FAVORITE: Updated note in notes computed:', updatedNoteInNotes?.isFavorite);
 
         try {
           // Update the favorite status on the server
@@ -771,13 +646,24 @@ export default {
         } catch (error) {
           console.error('Error updating favorite status:', error);
           // Revert the local change if server update fails
-          const revertedNotes = [...notes.value];
-          revertedNotes[noteIndex] = { ...note, isFavorite: !newFavoriteState };
+          const revertedNotes = notesResponse.value.data.map((n, index) => {
+            if (index === noteIndex) {
+              // Create a completely new object for the reverted note
+              return {
+                ...n, // Spread the original note properties
+                is_favorite: !newFavoriteState,
+                // Force Vue to see this as a new object by adding a timestamp
+                _lastUpdated: Date.now()
+              };
+            }
+            // Return unchanged notes as new objects to avoid shared references
+            return { ...n };
+          });
 
-          // Create a completely new object to ensure Vue reactivity is triggered
+          // Replace the entire notesResponse object to trigger reactivity
           notesResponse.value = {
             ...notesResponse.value,
-            data: [...revertedNotes] // Create new array reference
+            data: revertedNotes
           };
 
           // Force DOM update with nextTick

@@ -25,6 +25,27 @@
             <div class="text-sm text-gray-400">
               • {{ correctAnswersCount }} ✓ • {{ incorrectAnswersCount }} ✗ • {{ currentAccuracy }}%
             </div>
+            <!-- Study Time Display -->
+            <div class="flex items-center space-x-2 text-sm">
+              <font-awesome-icon :icon="['fas', 'clock']" class="text-blue-400" />
+              <span class="text-gray-300">{{ formattedElapsedTime }}</span>
+              <button
+                v-if="!isTracking"
+                @click="startStudySession"
+                class="px-2 py-1 bg-green-600 rounded text-xs hover:bg-green-700 transition"
+                title="Start study session"
+              >
+                <font-awesome-icon :icon="['fas', 'play']" />
+              </button>
+              <button
+                v-else
+                @click="endStudySession"
+                class="px-2 py-1 bg-red-600 rounded text-xs hover:bg-red-700 transition"
+                title="End study session"
+              >
+                <font-awesome-icon :icon="['fas', 'stop']" />
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -377,6 +398,7 @@
 <script>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { useStudyTime } from '@/composables/useStudyTime'
 import api from '@/services/api'
 
 export default {
@@ -404,6 +426,18 @@ export default {
     const showCompletionPopup = ref(false)
     const isSavingQuiz = ref(false)
     const currentQuestionIndex = ref(0)
+
+    // =====================================
+    // STUDY TIME TRACKING SYSTEM
+    // =====================================
+    const {
+      isTracking,
+      formattedElapsedTime,
+      startStudySession: startSession,
+      endStudySession: endSession,
+      setCurrentActivity,
+      incrementQuizzesTaken
+    } = useStudyTime()
 
     // Computed properties
     const allQuestionsAnswered = computed(() => {
@@ -511,6 +545,11 @@ export default {
       console.log('Question data:', quizQuestions.value[questionIndex])
       console.log('Correct answer:', quizQuestions.value[questionIndex].correctAnswer)
       console.log('Is correct:', optionIndex === quizQuestions.value[questionIndex].correctAnswer)
+
+      // Update study activity if tracking
+      if (isTracking.value) {
+        setCurrentActivity('taking_quiz')
+      }
 
       // Force reactivity update using nextTick
       await nextTick()
@@ -700,6 +739,11 @@ Unanswered: ${getUnansweredQuestionsCount()}`)
       quizCompleted.value = true
       console.log(`Quiz completed. Valid questions: ${totalValidQuestions}, Correct: ${validatedScore}, Score: ${validatedScore}/${totalValidQuestions}`)
 
+      // Update study session with quiz completion
+      if (isTracking.value) {
+        incrementQuizzesTaken(validatedScore)
+      }
+
       // Show completion popup immediately
       showCompletionPopup.value = true
     }
@@ -827,6 +871,42 @@ Unanswered: ${getUnansweredQuestionsCount()}`)
       }
     }
 
+    // =====================================
+    // STUDY SESSION FUNCTIONS
+    // =====================================
+
+    /**
+     * Start a study session for taking quiz
+     */
+    const startStudySession = async () => {
+      const result = await startSession('taking_quiz')
+      if (result.success) {
+        console.log('Study session started for quiz taking')
+      } else {
+        console.error('Failed to start study session:', result.error)
+        alert('Failed to start study session tracking')
+      }
+    }
+
+    /**
+     * End the current study session
+     */
+    const endStudySession = async () => {
+      const accuracy = quizQuestions.value.length > 0 ? Math.round((quizScore.value / quizQuestions.value.length) * 100) : 0
+      const result = await endSession({
+        notesStudied: 0, // Quiz taking doesn't count as note studying
+        quizzesTaken: 1,
+        averageScore: accuracy,
+        focusLevel: 'high'
+      })
+
+      if (result.success) {
+        console.log('Study session ended for quiz taking')
+      } else {
+        console.error('Failed to end study session:', result.error)
+      }
+    }
+
     // Initialize
     onMounted(async () => {
       await loadQuiz()
@@ -866,7 +946,12 @@ Unanswered: ${getUnansweredQuestionsCount()}`)
       viewResults,
       retakeQuiz,
       saveQuiz,
-      shuffleArray
+      shuffleArray,
+      // Study time tracking
+      isTracking,
+      formattedElapsedTime,
+      startStudySession,
+      endStudySession
     }
   }
 }

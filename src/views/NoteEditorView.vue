@@ -1,93 +1,23 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-900 text-white overflow-x-hidden">
-    <!-- Header (same as other pages) -->
-    <header class="p-3 sm:p-4 bg-gray-800 flex justify-between items-center">
-      <div class="text-lg sm:text-xl font-bold">SmartScribe</div>
-      <div class="flex items-center space-x-2 sm:space-x-4">
-        <button class="text-gray-400 hover:text-white p-2">
-          <font-awesome-icon :icon="['fas', 'bell']" class="text-sm sm:text-base" />
-        </button>
-        <div class="w-6 h-6 sm:w-8 sm:h-8 bg-gray-600 rounded-full"></div>
-      </div>
-    </header>
+  <Header @open-profile-modal="openProfileModal">
 
-    <!-- Main Content -->
-    <div class="flex flex-grow">
-      <!-- Mobile Menu Button -->
-      <button
-        @click="sidebarOpen = !sidebarOpen"
-        class="md:hidden fixed top-20 left-4 z-50 bg-gray-800 p-2 rounded-md shadow-lg"
-      >
-        <font-awesome-icon :icon="['fas', sidebarOpen ? 'times' : 'bars']" />
-      </button>
+    <!-- Mobile Menu Button -->
+    <button
+      @click="sidebarOpen = !sidebarOpen"
+      class="md:hidden fixed top-20 left-4 z-50 bg-gray-800 p-2 rounded-md shadow-lg"
+    >
+      <font-awesome-icon :icon="['fas', sidebarOpen ? 'times' : 'bars']" />
+    </button>
 
-      <!-- Sidebar Overlay for Mobile -->
-      <div
-        v-if="sidebarOpen"
-        @click="sidebarOpen = false"
-        class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-      ></div>
+    <!-- Sidebar Overlay for Mobile -->
+    <div
+      v-if="sidebarOpen"
+      @click="sidebarOpen = false"
+      class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+    ></div>
 
-      <!-- Sidebar -->
-      <aside
-        :class="[
-          'bg-gray-800 p-4 transition-all duration-300 ease-in-out',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-          'fixed md:relative z-50 md:z-auto',
-          'w-64 md:w-64 max-w-full',
-          'min-h-screen md:min-h-0',
-          'top-0 left-0 md:top-auto md:left-auto',
-          'overflow-hidden'
-        ]"
-      >
-        <nav class="mt-16 md:mt-0">
-          <ul class="space-y-2">
-            <li>
-              <router-link
-                to="/dashboard"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'home']" />
-                <span>Dashboard</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/notes"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md bg-gray-700"
-              >
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>My Notes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/progress"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'chart-line']" />
-                <span>Progress</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/settings"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'cog']" />
-                <span>Settings</span>
-              </router-link>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
-      <!-- Note Editor Main Content -->
-      <main class="flex-grow p-4 sm:p-6 ml-0 md:ml-0" style="width: 100vw; max-width: 100vw;">
+    <!-- Note Editor Main Content -->
+    <main class="flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out">
         <div v-if="isLoading" class="flex justify-center items-center h-full">
           <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-4xl text-blue-500" />
         </div>
@@ -239,8 +169,14 @@
         </div>
         </div>
       </main>
-    </div>
-  </div>
+
+    <!-- Camera Modal -->
+    <CameraModal
+      :show="showCameraModal"
+      @close="closeCameraModal"
+      @photo-captured="handlePhotoCaptured"
+    />
+  </Header>
 </template>
 
 <script>
@@ -248,9 +184,13 @@ import { ref, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import api from '@/services/api';
+import Header from '@/components/Header.vue';
 
 export default {
   name: 'NoteEditorView',
+  components: {
+    Header
+  },
   setup() {
     const store = useStore();
     const router = useRouter();
@@ -659,6 +599,16 @@ export default {
       }
     };
 
+    const showProfileModal = ref(false);
+
+    const openProfileModal = () => {
+      showProfileModal.value = true;
+    };
+
+    const closeProfileModal = () => {
+      showProfileModal.value = false;
+    };
+
     return {
       note,
       summaryLength,
@@ -682,7 +632,10 @@ export default {
       generateQuiz,
       checkQuizAnswers,
       resetQuiz,
-      exportNote
+      exportNote,
+      showProfileModal,
+      openProfileModal,
+      closeProfileModal
     };
   }
 }

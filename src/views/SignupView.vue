@@ -1,13 +1,5 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-900 text-white">
-    <!-- Header -->
-    <header class="p-4 flex justify-between items-center">
-      <router-link to="/" class="text-xl font-bold">SmartScribe</router-link>
-      <div class="space-x-2">
-        <router-link to="/login" class="px-4 py-2 border border-white rounded-md hover:bg-gray-800 transition">Sign In</router-link>
-        <router-link to="/contact" class="px-4 py-2 bg-white text-gray-900 rounded-md hover:bg-gray-200 transition">Contact</router-link>
-      </div>
-    </header>
+  <Header>
 
     <!-- Main Content -->
     <main class="flex-grow flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-8" style="min-height: calc(100vh - 200px);">
@@ -216,7 +208,7 @@
       </div>
       <div>© 2025 SmartScribe Inc.</div>
     </footer>
-  </div>
+</Header>
 </template>
 
 <script>

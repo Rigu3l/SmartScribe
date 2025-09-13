@@ -1,51 +1,5 @@
 <template>
-  <div :class="themeClasses.main" class="min-h-screen flex flex-col">
-    <!-- Reusable Header Component -->
-    <AppHeader
-      @toggle-sidebar="handleSidebarToggle"
-      @open-profile-modal="openProfileModal"
-    />
-
-    <!-- Main Content -->
-    <div class="flex flex-grow transition-all duration-300">
-      <!-- Sidebar -->
-      <aside v-if="sidebarVisible" class="w-64 p-4 transition-all duration-300 ease-in-out" :class="themeClasses.sidebar">
-        <nav>
-          <ul class="space-y-2">
-            <li>
-              <router-link to="/dashboard" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'home']" />
-                <span>Dashboard</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/notes" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>My Notes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>Quizzes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'chart-line']" />
-                <span>Progress</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/settings" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'cog']" />
-                <span>Settings</span>
-              </router-link>
-            </li>
-          </ul>
-
-        </nav>
-      </aside>
+  <Header @open-profile-modal="openProfileModal">
 
       <div
         v-if="showSaveConfirmation"
@@ -341,38 +295,6 @@
               </label>
             </div>
 
-            <!-- Camera Interface -->
-            <div v-if="showCamera" class="mt-3 p-3 rounded border"
-                 :class="[
-                   store.getters['app/getCurrentTheme'] === 'dark'
-                     ? 'bg-gray-800 border-gray-600'
-                     : 'bg-gray-50 border-gray-200'
-                 ]">
-              <video
-                ref="video"
-                autoplay
-                class="w-full rounded"
-              ></video>
-              <div class="flex justify-center space-x-2 mt-2">
-                <button
-                  @click="capturePhoto"
-                  class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-                >
-                  Capture
-                </button>
-                <button
-                  @click="closeCamera"
-                  class="px-3 py-1 text-sm rounded transition-colors"
-                  :class="[
-                    store.getters['app/getCurrentTheme'] === 'dark'
-                      ? 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                      : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
-                  ]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
 
             <!-- Create Button -->
             <div class="flex justify-center pt-2">
@@ -520,25 +442,31 @@
           </div>
         </div>
       </main>
-    </div>
-  </div>
-</template>
 
+    <!-- Camera Modal -->
+    <CameraModal
+      :show="showCameraModal"
+      @close="closeCameraModal"
+      @photo-captured="handlePhotoCaptured"
+    />
+  </Header>
+</template>
 <script>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import Tesseract from 'tesseract.js';
-import { nextTick } from 'vue';
 import { useNotifications } from '@/composables/useNotifications';
 import { useUserProfile } from '@/composables/useUserProfile';
 import api from '@/services/api';
-import AppHeader from '@/components/AppHeader.vue';
+import CameraModal from '@/components/CameraModal.vue';
+import Header from '@/components/Header.vue';
 
 export default {
   name: 'DashboardView',
   components: {
-    AppHeader
+    CameraModal,
+    Header
   },
   setup() {
     const router = useRouter();
@@ -562,13 +490,6 @@ export default {
     // NOTIFICATION SYSTEM
     // =====================================
     const {
-      showNotifications,
-      notifications,
-      unreadNotifications,
-      toggleNotifications,
-      closeNotifications,
-      markAsRead,
-      markAllAsRead,
       showSuccess,
       showInfo,
       showWarning
@@ -658,9 +579,6 @@ export default {
     // Use user from composable
     const user = userProfile;
 
-    // Sidebar visibility from store
-    const sidebarVisible = computed(() => store.getters['app/getSidebarVisible']);
-
     // Use global theme classes from store with computed property
     const themeClasses = computed(() => {
       try {
@@ -710,8 +628,6 @@ export default {
     // UI STATE
     // =====================================
     const showProfileModal = ref(false);
-    const showCamera = ref(false);
-    const video = ref(null);
 
     // Note creation state
     const ocrText = ref('');
@@ -728,6 +644,9 @@ export default {
     // Note deletion state
     const showDeleteModal = ref(false);
     const noteToDelete = ref(null);
+
+    // Camera modal state
+    const showCameraModal = ref(false);
 
     // =====================================
     // API FUNCTIONS
@@ -944,28 +863,8 @@ export default {
     });
 
     // =====================================
-    // SIDEBAR FUNCTIONS
-    // =====================================
-
-    /**
-     * Handle sidebar toggle from AppHeader component
-     */
-    const handleSidebarToggle = () => {
-      store.dispatch('app/toggleSidebar');
-    };
-
-    /**
-     * Toggle sidebar visibility (legacy function for backward compatibility)
-     */
-    const toggleSidebar = () => {
-      store.dispatch('app/toggleSidebar');
-    };
-
-    // =====================================
     // USER MENU FUNCTIONS
     // =====================================
-
-    // User menu functions are now handled by AppHeader component
 
     /**
      * Open user profile modal
@@ -981,68 +880,34 @@ export default {
       showProfileModal.value = false;
     };
 
-    // Logout function is now handled by AppHeader component
-
     // =====================================
     // CAMERA & OCR FUNCTIONS
     // =====================================
 
     /**
-     * Open camera for note scanning
+     * Open camera modal
      */
-    const openCamera = async () => {
-      showCamera.value = true;
-
-      await nextTick(); // Wait for the video element to exist
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (video.value) {
-          video.value.srcObject = stream;
-        }
-      } catch (err) {
-        // Camera access denied or error
-      }
+    const openCamera = () => {
+      showCameraModal.value = true;
     };
 
     /**
-     * Close camera and stop video stream
+     * Close camera modal
      */
-    const closeCamera = () => {
-      showCamera.value = false;
-      const stream = video.value.srcObject;
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      video.value.srcObject = null;
+    const closeCameraModal = () => {
+      showCameraModal.value = false;
     };
 
     /**
-     * Capture photo from camera and perform OCR
+     * Handle photo captured from camera modal
      */
-    const capturePhoto = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.value.videoWidth;
-      canvas.height = video.value.videoHeight;
-      canvas.getContext('2d').drawImage(video.value, 0, 0);
+    const handlePhotoCaptured = (photoData) => {
+      // Store the captured data for processing
+      pendingImageData.value = photoData;
 
-      canvas.toBlob(async (blob) => {
-        try {
-          const { data: { text } } = await Tesseract.recognize(blob, 'eng', {
-            logger: () => {} // Disable logging
-          });
-
-          ocrText.value = text;
-          pendingImageData.value = { type: 'capture', data: text };
-          closeCamera();
-
-          showTitleModal.value = true;
-          noteTitle.value = ''; // Reset title input
-
-        } catch (error) {
-          // OCR error
-        }
-      }, 'image/jpeg');
+      // Show title modal to get note title
+      showTitleModal.value = true;
+      noteTitle.value = '';
     };
 
     /**
@@ -1228,8 +1093,6 @@ export default {
     return {
       // UI State
       showProfileModal,
-      showCamera,
-      video,
       showSaveConfirmation,
       showTitleModal,
       noteTitle,
@@ -1237,6 +1100,7 @@ export default {
       showDeleteModal,
       noteToDelete,
       isProcessingFile,
+      showCameraModal,
 
       // Quick note state
       quickNoteContent,
@@ -1246,7 +1110,6 @@ export default {
       user,
       recentNotes,
       stats,
-      sidebarVisible,
 
       // Computed properties
       canCreateNote,
@@ -1263,13 +1126,11 @@ export default {
       lastSync,
 
       // User interaction functions
-      handleSidebarToggle,
-      toggleSidebar,
       openProfileModal,
       closeProfileModal,
       openCamera,
-      closeCamera,
-      capturePhoto,
+      closeCameraModal,
+      handlePhotoCaptured,
       handleFileUpload,
       handleProfilePictureUpload,
       saveNoteWithTitle,
@@ -1289,13 +1150,6 @@ export default {
       handleImageLoad,
 
       // Notification functions
-      showNotifications,
-      notifications,
-      unreadNotifications,
-      toggleNotifications,
-      markAsRead,
-      markAllAsRead,
-      closeNotifications,
       showSuccess,
       showInfo,
       showWarning,

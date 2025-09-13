@@ -22,7 +22,7 @@ const state = {
   fontSize: 16,
 
   // Sidebar visibility
-  sidebarVisible: true,
+  sidebarVisible: false,
 };
 
 const getters = {
@@ -60,17 +60,46 @@ const getters = {
     const isDark = state.theme === 'dark' ||
                   (state.theme === 'system' && isSystemDark);
 
-    return {
-      main: isDark ? 'bg-gray-900 text-white' : 'bg-gray-100 text-gray-900',
-      header: isDark ? 'bg-gray-800' : 'bg-white border-b border-gray-200',
-      sidebar: isDark ? 'bg-gray-800' : 'bg-gray-50 border-r border-gray-200',
-      mainContent: isDark ? '' : 'bg-gray-100',
-      card: isDark ? 'bg-gray-800' : 'bg-white border border-gray-200',
-      text: isDark ? 'text-white' : 'text-gray-900',
-      secondaryText: isDark ? 'text-gray-400' : 'text-gray-600',
-      input: isDark ? 'bg-gray-700 border-gray-600 text-white' : 'bg-white border-gray-300 text-gray-900',
-      button: isDark ? 'bg-gray-700 hover:bg-gray-600' : 'bg-gray-200 hover:bg-gray-300'
-    };
+    if (isDark) {
+      return {
+        main: 'bg-gray-900 text-white',
+        header: 'bg-gray-800 border-b border-gray-700',
+        sidebar: 'bg-gray-800 border-r border-gray-700',
+        mainContent: 'bg-gray-900',
+        card: 'bg-gray-800 border border-gray-700 shadow-lg',
+        text: 'text-white',
+        secondaryText: 'text-gray-300',
+        tertiaryText: 'text-gray-400',
+        input: 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500',
+        button: 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600',
+        buttonPrimary: 'bg-blue-600 hover:bg-blue-700 text-white border border-blue-600',
+        buttonSecondary: 'bg-gray-600 hover:bg-gray-500 text-white border border-gray-600',
+        link: 'text-blue-400 hover:text-blue-300',
+        border: 'border-gray-700',
+        hover: 'hover:bg-gray-700',
+        focus: 'focus:bg-gray-600 focus:border-blue-500'
+      };
+    } else {
+      // Enhanced light theme for better readability
+      return {
+        main: 'bg-slate-50 text-slate-900',
+        header: 'bg-white border-b border-slate-200 shadow-sm',
+        sidebar: 'bg-slate-100 border-r border-slate-200',
+        mainContent: 'bg-slate-50',
+        card: 'bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow',
+        text: 'text-slate-900',
+        secondaryText: 'text-slate-600',
+        tertiaryText: 'text-slate-500',
+        input: 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-blue-500 shadow-sm',
+        button: 'bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 hover:border-slate-400',
+        buttonPrimary: 'bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm',
+        buttonSecondary: 'bg-slate-500 hover:bg-slate-600 text-white border border-slate-500 shadow-sm',
+        link: 'text-blue-600 hover:text-blue-700',
+        border: 'border-slate-200',
+        hover: 'hover:bg-slate-100',
+        focus: 'focus:bg-slate-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
+      };
+    }
   },
   getFontSizeClasses: (state) => {
     const size = state.fontSize;
@@ -212,11 +241,39 @@ const actions = {
     commit('CLEAR_OPTIMISTIC_UPDATES');
   },
 
+  // Debug action for theme troubleshooting
+  debugTheme({ state, getters }) {
+    console.log('🎨 === THEME DEBUG INFO ===');
+    console.log('🎨 Current theme state:', state.theme);
+    console.log('🎨 Current theme (computed):', getters.getCurrentTheme);
+    console.log('🎨 Font size:', state.fontSize);
+    console.log('🎨 Sidebar visible:', state.sidebarVisible);
+    console.log('🎨 Theme classes:', getters.getThemeClasses);
+    console.log('🎨 Font size classes:', getters.getFontSizeClasses);
+
+    // Check DOM classes
+    if (typeof document !== 'undefined') {
+      console.log('🎨 Document root classes:', document.documentElement.className);
+      console.log('🎨 Body classes:', document.body.className);
+    }
+
+    console.log('🎨 === END THEME DEBUG ===');
+    return {
+      theme: state.theme,
+      currentTheme: getters.getCurrentTheme,
+      fontSize: state.fontSize,
+      sidebarVisible: state.sidebarVisible,
+      themeClasses: getters.getThemeClasses
+    };
+  },
+
   // Theme actions
   setTheme({ commit, dispatch }, theme) {
+    console.log('🎨 setTheme called with:', theme);
     commit('SET_THEME', theme);
     dispatch('applyTheme', theme);
     dispatch('saveThemeSettings');
+    console.log('🎨 Theme set to:', theme);
   },
 
   setFontSize({ commit, dispatch }, fontSize) {
@@ -244,50 +301,78 @@ const actions = {
     const root = document.documentElement;
     const body = document.body;
 
+    // Remove all theme classes first
+    root.classList.remove('theme-dark', 'theme-light', 'theme-system');
+    body.classList.remove('theme-dark', 'theme-light', 'theme-system');
+
+    // Apply the appropriate theme class
     if (theme === 'dark') {
-      root.classList.add('dark');
-      body.classList.add('dark');
+      root.classList.add('theme-dark');
+      body.classList.add('theme-dark');
+      console.log('🎨 Applied dark theme');
     } else if (theme === 'light') {
-      root.classList.remove('dark');
-      body.classList.remove('dark');
+      root.classList.add('theme-light');
+      body.classList.add('theme-light');
+      console.log('🎨 Applied light theme');
     } else if (theme === 'system') {
       const prefersDark = window.matchMedia('(prefers-color-scheme: dark)').matches;
-      root.classList.toggle('dark', prefersDark);
-      body.classList.toggle('dark', prefersDark);
+      const systemTheme = prefersDark ? 'theme-dark' : 'theme-light';
+      root.classList.add('theme-system', systemTheme);
+      body.classList.add('theme-system', systemTheme);
+      console.log('🎨 Applied system theme:', systemTheme);
     }
+
+    // Force a repaint to ensure theme changes are visible
+    document.body.style.display = 'none';
+    document.body.offsetHeight; // Trigger reflow
+    document.body.style.display = '';
   },
 
   saveThemeSettings({ state }) {
+    console.log('🎨 saveThemeSettings: Saving theme settings to localStorage');
     // Save to localStorage
     const settings = {
       theme: state.theme,
       fontSize: state.fontSize,
       sidebarVisible: state.sidebarVisible
     };
+    console.log('🎨 saveThemeSettings: Settings to save:', settings);
     localStorage.setItem('smartscribe_theme_settings', JSON.stringify(settings));
+    console.log('🎨 saveThemeSettings: Settings saved to localStorage');
   },
 
   loadThemeSettings({ commit, dispatch }) {
+    console.log('🎨 loadThemeSettings: Loading theme settings from localStorage');
     // Load from localStorage
     const savedSettings = localStorage.getItem('smartscribe_theme_settings');
+    console.log('🎨 loadThemeSettings: Raw localStorage data:', savedSettings);
+
     if (savedSettings) {
       try {
         const settings = JSON.parse(savedSettings);
+        console.log('🎨 loadThemeSettings: Parsed settings:', settings);
+
         if (settings.theme) {
+          console.log('🎨 loadThemeSettings: Setting theme to:', settings.theme);
           commit('SET_THEME', settings.theme);
         }
         if (settings.fontSize) {
+          console.log('🎨 loadThemeSettings: Setting font size to:', settings.fontSize);
           commit('SET_FONT_SIZE', settings.fontSize);
         }
         if (typeof settings.sidebarVisible === 'boolean') {
+          console.log('🎨 loadThemeSettings: Setting sidebar visible to:', settings.sidebarVisible);
           commit('SET_SIDEBAR_VISIBLE', settings.sidebarVisible);
         }
         // Apply the loaded theme
-        dispatch('applyTheme', settings.theme || 'dark');
+        const themeToApply = settings.theme || 'dark';
+        console.log('🎨 loadThemeSettings: Applying theme:', themeToApply);
+        dispatch('applyTheme', themeToApply);
       } catch (error) {
-        console.error('Error loading theme settings:', error);
+        console.error('🎨 loadThemeSettings: Error loading theme settings:', error);
       }
     } else {
+      console.log('🎨 loadThemeSettings: No saved settings found, applying default theme');
       // Apply default theme
       dispatch('applyTheme', 'dark');
     }

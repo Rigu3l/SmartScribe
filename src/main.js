@@ -28,7 +28,8 @@ import {
   faAngleLeft,
   faInfoCircle,
   faPaperPlane,
-  faRedo
+  faRedo,
+  faFlask
 } from '@fortawesome/free-solid-svg-icons'
 import {
   faTwitter, faFacebook, faInstagram, faGithub,
@@ -55,7 +56,8 @@ library.add(
   faAngleLeft,
   faInfoCircle,
   faPaperPlane,
-  faRedo
+  faRedo,
+  faFlask
 )
 
 

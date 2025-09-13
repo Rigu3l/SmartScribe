@@ -134,7 +134,14 @@ export default {
   
   // Notes
   getNotes() {
-    return api.get('?resource=notes')
+    // Add cache-busting parameter to prevent browser caching
+    const cacheBust = Date.now();
+    return api.get(`?resource=notes&_t=${cacheBust}`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    })
   },
   getNote(id) {
     return api.get(`?resource=notes&id=${id}`)
@@ -167,7 +174,9 @@ export default {
       formData.append('text', noteData.text)
     }
     if (noteData.is_favorite !== undefined) {
-      formData.append('is_favorite', noteData.is_favorite ? '1' : '0')
+      const favoriteValue = noteData.is_favorite ? '1' : '0';
+      console.log('🔄 API: Setting is_favorite to:', favoriteValue, '(from boolean:', noteData.is_favorite, ')');
+      formData.append('is_favorite', favoriteValue);
     }
     if (noteData.summary) {
       formData.append('summary', noteData.summary)
@@ -176,7 +185,13 @@ export default {
       formData.append('keywords', noteData.keywords)
     }
 
-    return api.post(`?resource=notes&id=${id}`, formData)
+    // Add cache-busting headers
+    return api.post(`?resource=notes&id=${id}`, formData, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    })
   },
   deleteNote(id) {
     return api.delete(`?resource=notes&id=${id}`)
@@ -257,10 +272,19 @@ export default {
     return api.get('?resource=quizzes')
   },
   getQuiz(id) {
-    return api.get(`?resource=quizzes&id=${id}`)
+    console.log('🔄 API getQuiz: Starting with quizId:', id)
+    const result = api.get(`?resource=quizzes&id=${id}`)
+    console.log('🔄 API getQuiz: Request promise created')
+    return result
   },
   createQuiz(noteId, options) {
-    return api.post('?resource=quizzes', { note_id: noteId, ...options })
+    console.log('🔄 API createQuiz: Starting with noteId:', noteId)
+    console.log('🔄 API createQuiz: Options:', options)
+    const requestData = { note_id: noteId, ...options }
+    console.log('🔄 API createQuiz: Full request data:', requestData)
+    const result = api.post('?resource=quizzes', requestData)
+    console.log('🔄 API createQuiz: Request promise created')
+    return result
   },
   updateQuiz(id, data) {
     return api.put(`?resource=quizzes&id=${id}`, data)
