@@ -1,7 +1,5 @@
 <template>
-  <Header>
-
-    <!-- Main Content -->
+  <!-- Main Content -->
     <main class="flex-grow flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-8" style="min-height: calc(100vh - 200px);">
       <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 sm:p-10 w-full max-w-md border border-gray-700">
         <!-- Logo Section -->
@@ -208,7 +206,6 @@
       </div>
       <div>© 2025 SmartScribe Inc.</div>
     </footer>
-</Header>
 </template>
 
 <script>
