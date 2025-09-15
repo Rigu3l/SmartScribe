@@ -273,7 +273,7 @@ export default {
         // Create Google Sign-In client
         const googleClient = window.google.accounts.oauth2.initTokenClient({
           client_id: clientId,
-          scope: 'openid email profile',
+          scope: 'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
           callback: async (response) => {
             if (response.error) {
               console.error('❌ Google OAuth error:', response);
@@ -284,6 +284,7 @@ export default {
 
             try {
               console.log('🔐 Google OAuth successful, sending to backend');
+              console.log('🔐 Access token length:', response.access_token.length);
 
               // Send the access token to backend for verification
               await store.dispatch('auth/googleLogin', response.access_token);

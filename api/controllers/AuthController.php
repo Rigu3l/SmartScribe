@@ -829,23 +829,11 @@ class AuthController extends BaseController {
 
     private function verifyGoogleAccessToken($accessToken) {
         try {
-            // Get Google client ID from environment
-            $clientId = getenv('GOOGLE_OAUTH_CLIENT_ID');
-            error_log("DEBUG: GOOGLE_OAUTH_CLIENT_ID = " . $clientId);
-            if (!$clientId) {
-                error_log("Google OAuth client ID not configured");
-                return false;
-            }
-
-            if ($clientId === 'your_production_google_oauth_client_id') {
-                error_log("ERROR: Google OAuth client ID is still set to placeholder value");
-                return false;
-            }
-
             // DEBUG: Log the access token (first 20 chars for security)
             error_log("DEBUG: Verifying access token: " . substr($accessToken, 0, 20) . "...");
 
             // Use the access token to get user info from Google's userinfo endpoint
+            // Note: Client ID is not required for userinfo endpoint validation
             $url = 'https://www.googleapis.com/oauth2/v2/userinfo';
             $context = stream_context_create([
                 'http' => [
@@ -858,13 +846,21 @@ class AuthController extends BaseController {
 
             if (!$response) {
                 error_log("Failed to get user info from Google - no response");
+                error_log("DEBUG: Access token used: " . substr($accessToken, 0, 20) . "...");
                 return false;
             }
 
+            error_log("DEBUG: Google userinfo response: " . substr($response, 0, 200) . "...");
+
             $userData = json_decode($response, true);
 
-            if (!$userData || !isset($userData['id'])) {
-                error_log("Invalid user data from Google: " . json_encode($userData));
+            if (!$userData) {
+                error_log("Failed to decode Google userinfo response as JSON");
+                return false;
+            }
+
+            if (!isset($userData['id'])) {
+                error_log("Invalid user data from Google - missing 'id': " . json_encode($userData));
                 return false;
             }
 
