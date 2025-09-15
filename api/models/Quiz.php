@@ -6,6 +6,7 @@ class Quiz {
     public $user_id;
     public $questions;
     public $difficulty;
+    public $quiz_type;
     public $score;
     public $title;
     public $note_title;
@@ -24,8 +25,8 @@ class Quiz {
         error_log("QUIZ MODEL: title: " . ($this->title ?? 'null'));
         error_log("QUIZ MODEL: total_questions: " . ($this->total_questions ?? 'null'));
 
-        $query = "INSERT INTO quizzes (note_id, user_id, questions, score, title, total_questions, created_at)
-                  VALUES (:note_id, :user_id, :questions, :score, :title, :total_questions, NOW())";
+        $query = "INSERT INTO quizzes (note_id, user_id, questions, difficulty, quiz_type, score, title, total_questions, created_at)
+                  VALUES (:note_id, :user_id, :questions, :difficulty, :quiz_type, :score, :title, :total_questions, NOW())";
 
         error_log("QUIZ MODEL: SQL query prepared");
 
@@ -36,6 +37,8 @@ class Quiz {
             $stmt->bindParam(':note_id', $this->note_id);
             $stmt->bindParam(':user_id', $this->user_id);
             $stmt->bindParam(':questions', $this->questions);
+            $stmt->bindParam(':difficulty', $this->difficulty);
+            $stmt->bindParam(':quiz_type', $this->quiz_type);
             $stmt->bindParam(':score', $this->score);
             $stmt->bindParam(':title', $this->title);
             $stmt->bindParam(':total_questions', $this->total_questions);
@@ -102,6 +105,23 @@ class Quiz {
         if (isset($data['questions'])) {
             $updateFields[] = "questions = :questions";
             $params[':questions'] = json_encode($data['questions']);
+
+            // Also update total_questions when questions are updated
+            $questionsArray = $data['questions'];
+            if (is_array($questionsArray)) {
+                $updateFields[] = "total_questions = :total_questions";
+                $params[':total_questions'] = count($questionsArray);
+            }
+        }
+
+        if (isset($data['difficulty'])) {
+            $updateFields[] = "difficulty = :difficulty";
+            $params[':difficulty'] = $data['difficulty'];
+        }
+
+        if (isset($data['quiz_type'])) {
+            $updateFields[] = "quiz_type = :quiz_type";
+            $params[':quiz_type'] = $data['quiz_type'];
         }
 
         if (isset($data['title'])) {

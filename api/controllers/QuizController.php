@@ -28,7 +28,17 @@ class QuizController extends BaseController {
         $stmt->bindParam(':user_id', $userId);
         $stmt->execute();
 
-        $this->successResponse($stmt->fetchAll());
+        $quizzes = $stmt->fetchAll();
+
+        // Debug: Log quiz data to see what fields are present
+        error_log("QUIZ INDEX: Retrieved " . count($quizzes) . " quizzes");
+        if (count($quizzes) > 0) {
+            error_log("QUIZ INDEX: First quiz data: " . json_encode($quizzes[0]));
+            error_log("QUIZ INDEX: First quiz difficulty: " . ($quizzes[0]['difficulty'] ?? 'NOT SET'));
+            error_log("QUIZ INDEX: First quiz quiz_type: " . ($quizzes[0]['quiz_type'] ?? 'NOT SET'));
+        }
+
+        $this->successResponse($quizzes);
     }
 
     public function store() {
@@ -82,6 +92,8 @@ class QuizController extends BaseController {
         $this->quiz->note_id = $data['note_id'];
         $this->quiz->user_id = $userId;
         $this->quiz->questions = json_encode($data['questions']);
+        $this->quiz->difficulty = $data['difficulty'] ?? 'medium';
+        $this->quiz->quiz_type = $data['quiz_type'] ?? 'multiple_choice';
         $this->quiz->score = $data['score'] ?? null;
         $this->quiz->title = $data['title'] ?? 'Generated Quiz';
         $this->quiz->total_questions = is_array($data['questions']) ? count($data['questions']) : 0;
@@ -181,6 +193,26 @@ class QuizController extends BaseController {
         if (isset($data['questions'])) {
             $updateFields[] = "questions = :questions";
             $params[':questions'] = json_encode($data['questions']);
+        }
+
+        if (isset($data['difficulty'])) {
+            $updateFields[] = "difficulty = :difficulty";
+            $params[':difficulty'] = $data['difficulty'];
+        }
+
+        if (isset($data['quiz_type'])) {
+            $updateFields[] = "quiz_type = :quiz_type";
+            $params[':quiz_type'] = $data['quiz_type'];
+        }
+
+        if (isset($data['title'])) {
+            $updateFields[] = "title = :title";
+            $params[':title'] = $data['title'];
+        }
+
+        if (isset($data['note_title'])) {
+            $updateFields[] = "note_title = :note_title";
+            $params[':note_title'] = $data['note_title'];
         }
 
         if (empty($updateFields)) {

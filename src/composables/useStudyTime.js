@@ -1,7 +1,10 @@
 import { ref, computed, onMounted, onUnmounted, watch } from 'vue'
+import { useRoute } from 'vue-router'
 import api from '../services/api'
 
 export function useStudyTime() {
+  const route = useRoute()
+
   // Reactive state
   const currentSession = ref(null)
   const isTracking = ref(false)
@@ -42,6 +45,58 @@ export function useStudyTime() {
   const isActiveSession = computed(() => {
     return currentSession.value && !currentSession.value.duration_minutes
   })
+  
+  // Page visibility API for pause/resume
+  const handleVisibilityChange = () => {
+    if (document.hidden) {
+      // Pause timer when tab becomes hidden
+      console.log('🔄 Pausing timer - tab hidden')
+      stopTimer()
+    } else if (!document.hidden && isTracking.value) {
+      // Resume timer when tab becomes visible
+      console.log('🔄 Resuming timer - tab visible')
+      startTimer()
+    }
+  }
+
+  // User activity detection
+  const lastActivity = ref(Date.now())
+  const activityTimeout = ref(null)
+  const INACTIVITY_TIMEOUT = 5 * 60 * 1000 // 5 minutes
+
+  const resetActivityTimer = () => {
+    lastActivity.value = Date.now()
+
+    // Clear existing timeout
+    if (activityTimeout.value) {
+      clearTimeout(activityTimeout.value)
+    }
+
+    // Set new timeout to auto-pause after inactivity
+    activityTimeout.value = setTimeout(() => {
+      if (isTracking.value) {
+        console.log('🔄 Auto-pausing timer due to inactivity')
+        stopTimer()
+      }
+    }, INACTIVITY_TIMEOUT)
+
+    // Also reset the auto-end timer since there's activity
+    resetAutoEndTimer()
+  }
+
+  const addActivityListeners = () => {
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart']
+    events.forEach(event => {
+      document.addEventListener(event, resetActivityTimer, true)
+    })
+  }
+
+  const removeActivityListeners = () => {
+    const events = ['mousedown', 'mousemove', 'keypress', 'scroll', 'touchstart']
+    events.forEach(event => {
+      document.removeEventListener(event, resetActivityTimer, true)
+    })
+  }
 
   // Timer functions
   const startTimer = () => {
@@ -69,7 +124,7 @@ export function useStudyTime() {
   // API functions
   const startStudySession = async (activity = 'general_study') => {
     try {
-      const response = await api.post('?resource=study-sessions&action=start', {
+      const response = await api.startStudySession({
         activity: activity
       })
 
@@ -110,7 +165,7 @@ export function useStudyTime() {
         focus_level: sessionData.focusLevel || 'medium'
       }
 
-      const response = await api.post('?resource=study-sessions&action=end', endData)
+      const response = await api.endStudySession(endData)
 
       if (response.data.success) {
         const endedSession = response.data.data
@@ -137,7 +192,7 @@ export function useStudyTime() {
     if (!currentSession.value) return
 
     try {
-      const response = await api.post('?resource=study-sessions&action=update-activity', {
+      const response = await api.updateStudySessionActivity({
         session_id: currentSession.value.id,
         activity: activity
       })
@@ -157,7 +212,7 @@ export function useStudyTime() {
 
   const getActiveSession = async () => {
     try {
-      const response = await api.get('?resource=study-sessions&action=active')
+      const response = await api.getActiveStudySession()
 
       if (response.data.success && response.data.data) {
         currentSession.value = response.data.data
@@ -185,11 +240,7 @@ export function useStudyTime() {
 
   const getStudyStats = async (startDate = null, endDate = null) => {
     try {
-      let url = '?resource=study-sessions&action=stats'
-      if (startDate) url += `&start_date=${startDate}`
-      if (endDate) url += `&end_date=${endDate}`
-
-      const response = await api.get(url)
+      const response = await api.getStudySessionStats(startDate, endDate)
 
       if (response.data.success) {
         sessionStats.value = response.data.data
@@ -205,7 +256,7 @@ export function useStudyTime() {
 
   const getDailyStats = async (startDate, endDate) => {
     try {
-      const response = await api.get(`?resource=study-sessions&action=daily-stats&start_date=${startDate}&end_date=${endDate}`)
+      const response = await api.getDailyStudyStats(startDate, endDate)
 
       if (response.data.success) {
         return { success: true, dailyStats: response.data.data }
@@ -220,7 +271,7 @@ export function useStudyTime() {
 
   const getStudyStreak = async () => {
     try {
-      const response = await api.get('?resource=study-sessions&action=streak')
+      const response = await api.getStudyStreak()
 
       if (response.data.success) {
         return { success: true, streak: response.data.data }
@@ -257,8 +308,28 @@ export function useStudyTime() {
     }
   }
 
+  // Auto-start/stop based on routes
+  const studyRoutes = ['/notes', '/quizzes']
+
+  watch(() => route.path, async (newPath, oldPath) => {
+    const isOnStudyPage = studyRoutes.some(route => newPath.startsWith(route))
+    const wasOnStudyPage = studyRoutes.some(route => oldPath && oldPath.startsWith(route))
+
+    if (isOnStudyPage && !isTracking.value) {
+      // Auto-start session based on route
+      const activity = newPath.startsWith('/notes') ? 'reading_notes' : 'taking_quiz'
+      console.log('🔄 Auto-starting study session for activity:', activity)
+      await startStudySession(activity)
+    } else if (!isOnStudyPage && wasOnStudyPage && isTracking.value) {
+      // Auto-end session when leaving study pages
+      console.log('🔄 Auto-ending study session due to route change')
+      await endStudySession()
+    }
+  }, { immediate: true })
+
   // Auto-save functionality
   const autoSaveInterval = ref(null)
+  const autoEndTimeout = ref(null)
 
   const startAutoSave = () => {
     if (autoSaveInterval.value) return
@@ -267,7 +338,7 @@ export function useStudyTime() {
       if (isTracking.value && currentSession.value) {
         // Update session with current activity data
         try {
-          await api.post('?resource=study-sessions&action=update-activity', {
+          await api.updateStudySessionActivity({
             session_id: currentSession.value.id,
             activity: currentActivity.value
           })
@@ -285,6 +356,46 @@ export function useStudyTime() {
     }
   }
 
+  // Auto-end session after period of inactivity
+  const startAutoEndTimer = () => {
+    if (autoEndTimeout.value) {
+      clearTimeout(autoEndTimeout.value)
+    }
+
+    autoEndTimeout.value = setTimeout(async () => {
+      if (isTracking.value) {
+        console.log('🔄 Auto-ending study session due to extended inactivity')
+        await endStudySession()
+      }
+    }, 2 * 60 * 60 * 1000) // Auto-end after 2 hours of continuous tracking
+  }
+
+  const resetAutoEndTimer = () => {
+    if (isTracking.value) {
+      startAutoEndTimer()
+    }
+  }
+
+  const stopAutoEndTimer = () => {
+    if (autoEndTimeout.value) {
+      clearTimeout(autoEndTimeout.value)
+      autoEndTimeout.value = null
+    }
+  }
+
+  // Window beforeunload handler
+  const handleBeforeUnload = async () => {
+    if (isTracking.value) {
+      console.log('🔄 Ending study session due to page unload')
+      // End session synchronously if possible
+      try {
+        await endStudySession()
+      } catch (error) {
+        console.error('Failed to end session on unload:', error)
+      }
+    }
+  }
+
   // Lifecycle
   onMounted(async () => {
     // Check for active session on component mount
@@ -293,20 +404,46 @@ export function useStudyTime() {
     // Start auto-save if tracking
     if (isTracking.value) {
       startAutoSave()
+      startAutoEndTimer()
     }
+
+    // Add visibility change listener
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    // Add beforeunload listener to end sessions when page is closed/refreshed
+    window.addEventListener('beforeunload', handleBeforeUnload)
+
+    // Add activity listeners
+    addActivityListeners()
+    resetActivityTimer() // Start the activity timer
   })
 
   onUnmounted(() => {
     stopTimer()
     stopAutoSave()
+    stopAutoEndTimer()
+
+    // Remove visibility change listener
+    document.removeEventListener('visibilitychange', handleVisibilityChange)
+
+    // Remove beforeunload listener
+    window.removeEventListener('beforeunload', handleBeforeUnload)
+
+    // Remove activity listeners
+    removeActivityListeners()
+    if (activityTimeout.value) {
+      clearTimeout(activityTimeout.value)
+    }
   })
 
   // Watch for tracking state changes
   watch(isTracking, (newValue) => {
     if (newValue) {
       startAutoSave()
+      startAutoEndTimer()
     } else {
       stopAutoSave()
+      stopAutoEndTimer()
     }
   })
 
@@ -343,6 +480,11 @@ export function useStudyTime() {
     // Timer controls
     startTimer,
     stopTimer,
-    resetTimer
+    resetTimer,
+
+    // Auto-end controls
+    startAutoEndTimer,
+    resetAutoEndTimer,
+    stopAutoEndTimer
   }
 }

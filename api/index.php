@@ -131,14 +131,21 @@ try {
                     }
                     break;
                 case 'POST':
-                    $controller->store();
-                    break;
-                case 'PUT':
-                case 'POST': // Handle PUT via POST with _method
                     if (isset($_GET['id'])) {
                         $controller->update($_GET['id']);
                     } else {
                         $controller->store();
+                    }
+                    break;
+                case 'PUT':
+                    if (isset($_GET['id'])) {
+                        $controller->update($_GET['id']);
+                    } else {
+                        http_response_code(400);
+                        echo json_encode([
+                            'success' => false,
+                            'error' => 'Missing ID for PUT request'
+                        ]);
                     }
                     break;
                 case 'DELETE':

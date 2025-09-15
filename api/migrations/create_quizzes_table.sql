@@ -5,6 +5,7 @@ CREATE TABLE IF NOT EXISTS `quizzes` (
   `user_id` int NOT NULL,
   `questions` json NOT NULL,
   `difficulty` enum('easy','medium','hard') DEFAULT 'medium',
+  `quiz_type` enum('multiple_choice','true_false','mixed') DEFAULT 'multiple_choice',
   `score` decimal(5,2) DEFAULT NULL,
   `title` varchar(255) DEFAULT NULL,
   `note_title` varchar(255) DEFAULT NULL,

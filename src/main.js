@@ -35,6 +35,9 @@ import {
   faTwitter, faFacebook, faInstagram, faGithub,
   faFacebookF, faGoogle, faApple
 } from '@fortawesome/free-brands-svg-icons'
+import {
+  faCircle
+} from '@fortawesome/free-regular-svg-icons'
 
 // Add all icons to the library
 library.add(
@@ -57,7 +60,8 @@ library.add(
   faInfoCircle,
   faPaperPlane,
   faRedo,
-  faFlask
+  faFlask,
+  faCircle
 )
 
 

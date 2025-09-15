@@ -45,34 +45,18 @@
                   <font-awesome-icon :icon="['fas', 'clock']" class="text-blue-400" />
                   <span class="text-gray-300">{{ formattedElapsedTime }}</span>
                 </div>
-                <div class="flex space-x-2">
-                  <button
-                    v-if="!isTracking"
-                    @click="startStudySession"
-                    class="px-3 py-1 bg-green-600 rounded text-sm hover:bg-green-700 transition"
-                  >
-                    <font-awesome-icon :icon="['fas', 'play']" class="mr-1" /> Start Studying
-                  </button>
-                  <button
-                    v-else
-                    @click="pauseStudySession"
-                    class="px-3 py-1 bg-yellow-600 rounded text-sm hover:bg-yellow-700 transition"
-                  >
-                    <font-awesome-icon :icon="['fas', 'pause']" class="mr-1" /> Pause
-                  </button>
-                  <button
-                    v-if="isTracking"
-                    @click="endStudySession"
-                    class="px-3 py-1 bg-red-600 rounded text-sm hover:bg-red-700 transition"
-                  >
-                    <font-awesome-icon :icon="['fas', 'stop']" class="mr-1" /> End Session
-                  </button>
+                <div v-if="isTracking" class="flex items-center space-x-2 text-sm text-green-400">
+                  <font-awesome-icon :icon="['far', 'circle']" class="animate-pulse" />
+                  <span>Auto-tracking study time</span>
+                </div>
+                <div v-else class="text-sm text-gray-400">
+                  Study time tracking will start automatically
                 </div>
               </div>
             </div>
             <div v-if="isActiveSession" class="bg-green-900 border border-green-700 rounded-lg p-3 mb-4">
               <div class="flex items-center space-x-2 text-sm text-green-300">
-                <font-awesome-icon :icon="['fas', 'circle']" class="text-green-400 animate-pulse" />
+                <font-awesome-icon :icon="['far', 'circle']" class="text-green-400 animate-pulse" />
                 <span>Study session active - Tracking your reading time</span>
               </div>
             </div>
@@ -195,10 +179,8 @@ export default {
       isTracking,
       formattedElapsedTime,
       isActiveSession,
-      startStudySession: startSession,
       endStudySession: endSession,
-      setCurrentActivity,
-      incrementNotesStudied
+      setCurrentActivity
     } = useStudyTime();
 
     const note = ref(null);
@@ -492,27 +474,6 @@ export default {
     // STUDY SESSION FUNCTIONS
     // =====================================
 
-    /**
-     * Start a study session for reading notes
-     */
-    const startStudySession = async () => {
-      const result = await startSession('reading_notes');
-      if (result.success) {
-        showSuccess('Study session started!', 'Your reading time is now being tracked.');
-        incrementNotesStudied();
-      } else {
-        showError('Failed to start study session', result.error);
-      }
-    };
-
-    /**
-     * Pause the current study session
-     */
-    const pauseStudySession = async () => {
-      // For now, we'll just stop the timer but keep the session active
-      // In a future enhancement, we could add pause/resume functionality
-      showInfo('Study session paused', 'Timer stopped but session remains active.');
-    };
 
     /**
      * End the current study session
@@ -580,8 +541,6 @@ export default {
       isTracking,
       formattedElapsedTime,
       isActiveSession,
-      startStudySession,
-      pauseStudySession,
       endStudySession,
       onNoteScroll
     };

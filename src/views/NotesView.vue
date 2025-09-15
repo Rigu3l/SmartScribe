@@ -109,7 +109,7 @@
                     <font-awesome-icon :icon="['fas', 'star']" :class="note.isFavorite ? 'text-yellow-500' : themeClasses.secondaryText + ' opacity-50'" />
                   </button>
                   <div class="relative">
-                    <button @click.stop="showNoteMenu(note.id)" :class="themeClasses.secondaryText" class="hover:text-white">
+                    <button @click.stop="showNoteMenu(note.id)" :class="themeClasses.secondaryText" class="hover:text-white p-2 rounded-md hover:bg-gray-700 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
                       <font-awesome-icon :icon="['fas', 'ellipsis-v']" />
                     </button>
                     
@@ -696,9 +696,13 @@ export default {
         };
 
         try {
-          await api.createNote(duplicatedNote);
-          await fetchNotes(); // Refresh notes list
-          showSuccess('Note duplicated', 'The note has been successfully duplicated.');
+          const response = await api.createNote(duplicatedNote);
+          if (response.data.success) {
+            await fetchNotes(); // Refresh notes list
+            showSuccess('Note duplicated', 'The note has been successfully duplicated.');
+          } else {
+            throw new Error(response.data.error || 'Failed to duplicate note');
+          }
         } catch (error) {
           console.error('Error duplicating note:', error);
           showWarning('Duplicate failed', 'Failed to duplicate the note. Please try again.');

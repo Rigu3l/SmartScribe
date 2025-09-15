@@ -286,6 +286,19 @@ export default {
     });
 
     const saveNote = async () => {
+      console.log('🔄 saveNote called - Current state:', {
+        isSaving: isSaving.value,
+        noteId: note.value.id,
+        title: note.value.title,
+        timestamp: new Date().toISOString()
+      });
+
+      // Prevent multiple concurrent saves
+      if (isSaving.value) {
+        console.log('⚠️ Save already in progress, ignoring duplicate save request');
+        return;
+      }
+
       try {
         // Check if user is authenticated
         const userData = localStorage.getItem('user');
@@ -325,6 +338,7 @@ export default {
 
         // Set saving state
         isSaving.value = true;
+        console.log('✅ Saving state set to true');
 
         // Update last edited timestamp
         note.value.lastEdited = new Date().toLocaleString();
@@ -337,7 +351,7 @@ export default {
           keywords: note.value.keywords.join(',')
         };
 
-        console.log('Saving note:', {
+        console.log('📝 Saving note:', {
           hasId: !!note.value.id,
           noteId: note.value.id,
           noteData: noteData,
@@ -345,18 +359,19 @@ export default {
         });
 
         // Log current localStorage state for debugging
-        console.log('Current localStorage state:', {
+        console.log('🔑 Current localStorage state:', {
           token: !!localStorage.getItem('token'),
           user: localStorage.getItem('user')
         });
 
         if (note.value.id) {
           // Update existing note
-          console.log('Updating existing note with ID:', note.value.id);
+          console.log('🔄 Updating existing note with ID:', note.value.id);
           const response = await api.updateNote(note.value.id, noteData);
-          console.log('Update response:', response.data);
+          console.log('📤 Update response:', response.data);
 
           if (response.data.success) {
+            console.log('✅ Note updated successfully!');
             alert('Note updated successfully!');
             router.push('/notes?refresh=true');
           } else {
@@ -364,12 +379,13 @@ export default {
           }
         } else {
           // Create new note
-          console.log('Creating new note');
+          console.log('🆕 Creating new note');
           const response = await api.createNote(noteData);
-          console.log('Create response:', response.data);
+          console.log('📤 Create response:', response.data);
 
           if (response.data.success) {
-            note.value.id = response.data.note_id;
+            console.log('✅ Note created successfully with ID:', response.data.note_id || response.data.data?.note_id);
+            note.value.id = response.data.note_id || response.data.data?.note_id;
             alert('Note saved successfully!');
             router.push('/notes?refresh=true');
           } else {

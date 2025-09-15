@@ -50,11 +50,11 @@
             <button
               @click="saveNoteWithTitle"
               class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="!noteTitle.trim() || isProcessingFile"
+              :disabled="!noteTitle.trim() || isProcessingFile || isSavingNote"
             >
-              <span v-if="isProcessingFile" class="flex items-center space-x-2">
+              <span v-if="isProcessingFile || isSavingNote" class="flex items-center space-x-2">
                 <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin" />
-                <span>Saving...</span>
+                <span>{{ isProcessingFile ? 'Processing...' : 'Saving...' }}</span>
               </span>
               <span v-else>{{ pendingImageData && pendingImageData.type === 'quick_note' ? 'Save Quick Note' : 'Save Note' }}</span>
             </button>
@@ -147,7 +147,7 @@
         </div>
 
         <!-- Dashboard Statistics -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-6">
+        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
           <div :class="themeClasses.card" class="rounded-lg p-6">
             <div class="flex justify-between items-center mb-2">
               <h3 class="text-lg font-semibold">Total Notes</h3>
@@ -179,20 +179,6 @@
             </div>
           </div>
 
-          <div :class="themeClasses.card" class="rounded-lg p-6">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="text-lg font-semibold">Quiz Score</h3>
-              <font-awesome-icon :icon="['fas', 'check-circle']" class="text-yellow-500 text-xl" />
-            </div>
-            <div v-if="loadingDashboard" class="animate-pulse">
-              <div :class="themeClasses.card" class="h-8 rounded mb-2"></div>
-              <div :class="themeClasses.card" class="h-4 rounded w-3/4"></div>
-            </div>
-            <div v-else>
-              <p class="text-3xl font-bold">{{ stats.quizAverage }}%</p>
-              <p :class="themeClasses.secondaryText" class="text-sm">{{ stats.totalQuizzesTaken }} quizzes taken</p>
-            </div>
-          </div>
 
           <div :class="themeClasses.card" class="rounded-lg p-6">
             <div class="flex justify-between items-center mb-2">
@@ -632,6 +618,7 @@ export default {
     // Note creation state
     const ocrText = ref('');
     const isProcessingFile = ref(false);
+    const isSavingNote = ref(false);
     const showSaveConfirmation = ref(false);
     const showTitleModal = ref(false);
     const noteTitle = ref('');
@@ -967,6 +954,12 @@ export default {
         return;
       }
 
+      // Prevent multiple concurrent saves
+      if (isSavingNote.value) {
+        console.log('⚠️ Save already in progress, ignoring duplicate save request');
+        return;
+      }
+
       try {
         let noteData;
 
@@ -991,23 +984,32 @@ export default {
           }
         }
 
+        // Set saving state
+        isSavingNote.value = true;
+
         try {
           // Create note using simple API call
-          await api.createNote(noteData);
+          const response = await api.createNote(noteData);
 
-          showSuccess('Note saved', 'Your note has been created successfully.');
+          // Check response success
+          if (response.data.success) {
+            showSuccess('Note saved', 'Your note has been created successfully.');
 
-          // Refresh notes and stats after successful creation
-          await Promise.all([
-            refreshNotes(),
-            refreshStats()
-          ]);
+            // Refresh notes and stats after successful creation
+            await Promise.all([
+              refreshNotes(),
+              refreshStats()
+            ]);
 
-          // Clear quick note content if it was a quick note
-          if (pendingImageData.value.type === 'quick_note') {
-            quickNoteContent.value = '';
+            // Clear quick note content if it was a quick note
+            if (pendingImageData.value.type === 'quick_note') {
+              quickNoteContent.value = '';
+            }
+          } else {
+            throw new Error(response.data.error || 'Failed to save note');
           }
         } catch (error) {
+          console.error('Error saving note:', error);
           showWarning('Save failed', 'Failed to save the note. Please try again.');
         }
 
@@ -1018,6 +1020,9 @@ export default {
 
       } catch (error) {
         showWarning('Save error', 'An error occurred while saving the note.');
+      } finally {
+        // Reset saving state
+        isSavingNote.value = false;
       }
     };
 
@@ -1100,6 +1105,7 @@ export default {
       showDeleteModal,
       noteToDelete,
       isProcessingFile,
+      isSavingNote,
       showCameraModal,
 
       // Quick note state

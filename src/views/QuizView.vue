@@ -24,7 +24,7 @@
                 <p class="text-gray-400">Create and manage your study quizzes</p>
               </div>
               <div class="flex space-x-3 mt-4 sm:mt-0">
-                <button @click="openNoteSelector" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition" :disabled="isGeneratingQuiz">
+                <button @click="openQuizOptions" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition" :disabled="isGeneratingQuiz">
                   <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
                   {{ isGeneratingQuiz ? 'Generating...' : 'Create New Quiz' }}
                 </button>
@@ -135,6 +135,8 @@
                   <div class="mt-2 pt-2 border-t border-gray-500">
                     <div class="text-xs text-gray-300 text-center">
                       <span class="font-medium">Difficulty:</span> {{ quiz.difficulty || 'Medium' }}
+                      <span class="mx-2">•</span>
+                      <span class="font-medium">Type:</span> {{ getQuizTypeDisplay(quiz.quiz_type || 'multiple_choice') }}
                       <span class="mx-2">•</span>
                       <span class="font-medium">Questions:</span> {{ quiz.questionCount || 0 }}
                     </div>
@@ -275,6 +277,101 @@
         </div>
       </div>
     </div>
+
+    <!-- Quiz Options Modal -->
+    <div v-if="showQuizOptions" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+      <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+        <div class="flex justify-between items-center mb-6">
+          <h2 class="text-xl font-semibold">Quiz Options</h2>
+          <button @click="closeQuizOptions" class="text-gray-400 hover:text-white">
+            <font-awesome-icon :icon="['fas', 'times']" class="text-xl" />
+          </button>
+        </div>
+
+        <!-- Difficulty Selection -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-300 mb-3">Difficulty Level</label>
+          <div class="grid grid-cols-3 gap-3">
+            <button
+              v-for="difficulty in ['easy', 'medium', 'hard']"
+              :key="difficulty"
+              @click="selectedDifficulty = difficulty"
+              :class="[
+                'px-4 py-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium capitalize',
+                selectedDifficulty === difficulty
+                  ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                  : 'border-gray-600 bg-gray-700/30 text-gray-400 hover:border-gray-500'
+              ]"
+            >
+              <font-awesome-icon
+                :icon="difficulty === 'easy' ? ['fas', 'smile'] : difficulty === 'medium' ? ['fas', 'meh'] : ['fas', 'frown']"
+                class="mr-2"
+              />
+              {{ difficulty }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Quantity Selection -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-300 mb-3">Number of Questions</label>
+          <div class="grid grid-cols-2 gap-3">
+            <button
+              v-for="quantity in [5, 10, 15, 20]"
+              :key="quantity"
+              @click="selectedQuantity = quantity"
+              :class="[
+                'px-4 py-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium',
+                selectedQuantity === quantity
+                  ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                  : 'border-gray-600 bg-gray-700/30 text-gray-400 hover:border-gray-500'
+              ]"
+            >
+              <font-awesome-icon :icon="['fas', 'question-circle']" class="mr-2" />
+              {{ quantity }} Questions
+            </button>
+          </div>
+        </div>
+
+        <!-- Quiz Type Selection -->
+        <div class="mb-6">
+          <label class="block text-sm font-medium text-gray-300 mb-3">Quiz Type</label>
+          <div class="space-y-3">
+            <button
+              v-for="type in ['multiple_choice', 'true_false', 'mixed']"
+              :key="type"
+              @click="selectedQuizType = type"
+              :class="[
+                'w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium text-left',
+                selectedQuizType === type
+                  ? 'border-blue-500 bg-blue-500/20 text-blue-400'
+                  : 'border-gray-600 bg-gray-700/30 text-gray-400 hover:border-gray-500'
+              ]"
+            >
+              <font-awesome-icon
+                :icon="type === 'multiple_choice' ? ['fas', 'list'] : type === 'true_false' ? ['fas', 'check-circle'] : ['fas', 'random']"
+                class="mr-3"
+              />
+              {{ type === 'multiple_choice' ? 'Multiple Choice' : type === 'true_false' ? 'True/False' : 'Mixed Questions' }}
+            </button>
+          </div>
+        </div>
+
+        <!-- Action Buttons -->
+        <div class="flex space-x-4">
+          <button @click="closeQuizOptions" class="flex-1 px-4 py-3 bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors text-white font-medium">
+            Cancel
+          </button>
+          <button
+            @click="proceedToNoteSelection"
+            class="flex-1 px-4 py-3 bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors text-white font-medium"
+          >
+            <font-awesome-icon :icon="['fas', 'arrow-right']" class="mr-2" />
+            Next
+          </button>
+        </div>
+      </div>
+    </div>
 </Header>
 </template>
 
@@ -364,6 +461,12 @@ export default {
     // Delete confirmation state
     const showDeleteConfirmation = ref(false)
     const quizToDelete = ref(null)
+
+    // Quiz options state
+    const showQuizOptions = ref(false)
+    const selectedDifficulty = ref('medium')
+    const selectedQuantity = ref(10)
+    const selectedQuizType = ref('multiple_choice')
 
     // User menu state
     const showUserMenu = ref(false)
@@ -553,6 +656,24 @@ export default {
       showNoteSelector.value = false
     }
 
+    // Quiz options functions
+    const openQuizOptions = () => {
+      showQuizOptions.value = true
+    }
+
+    const closeQuizOptions = () => {
+      showQuizOptions.value = false
+      // Reset to defaults
+      selectedDifficulty.value = 'medium'
+      selectedQuantity.value = 10
+      selectedQuizType.value = 'multiple_choice'
+    }
+
+    const proceedToNoteSelection = () => {
+      showQuizOptions.value = false
+      openNoteSelector()
+    }
+
     const generateQuizFromSelectedNotes = async () => {
       if (selectedNotes.value.length === 0) {
         alert('Please select at least one note to generate a quiz from.')
@@ -705,12 +826,13 @@ export default {
         console.log('🔄 QUIZ GENERATION: Combined content length:', combinedContent.length)
         console.log('🔄 QUIZ GENERATION: Note titles:', noteTitles)
 
-        // Generate quiz questions from combined content
+        // Generate quiz questions from combined content using selected options
         const gptResponse = await api.gpt.generateQuiz(combinedContent, {
-          difficulty: 'medium',
-          questionCount: Math.min(10, Math.max(5, notes.length * 2)), // More questions for multiple notes
+          difficulty: selectedDifficulty.value,
+          questionCount: selectedQuantity.value,
           noteTitle: noteTitles.length === 1 ? noteTitles[0] : `${noteTitles.length} Selected Notes`,
-          quizTitle: generatedQuizTitle
+          quizTitle: generatedQuizTitle,
+          quizType: selectedQuizType.value
         })
 
         console.log('🔄 QUIZ GENERATION: GPT API response received:', gptResponse)
@@ -737,11 +859,13 @@ export default {
 
           const quizData = {
             questions: generatedQuestions,
-            difficulty: 'medium',
+            difficulty: selectedDifficulty.value,
             source: notes.length === 1 ? 'single_note' : 'multiple_notes',
             note_count: notes.length,
             title: generatedQuizTitle,
-            note_title: generatedQuizTitle
+            note_title: generatedQuizTitle,
+            quiz_type: selectedQuizType.value,
+            total_questions: selectedQuantity.value
           }
           console.log('🔄 QUIZ GENERATION: Quiz data to save:', quizData)
           console.log('🔄 QUIZ GENERATION: Reference note ID:', referenceNoteId)
@@ -893,6 +1017,19 @@ export default {
 
     // saveQuiz function removed - quiz saving is handled by QuizTakingView
 
+    const getQuizTypeDisplay = (quizType) => {
+      switch (quizType) {
+        case 'multiple_choice':
+          return 'Multiple Choice'
+        case 'true_false':
+          return 'True/False'
+        case 'mixed':
+          return 'Mixed'
+        default:
+          return 'Multiple Choice'
+      }
+    }
+
     const debugQuizStatus = () => {
       console.log('=== QUIZ STATUS DEBUG ===')
       console.log('Total quizzes:', savedQuizzes.value.length)
@@ -944,8 +1081,10 @@ Check console for detailed quiz data.`)
 
         if (response.data.success && response.data.data) {
           console.log('Processing', response.data.data.length, 'quizzes')
+          console.log('Raw quiz data from API:', response.data.data)
           savedQuizzes.value = response.data.data.map(quiz => {
             console.log('Processing quiz:', quiz.id, 'Questions type:', typeof quiz.questions, 'Questions value:', quiz.questions)
+            console.log('Quiz difficulty:', quiz.difficulty, 'Quiz type:', quiz.quiz_type)
             let questions = []
             let questionCount = 0
             let accuracy = 0
@@ -957,11 +1096,24 @@ Check console for detailed quiz data.`)
               } else {
                 questions = quiz.questions || []
               }
-              questionCount = Array.isArray(questions) ? questions.length : 0
+
+              // Get question count with multiple fallbacks
+              if (Array.isArray(questions) && questions.length > 0) {
+                questionCount = questions.length
+              } else if (quiz.total_questions && quiz.total_questions > 0) {
+                // Fallback to total_questions field from database
+                questionCount = Number(quiz.total_questions)
+                console.log(`Using total_questions fallback for quiz ${quiz.id}: ${questionCount}`)
+              } else {
+                // Last resort: try to estimate from other data or set to 0
+                questionCount = 0
+                console.warn(`Could not determine question count for quiz ${quiz.id}`)
+              }
 
               // Ensure score is a valid number (including 0)
               const validScore = (quiz.score !== null && quiz.score !== undefined && !isNaN(quiz.score)) ? Number(quiz.score) : null
 
+              // Calculate accuracy with proper validation
               if (validScore !== null && questionCount > 0) {
                 accuracy = Math.round((validScore / questionCount) * 100)
                 // Ensure accuracy is within valid range
@@ -972,10 +1124,14 @@ Check console for detailed quiz data.`)
 
               console.log(`Quiz ${quiz.id} stats: score=${validScore}, questionCount=${questionCount}, accuracy=${accuracy}%, isCompleted=${validScore !== null && questionCount > 0}`)
             } catch (parseError) {
-              console.warn('Error parsing questions for quiz', quiz.id, parseError)
-              console.warn('Quiz data:', quiz)
-              questionCount = 0
+              console.error('Error parsing questions for quiz', quiz.id, parseError)
+              console.error('Quiz data:', quiz)
+
+              // Fallback: try to use total_questions if available
+              questionCount = quiz.total_questions ? Number(quiz.total_questions) : 0
               accuracy = 0
+
+              console.warn(`Fallback used for quiz ${quiz.id}: questionCount=${questionCount}`)
             }
 
             // Use note title as the primary display title
@@ -989,6 +1145,7 @@ Check console for detailed quiz data.`)
               note_id: quiz.note_id,
               questions: questions,
               difficulty: quiz.difficulty,
+              quiz_type: quiz.quiz_type,
               score: quiz.score,
               created_at: quiz.created_at,
               updated_at: quiz.updated_at,
@@ -1167,8 +1324,17 @@ Check console for detailed quiz data.`)
       showWarning,
       loadUserProfile,
       debugQuizStatus,
+      getQuizTypeDisplay,
       themeClasses,
-      store
+      store,
+      // Quiz options
+      showQuizOptions,
+      selectedDifficulty,
+      selectedQuantity,
+      selectedQuizType,
+      openQuizOptions,
+      closeQuizOptions,
+      proceedToNoteSelection
     }
   }
 }

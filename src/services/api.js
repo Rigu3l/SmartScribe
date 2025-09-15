@@ -304,5 +304,31 @@ export default {
     return api.get(`?resource=export&id=${noteId}&format=${format}`, {
       responseType: 'blob' // Important for file downloads
     })
+  },
+
+  // Study Sessions
+  startStudySession(sessionData) {
+    return api.post('?resource=study-sessions&action=start', sessionData)
+  },
+  endStudySession(sessionData) {
+    return api.post('?resource=study-sessions&action=end', sessionData)
+  },
+  updateStudySessionActivity(sessionData) {
+    return api.post('?resource=study-sessions&action=update-activity', sessionData)
+  },
+  getActiveStudySession() {
+    return api.get('?resource=study-sessions&action=active')
+  },
+  getStudySessionStats(startDate = null, endDate = null) {
+    let url = '?resource=study-sessions&action=stats'
+    if (startDate) url += `&start_date=${startDate}`
+    if (endDate) url += `&end_date=${endDate}`
+    return api.get(url)
+  },
+  getDailyStudyStats(startDate, endDate) {
+    return api.get(`?resource=study-sessions&action=daily-stats&start_date=${startDate}&end_date=${endDate}`)
+  },
+  getStudyStreak() {
+    return api.get('?resource=study-sessions&action=streak')
   }
 }
