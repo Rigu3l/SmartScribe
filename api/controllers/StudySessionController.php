@@ -2,14 +2,17 @@
 // api/controllers/StudySessionController.php
 require_once 'BaseController.php';
 require_once __DIR__ . '/../models/StudySession.php';
+require_once __DIR__ . '/../models/Goal.php';
 
 class StudySessionController extends BaseController {
 
     private $studySessionModel;
+    private $goalModel;
 
     public function __construct() {
         parent::__construct();
         $this->studySessionModel = new StudySession();
+        $this->goalModel = new Goal($this->db);
     }
 
     /**
@@ -86,6 +89,16 @@ class StudySessionController extends BaseController {
         );
 
         if ($result) {
+            // Update goal progress for study time and accuracy
+            try {
+                $studyTimeGoalsUpdated = $this->goalModel->updateProgressForStudyTime($userId);
+                $accuracyGoalsUpdated = $this->goalModel->updateProgressForAccuracy($userId);
+                error_log("StudySessionController::endSession() - Updated $studyTimeGoalsUpdated study time goals and $accuracyGoalsUpdated accuracy goals for user $userId");
+            } catch (Exception $e) {
+                error_log("StudySessionController::endSession() - Error updating goals: " . $e->getMessage());
+                // Don't fail the session end if goal update fails
+            }
+
             $session = $this->studySessionModel->findByIdAndUser($sessionId, $userId);
             $this->successResponse($session, 'Study session ended successfully');
         } else {

@@ -330,5 +330,19 @@ export default {
   },
   getStudyStreak() {
     return api.get('?resource=study-sessions&action=streak')
+  },
+
+  // Generic methods for resources that don't have specific methods yet
+  get(url, config = {}) {
+    return api.get(url, config)
+  },
+  post(url, data = {}, config = {}) {
+    return api.post(url, data, config)
+  },
+  put(url, data = {}, config = {}) {
+    return api.put(url, data, config)
+  },
+  delete(url, config = {}) {
+    return api.delete(url, config)
   }
 }

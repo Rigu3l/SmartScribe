@@ -147,69 +147,11 @@
         </div>
 
         <!-- Dashboard Statistics -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 md:gap-6 mb-6">
-          <div :class="themeClasses.card" class="rounded-lg p-6">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="text-lg font-semibold">Total Notes</h3>
-              <font-awesome-icon :icon="['fas', 'book']" class="text-blue-500 text-xl" />
-            </div>
-            <div v-if="loadingDashboard" class="animate-pulse">
-              <div class="h-8 bg-gray-700 rounded mb-2"></div>
-              <div class="h-4 bg-gray-700 rounded w-3/4"></div>
-            </div>
-            <div v-else>
-              <p class="text-3xl font-bold">{{ stats.totalNotes }}</p>
-              <p class="text-sm text-gray-400">{{ stats.notesThisWeek }} new this week</p>
-            </div>
-          </div>
-
-          <div :class="themeClasses.card" class="rounded-lg p-6">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="text-lg font-semibold">Study Time</h3>
-              <font-awesome-icon :icon="['fas', 'clock']" class="text-green-500 text-xl" />
-            </div>
-            <div v-if="loadingDashboard" class="animate-pulse">
-              <div :class="themeClasses.card" class="h-8 rounded mb-2"></div>
-              <div :class="themeClasses.card" class="h-4 rounded w-3/4"></div>
-            </div>
-            <div v-else>
-              <p class="text-3xl font-bold">{{ stats.studyHours }}h</p>
-              <p :class="themeClasses.secondaryText" class="text-sm">{{ stats.studyHoursThisWeek }}h this week</p>
-              <p :class="themeClasses.secondaryText" class="text-xs mt-1">{{ stats.totalNotesStudied }} notes studied</p>
-            </div>
-          </div>
-
-
-          <div :class="themeClasses.card" class="rounded-lg p-6">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="text-lg font-semibold">Goals</h3>
-              <font-awesome-icon :icon="['fas', 'bullseye']" class="text-purple-500 text-xl" />
-            </div>
-            <div v-if="loadingDashboard" class="animate-pulse">
-              <div :class="themeClasses.card" class="h-8 rounded mb-2"></div>
-              <div :class="themeClasses.card" class="h-4 rounded w-3/4"></div>
-            </div>
-            <div v-else>
-              <p class="text-3xl font-bold">{{ stats.activeGoals }}</p>
-              <p :class="themeClasses.secondaryText" class="text-sm">{{ stats.completedGoals }} completed this month</p>
-            </div>
-          </div>
-
-          <div :class="themeClasses.card" class="rounded-lg p-6">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="text-lg font-semibold">Study Streak</h3>
-              <font-awesome-icon :icon="['fas', 'fire']" class="text-orange-500 text-xl" />
-            </div>
-            <div v-if="loadingDashboard" class="animate-pulse">
-              <div :class="themeClasses.card" class="h-8 rounded mb-2"></div>
-              <div :class="themeClasses.card" class="h-4 rounded w-3/4"></div>
-            </div>
-            <div v-else>
-              <p class="text-3xl font-bold">{{ stats.studyStreak }}</p>
-              <p :class="themeClasses.secondaryText" class="text-sm">days in a row</p>
-            </div>
-          </div>
-        </div>
+        <StatisticsCard
+          :stats="stats"
+          :loading="loadingDashboard"
+          :theme-classes="themeClasses"
+        />
 
         <!-- Create New Note Section -->
         <div :class="themeClasses.card" class="rounded-lg p-4 mb-4">
@@ -447,12 +389,14 @@ import { useUserProfile } from '@/composables/useUserProfile';
 import api from '@/services/api';
 import CameraModal from '@/components/CameraModal.vue';
 import Header from '@/components/Header.vue';
+import StatisticsCard from '@/components/Statistics.vue';
 
 export default {
   name: 'DashboardView',
   components: {
     CameraModal,
-    Header
+    Header,
+    StatisticsCard
   },
   setup() {
     const router = useRouter();
@@ -760,13 +704,22 @@ export default {
     // Fetch dashboard stats from API
     const fetchStats = async () => {
       try {
+        console.log('🔍 DEBUG: Starting fetchStats...');
         loadingDashboard.value = true;
         const response = await api.getDashboardStats();
+        console.log('🔍 DEBUG: fetchStats response:', response);
+        console.log('🔍 DEBUG: fetchStats response.data:', response.data);
+        if (response.data && response.data.data) {
+          console.log('🔍 DEBUG: Goals stats - activeGoals:', response.data.data.activeGoals, 'completedGoals:', response.data.data.completedGoals);
+        }
         statsResponse.value = response.data;
+        console.log('🔍 DEBUG: statsResponse.value set to:', statsResponse.value);
       } catch (error) {
-        // Error fetching dashboard stats
+        console.error('❌ DEBUG: Error fetching dashboard stats:', error);
+        console.error('❌ DEBUG: Error details:', error.response?.data || error.message);
       } finally {
         loadingDashboard.value = false;
+        console.log('🔍 DEBUG: fetchStats completed');
       }
     };
 

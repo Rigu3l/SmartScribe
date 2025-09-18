@@ -1,11 +1,13 @@
 <?php
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Note.php';
+require_once __DIR__ . '/../models/Goal.php';
 require_once __DIR__ . '/../helpers/FileUpload.php';
 require_once __DIR__ . '/../services/AIKeywordService.php';
 
 class NoteController extends BaseController {
     private $note;
+    private $goal;
     private $keywordService;
 
     public function __construct($db = null) {
@@ -22,6 +24,14 @@ class NoteController extends BaseController {
             error_log("NoteController::__construct() - Note model instantiated");
         } catch (Exception $e) {
             error_log("NoteController::__construct() - Error instantiating Note model: " . $e->getMessage());
+            throw $e;
+        }
+
+        try {
+            $this->goal = new Goal($this->db);
+            error_log("NoteController::__construct() - Goal model instantiated");
+        } catch (Exception $e) {
+            error_log("NoteController::__construct() - Error instantiating Goal model: " . $e->getMessage());
             throw $e;
         }
 
@@ -165,6 +175,25 @@ class NoteController extends BaseController {
 
             error_log("NoteController::store() - Note creation result: " . ($noteId ? "Success (ID: $noteId)" : "Failed"));
 
+            // DEBUG: Check for goals that need updating
+            if ($noteId) {
+                error_log("NoteController::store() - Checking for goals to update for user $userId");
+
+                // Query for active goals with target_type = 'notes'
+                $goalQuery = "SELECT id, title, target_value, current_value, status FROM learning_goals
+                             WHERE user_id = :user_id AND target_type = 'notes' AND status = 'active'";
+                $goalStmt = $this->db->prepare($goalQuery);
+                $goalStmt->bindParam(':user_id', $userId);
+                $goalStmt->execute();
+                $activeGoals = $goalStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                error_log("NoteController::store() - Found " . count($activeGoals) . " active note goals for user $userId");
+
+                foreach ($activeGoals as $goal) {
+                    error_log("NoteController::store() - Goal ID {$goal['id']}: {$goal['title']} - Current: {$goal['current_value']}/{$goal['target_value']} - Status: {$goal['status']}");
+                }
+            }
+
             if ($noteId) {
                 // Auto-extract keywords from the note content
                 $keywords = $this->keywordService->extractKeywords($this->sanitizeInput($text), 5);
@@ -179,6 +208,15 @@ class NoteController extends BaseController {
                 $updateStmt->execute();
 
                 error_log("NoteController::store() - Keywords extracted and saved: " . $keywordsString);
+
+                // Update goal progress for this user
+                try {
+                    $goalsUpdated = $this->goal->updateProgressForNotes($userId);
+                    error_log("NoteController::store() - Updated $goalsUpdated goals for user $userId");
+                } catch (Exception $e) {
+                    error_log("NoteController::store() - Error updating goals: " . $e->getMessage());
+                    // Don't fail the note creation if goal update fails
+                }
 
                 $this->successResponse([
                     'note_id' => $noteId,

@@ -1,13 +1,16 @@
 <?php
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Quiz.php';
+require_once __DIR__ . '/../models/Goal.php';
 
 class QuizController extends BaseController {
     private $quiz;
+    private $goal;
 
     public function __construct() {
         parent::__construct();
         $this->quiz = new Quiz($this->db);
+        $this->goal = new Goal($this->db);
     }
 
     public function index() {
@@ -119,6 +122,16 @@ class QuizController extends BaseController {
 
         if ($quizId) {
             error_log("QUIZ STORE: Quiz created successfully with ID: $quizId");
+
+            // Update goal progress for this user
+            try {
+                $goalsUpdated = $this->goal->updateProgressForQuizzes($userId);
+                error_log("QuizController::store() - Updated $goalsUpdated quiz goals for user $userId");
+            } catch (Exception $e) {
+                error_log("QuizController::store() - Error updating quiz goals: " . $e->getMessage());
+                // Don't fail the quiz creation if goal update fails
+            }
+
             $this->successResponse([
                 "quiz_id" => $quizId
             ], 'Quiz created successfully', 201);
@@ -224,6 +237,17 @@ class QuizController extends BaseController {
         $stmt = $this->db->prepare($query);
 
         if ($stmt->execute($params)) {
+            // If score was updated, update accuracy goals
+            if (isset($data['score'])) {
+                try {
+                    $accuracyGoalsUpdated = $this->goal->updateProgressForAccuracy($userId);
+                    error_log("QuizController::update() - Updated $accuracyGoalsUpdated accuracy goals for user $userId after score update");
+                } catch (Exception $e) {
+                    error_log("QuizController::update() - Error updating accuracy goals: " . $e->getMessage());
+                    // Don't fail the quiz update if goal update fails
+                }
+            }
+
             $this->successResponse(null, 'Quiz updated successfully');
         } else {
             $this->errorResponse('Failed to update quiz');

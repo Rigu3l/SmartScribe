@@ -108,6 +108,37 @@ class DashboardController extends BaseController {
                 'total_quizzes_taken' => 0
             ];
 
+            // Check if learning_goals table exists
+            $tableCheckQuery = "SHOW TABLES LIKE 'learning_goals'";
+            $stmt = $this->db->prepare($tableCheckQuery);
+            $stmt->execute();
+            $tableExists = $stmt->fetch();
+
+            error_log("DEBUG: Table check result: " . ($tableExists ? 'EXISTS' : 'DOES NOT EXIST'));
+
+            if (!$tableExists) {
+                error_log("DEBUG: learning_goals table does not exist in database");
+                throw new Exception("Table 'learning_goals' doesn't exist");
+            }
+
+            // Get goals statistics
+            error_log("DEBUG: Fetching goals stats for user_id: $userId");
+            $goalsStatsQuery = "
+                SELECT
+                    COUNT(CASE WHEN status = 'active' THEN 1 END) as active_goals,
+                    COUNT(CASE WHEN status = 'completed' THEN 1 END) as completed_goals
+                FROM learning_goals
+                WHERE user_id = :user_id
+            ";
+            $stmt = $this->db->prepare($goalsStatsQuery);
+            $stmt->bindParam(':user_id', $userId);
+            $stmt->execute();
+            $goalsStats = $stmt->fetch() ?: [
+                'active_goals' => 0,
+                'completed_goals' => 0
+            ];
+            error_log("DEBUG: Goals stats result: " . json_encode($goalsStats));
+
             // Calculate study streak (consecutive days with study sessions)
             $streakQuery = "
                 SELECT session_date
@@ -198,8 +229,8 @@ class DashboardController extends BaseController {
                 'studyHoursThisWeek' => (float)$weeklyStudyHours,
                 'quizAverage' => (float)$averageScore,
                 'quizzesCompleted' => (int)$totalQuizzes,
-                'activeGoals' => 0, // Placeholder for now
-                'completedGoals' => 0, // Placeholder for now
+                'activeGoals' => (int)$goalsStats['active_goals'],
+                'completedGoals' => (int)$goalsStats['completed_goals'],
                 'studyStreak' => (int)$studyStreak,
                 'avgSessionDuration' => round($sessionStats['avg_session_duration'] ?? 0, 1),
                 'longestSession' => (int)$sessionStats['longest_session'],
@@ -209,6 +240,7 @@ class DashboardController extends BaseController {
                 'lastUpdated' => date('Y-m-d H:i:s')
             ];
 
+            error_log("DEBUG: Final stats response: " . json_encode($stats));
             $this->successResponse($stats);
 
         } catch (Exception $e) {

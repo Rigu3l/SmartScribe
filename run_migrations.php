@@ -25,11 +25,12 @@ try {
 
             $sql = file_get_contents($migration);
 
-            // Split SQL into individual statements
+            // Remove comments and split SQL into individual statements
+            $sql = preg_replace('/--.*$/m', '', $sql); // Remove single-line comments
             $statements = array_filter(array_map('trim', explode(';', $sql)));
 
             foreach ($statements as $statement) {
-                if (!empty($statement) && !preg_match('/^--/', $statement)) {
+                if (!empty($statement)) {
                     try {
                         $db->exec($statement);
                         echo "  ✅ Executed: " . substr($statement, 0, 50) . "...\n";

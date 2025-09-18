@@ -6,7 +6,7 @@ import SignupView from '../views/SignupView.vue'
 import ForgotPasswordView from '../views/ForgotPasswordView.vue'
 import ResetPasswordView from '../views/ResetPasswordView.vue'
 import NotesView from '../views/NotesView.vue'
-import ProgressView from '../views/ProgressView.vue'
+import GoalView from '../views/GoalView.vue'
 import SettingsView from '../views/SettingsView.vue'
 import NoteDetailView from '../views/NoteDetailView.vue'
 import NoteEditorView from '@/views/NoteEditorView.vue'
@@ -78,9 +78,9 @@ const routes = [
     //meta: { requiresAuth: true }
   },
   {
-    path: '/progress',
-    name: 'progress',
-    component: ProgressView,
+    path: '/goals',
+    name: 'goals',
+    component: GoalView,
     //meta: { requiresAuth: true }
   },
   {

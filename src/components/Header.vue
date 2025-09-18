@@ -174,9 +174,9 @@
               </router-link>
             </li>
             <li>
-              <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md" :class="isProgressActive ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200') : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200')">
-                <font-awesome-icon :icon="['fas', 'chart-line']" />
-                <span>Progress</span>
+              <router-link to="/goals" class="flex items-center space-x-2 p-2 rounded-md" :class="isGoalsActive ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200') : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200')">
+                <font-awesome-icon :icon="['fas', 'bullseye']" />
+                <span>Goal</span>
               </router-link>
             </li>
             <li>
@@ -247,7 +247,7 @@ export default {
     const isDashboardActive = computed(() => route.path === '/dashboard' || route.path === '/');
     const isNotesActive = computed(() => route.path.startsWith('/notes'));
     const isQuizzesActive = computed(() => route.path.startsWith('/quizzes'));
-    const isProgressActive = computed(() => route.path.startsWith('/progress'));
+    const isGoalsActive = computed(() => route.path.startsWith('/goals'));
     const isSettingsActive = computed(() => route.path.startsWith('/settings'));
 
     // Use global theme classes from store with computed property
@@ -403,7 +403,7 @@ export default {
       isDashboardActive,
       isNotesActive,
       isQuizzesActive,
-      isProgressActive,
+      isGoalsActive,
       isSettingsActive,
 
       // Notification functions
