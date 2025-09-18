@@ -4,7 +4,10 @@
       <div class="flex items-center space-x-3">
         <!-- Classic Sidebar Toggle Button -->
         <button @click="toggleSidebar"
-                class="group relative flex flex-col items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-slate-800 to-gray-900 hover:from-blue-600 hover:to-blue-700 text-gray-300 hover:text-white transition-all duration-300 ease-out transform hover:scale-105 active:scale-95 overflow-hidden shadow-lg hover:shadow-xl hover:shadow-blue-500/25"
+                class="group relative flex flex-col items-center justify-center w-12 h-12 rounded-xl transition-all duration-300 ease-out transform hover:scale-105 active:scale-95 overflow-hidden shadow-lg hover:shadow-xl"
+                :class="store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gradient-to-br from-slate-800 to-gray-900 hover:from-blue-600 hover:to-blue-700 text-gray-300 hover:text-white hover:shadow-blue-500/25'
+                  : 'bg-gradient-to-br from-slate-200 to-slate-300 hover:from-blue-600 hover:to-blue-700 text-slate-700 hover:text-white hover:shadow-blue-500/25'"
                 :title="sidebarVisible ? 'Hide sidebar' : 'Show sidebar'">
 
           <!-- Hamburger Menu Lines -->
@@ -26,12 +29,15 @@
             <div class="absolute -top-1 left-1/2 transform -translate-x-1/2 w-2 h-2 bg-gray-900 border-l border-t border-gray-700 rotate-45"></div>
           </div>
         </button>
-        <div class="text-lg md:text-xl font-bold">SmartScribe</div>
+        <div :class="themeClasses.text" class="text-lg md:text-xl font-bold">SmartScribe</div>
       </div>
       <div class="flex items-center space-x-2 md:space-x-4">
 
         <div class="relative">
-          <button @click="toggleNotifications" class="text-gray-400 hover:text-white relative">
+          <button @click="toggleNotifications" class="relative transition-colors duration-300"
+                  :class="store.getters['app/getCurrentTheme'] === 'dark'
+                    ? 'text-gray-400 hover:text-white'
+                    : 'text-slate-500 hover:text-slate-900'">
             <font-awesome-icon :icon="['fas', 'bell']" />
             <span v-if="unreadNotifications > 0" class="absolute -top-1 -right-1 bg-red-500 text-white text-xs rounded-full h-5 w-5 flex items-center justify-center">
               {{ unreadNotifications }}
@@ -118,8 +124,9 @@
           <div v-if="showNotifications" class="fixed inset-0 z-0" @click="closeNotifications"></div>
         </div>
         <div class="relative">
-          <button @click="toggleUserMenu" class="flex items-center space-x-2">
-            <div class="w-8 h-8 rounded-full overflow-hidden bg-gray-600">
+          <button @click="toggleUserMenu" class="flex items-center space-x-2 transition-colors duration-300">
+            <div class="w-8 h-8 rounded-full overflow-hidden"
+                 :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-600' : 'bg-slate-300'">
               <img
                 v-if="user && user.profilePicture"
                 :key="user.profilePicture"
@@ -129,17 +136,35 @@
                 @error="handleImageError"
                 @load="handleImageLoad"
               />
-              <div v-else class="w-full h-full bg-gray-600 flex items-center justify-center">
-                <font-awesome-icon :icon="['fas', 'user']" class="text-white text-sm" />
+              <div v-else class="w-full h-full flex items-center justify-center"
+                   :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-600' : 'bg-slate-300'">
+                <font-awesome-icon :icon="['fas', 'user']"
+                                   :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-slate-700'"
+                                   class="text-sm" />
               </div>
             </div>
-            <span class="text-sm text-gray-300">{{ user?.name || 'User' }}</span>
-            <font-awesome-icon :icon="['fas', 'chevron-down']" class="text-xs" />
+            <span class="text-sm transition-colors duration-300"
+                  :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-slate-700'">
+              {{ user?.name || 'User' }}
+            </span>
+            <font-awesome-icon :icon="['fas', 'chevron-down']"
+                               :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-slate-700'"
+                               class="text-xs" />
           </button>
-          <div v-if="showUserMenu" class="absolute right-0 mt-2 w-48 bg-gray-800 rounded-md shadow-lg py-1 z-10">
-            <button @click="openProfileModal" class="w-full text-left block px-4 py-2 hover:bg-gray-700">Profile</button>
-            <router-link to="/settings" @click="closeUserMenu" class="block px-4 py-2 hover:bg-gray-700">Settings</router-link>
-            <button @click="logout" class="w-full text-left block px-4 py-2 hover:bg-gray-700 text-red-400 hover:text-red-300">Logout</button>
+          <div v-if="showUserMenu" class="absolute right-0 mt-2 w-48 rounded-md shadow-lg py-1 z-10 transition-colors duration-300"
+               :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-slate-200'">
+            <button @click="openProfileModal" class="w-full text-left block px-4 py-2 transition-colors duration-300"
+                    :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-slate-100'">
+              Profile
+            </button>
+            <router-link to="/settings" @click="closeUserMenu" class="block px-4 py-2 transition-colors duration-300"
+                         :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-slate-100'">
+              Settings
+            </router-link>
+            <button @click="logout" class="w-full text-left block px-4 py-2 transition-colors duration-300"
+                    :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700 text-red-400 hover:text-red-300' : 'hover:bg-slate-100 text-red-600 hover:text-red-700'">
+              Logout
+            </button>
           </div>
         </div>
       </div>
@@ -156,31 +181,61 @@
         <nav>
           <ul class="space-y-2">
             <li>
-              <router-link to="/dashboard" class="flex items-center space-x-2 p-2 rounded-md" :class="isDashboardActive ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200') : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200')">
+              <router-link to="/dashboard" class="flex items-center space-x-2 p-2 rounded-md transition-colors duration-300"
+                           :class="[
+                             isDashboardActive
+                               ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white')
+                               : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700 text-white' : 'hover:bg-slate-200 text-gray-900'),
+                             store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                           ]">
                 <font-awesome-icon :icon="['fas', 'home']" />
                 <span>Dashboard</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/notes" class="flex items-center space-x-2 p-2 rounded-md" :class="isNotesActive ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200') : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200')">
+              <router-link to="/notes" class="flex items-center space-x-2 p-2 rounded-md transition-colors duration-300"
+                           :class="[
+                             isNotesActive
+                               ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white')
+                               : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700 text-white' : 'hover:bg-slate-200 text-gray-900'),
+                             store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                           ]">
                 <font-awesome-icon :icon="['fas', 'book']" />
                 <span>My Notes</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md" :class="isQuizzesActive ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200') : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200')">
+              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md transition-colors duration-300"
+                           :class="[
+                             isQuizzesActive
+                               ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white')
+                               : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700 text-white' : 'hover:bg-slate-200 text-gray-900'),
+                             store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                           ]">
                 <font-awesome-icon :icon="['fas', 'book']" />
                 <span>Quizzes</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/goals" class="flex items-center space-x-2 p-2 rounded-md" :class="isGoalsActive ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200') : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200')">
+              <router-link to="/goals" class="flex items-center space-x-2 p-2 rounded-md transition-colors duration-300"
+                           :class="[
+                             isGoalsActive
+                               ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white')
+                               : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700 text-white' : 'hover:bg-slate-200 text-gray-900'),
+                             store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                           ]">
                 <font-awesome-icon :icon="['fas', 'bullseye']" />
                 <span>Goal</span>
               </router-link>
             </li>
             <li>
-              <router-link to="/settings" class="flex items-center space-x-2 p-2 rounded-md" :class="isSettingsActive ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200') : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200')">
+              <router-link to="/settings" class="flex items-center space-x-2 p-2 rounded-md transition-colors duration-300"
+                           :class="[
+                             isSettingsActive
+                               ? (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-blue-500 text-white' : 'bg-blue-600 text-white')
+                               : (store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700 text-white' : 'hover:bg-slate-200 text-gray-900'),
+                             store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                           ]">
                 <font-awesome-icon :icon="['fas', 'cog']" />
                 <span>Settings</span>
               </router-link>

@@ -2,7 +2,7 @@
   <Header @open-profile-modal="openProfileModal">
 
       <!-- Note Detail Main Content -->
-      <main class="flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out">
+      <main :class="`${themeClasses.mainContent} flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out`">
         <div v-if="isLoading" class="flex justify-center items-center h-full">
           <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-3xl sm:text-4xl text-blue-500" />
         </div>
@@ -10,25 +10,25 @@
         <div v-else-if="note && !error">
           <div class="flex flex-col justify-between items-start mb-6 space-y-4" style="flex-direction: column !important;">
             <div>
-              <h1 class="text-xl sm:text-2xl font-bold">{{ note.title }}</h1>
-              <p class="text-gray-400 text-xs sm:text-sm">Last edited: {{ note.lastEdited }}</p>
+              <h1 :class="`${themeClasses.text} font-bold ${fontSizeClasses.heading}`">{{ note.title }}</h1>
+              <p :class="`${themeClasses.tertiaryText} ${fontSizeClasses.label}`">Last edited: {{ note.lastEdited }}</p>
             </div>
             <div class="flex space-x-2 sm:space-x-3 w-full sm:w-auto">
               <button @click="editNote" class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base bg-blue-600 rounded-md hover:bg-blue-700 transition">
                 <font-awesome-icon :icon="['fas', 'edit']" class="mr-2" /> Edit
               </button>
-              <button @click="showExportOptions = !showExportOptions" class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base bg-gray-700 rounded-md hover:bg-gray-600 transition relative">
+              <button @click="showExportOptions = !showExportOptions" :class="`flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base ${themeClasses.button} rounded-md transition relative`">
                 <font-awesome-icon :icon="['fas', 'file-export']" class="mr-2" /> Export
                 
                 <!-- Export Options Dropdown -->
-                <div v-if="showExportOptions" class="absolute right-0 mt-2 w-48 sm:w-56 bg-gray-800 rounded-md shadow-lg py-1 z-10 max-w-full">
-                  <button @click="exportNote('pdf')" class="block w-full text-left px-4 py-2 hover:bg-gray-700">
+                <div v-if="showExportOptions" :class="`absolute right-0 mt-2 w-48 sm:w-56 ${themeClasses.card} rounded-md shadow-lg py-1 z-10 max-w-full`">
+                  <button @click="exportNote('pdf')" :class="`block w-full text-left px-4 py-2 ${themeClasses.hover}`">
                     <font-awesome-icon :icon="['fas', 'file-code']" class="mr-2" /> HTML for PDF conversion
                   </button>
-                  <button @click="exportNote('word')" class="block w-full text-left px-4 py-2 hover:bg-gray-700">
+                  <button @click="exportNote('word')" :class="`block w-full text-left px-4 py-2 ${themeClasses.hover}`">
                     <font-awesome-icon :icon="['fas', 'file-word']" class="mr-2" /> Word Document (.doc)
                   </button>
-                  <button @click="exportNote('text')" class="block w-full text-left px-4 py-2 hover:bg-gray-700">
+                  <button @click="exportNote('text')" :class="`block w-full text-left px-4 py-2 ${themeClasses.hover}`">
                     <font-awesome-icon :icon="['fas', 'file-alt']" class="mr-2" /> Plain Text (.txt)
                   </button>
                 </div>
@@ -37,19 +37,19 @@
           </div>
 
           <!-- Study Time Tracker -->
-          <div class="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
+          <div :class="`${themeClasses.card} rounded-lg p-4 sm:p-6 mb-6`">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0">
-              <h2 class="text-base sm:text-lg font-semibold">Study Session</h2>
+              <h2 :class="`${themeClasses.text} font-semibold ${fontSizeClasses.body}`">Study Session</h2>
               <div class="flex flex-col sm:flex-row space-y-2 sm:space-y-0 sm:space-x-2 w-full sm:w-auto">
                 <div class="flex items-center space-x-2 text-sm">
                   <font-awesome-icon :icon="['fas', 'clock']" class="text-blue-400" />
-                  <span class="text-gray-300">{{ formattedElapsedTime }}</span>
+                  <span :class="themeClasses.secondaryText">{{ formattedElapsedTime }}</span>
                 </div>
                 <div v-if="isTracking" class="flex items-center space-x-2 text-sm text-green-400">
                   <font-awesome-icon :icon="['far', 'circle']" class="animate-pulse" />
                   <span>Auto-tracking study time</span>
                 </div>
-                <div v-else class="text-sm text-gray-400">
+                <div v-else :class="`text-sm ${themeClasses.tertiaryText}`">
                   Study time tracking will start automatically
                 </div>
               </div>
@@ -64,10 +64,10 @@
 
           <div class="grid grid-cols-1 gap-4 sm:gap-6 mb-6" style="grid-template-columns: 1fr;">
             <!-- Original Text -->
-            <div class="bg-gray-800 rounded-lg p-4 sm:p-6">
-              <h2 class="text-base sm:text-lg font-semibold mb-4">Original Text</h2>
+            <div :class="`${themeClasses.card} rounded-lg p-4 sm:p-6`">
+              <h2 :class="`${themeClasses.text} font-semibold mb-4 ${fontSizeClasses.body}`">Original Text</h2>
               <div
-                class="bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 h-64 sm:h-96 overflow-y-auto overflow-x-hidden text-sm sm:text-base break-words"
+                :class="`${themeClasses.input} rounded-lg p-3 sm:p-4 ${themeClasses.text} h-64 sm:h-96 overflow-y-auto overflow-x-hidden text-sm sm:text-base break-words`"
                 @scroll="onNoteScroll"
               >
                 {{ note.originalText }}
@@ -75,22 +75,22 @@
             </div>
 
             <!-- AI Summary -->
-            <div class="bg-gray-800 rounded-lg p-4 sm:p-6">
+            <div :class="`${themeClasses.card} rounded-lg p-4 sm:p-6`">
               <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4 space-y-2 sm:space-y-0">
-                <h2 class="text-base sm:text-lg font-semibold">AI Summary</h2>
+                <h2 :class="`${themeClasses.text} font-semibold ${fontSizeClasses.body}`">AI Summary</h2>
                 <button @click="generateSummary" class="w-full sm:w-auto px-3 py-2 sm:px-3 sm:py-1 bg-blue-600 rounded text-sm hover:bg-blue-700 transition" :disabled="isGeneratingSummary">
                   <font-awesome-icon :icon="['fas', 'sync-alt']" class="mr-1" :spin="generatingSummary" /> {{ generatingSummary ? 'Generating...' : 'Generate Summary' }}
                 </button>
               </div>
-              <div class="bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 h-64 sm:h-96 overflow-y-auto overflow-x-hidden text-sm sm:text-base break-words whitespace-pre-line">
+              <div :class="`${themeClasses.input} rounded-lg p-3 sm:p-4 ${themeClasses.text} h-64 sm:h-96 overflow-y-auto overflow-x-hidden text-sm sm:text-base break-words whitespace-pre-line`">
                 {{ note.summary || 'No summary available. Click "Generate Summary" to create one.' }}
               </div>
             </div>
           </div>
 
           <!-- Keywords and Tags -->
-          <div class="bg-gray-800 rounded-lg p-4 sm:p-6 mb-6">
-            <h2 class="text-base sm:text-lg font-semibold mb-4">Keywords & Tags</h2>
+          <div :class="`${themeClasses.card} rounded-lg p-4 sm:p-6 mb-6`">
+            <h2 :class="`${themeClasses.text} font-semibold mb-4 ${fontSizeClasses.body}`">Keywords & Tags</h2>
             <div class="flex flex-wrap gap-2">
               <span
                 v-for="(keyword, index) in note.keywords"
@@ -106,8 +106,8 @@
         
         <div v-else-if="error" class="flex flex-col items-center justify-center h-full">
            <font-awesome-icon :icon="['fas', 'times']" class="text-4xl text-red-400 mb-4" />
-           <h2 class="text-xl font-medium mb-2">Error Loading Note</h2>
-           <p class="text-gray-400 mb-4">{{ error }}</p>
+           <h2 :class="`${themeClasses.text} font-medium mb-2 ${fontSizeClasses.heading}`">Error Loading Note</h2>
+           <p :class="`${themeClasses.tertiaryText} mb-4`">{{ error }}</p>
            <router-link to="/notes" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
              Back to Notes
            </router-link>
@@ -115,8 +115,8 @@
 
          <div v-else class="flex flex-col items-center justify-center h-full">
            <font-awesome-icon :icon="['fas', 'exclamation-circle']" class="text-4xl text-gray-400 mb-4" />
-           <h2 class="text-xl font-medium mb-2">Note Not Found</h2>
-           <p class="text-gray-400 mb-4">The note you're looking for doesn't exist or has been deleted.</p>
+           <h2 :class="`${themeClasses.text} font-medium mb-2 ${fontSizeClasses.heading}`">Note Not Found</h2>
+           <p :class="`${themeClasses.tertiaryText} mb-4`">The note you're looking for doesn't exist or has been deleted.</p>
            <router-link to="/notes" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
              Back to Notes
            </router-link>
@@ -299,6 +299,20 @@ export default {
           secondaryText: 'text-gray-400',
           input: 'bg-gray-700 border-gray-600 text-white',
           button: 'bg-gray-700 hover:bg-gray-600'
+        };
+      }
+    });
+
+    // Use global font size classes from store
+    const fontSizeClasses = computed(() => {
+      try {
+        return store.getters['app/getFontSizeClasses'];
+      } catch (error) {
+        return {
+          heading: 'text-xl',
+          body: 'text-base',
+          label: 'text-sm',
+          small: 'text-xs'
         };
       }
     });
@@ -510,6 +524,7 @@ export default {
       isGeneratingSummary,
       sidebarOpen,
       themeClasses,
+      fontSizeClasses,
       sidebarVisible,
       showUserMenu,
       editNote,

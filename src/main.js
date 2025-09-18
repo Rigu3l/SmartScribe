@@ -30,7 +30,13 @@ import {
   faPaperPlane,
   faRedo,
   faFlask,
-  faCalendar
+  faCalendar,
+  faCompass,
+  faChevronLeft,
+  faChevronRight,
+  faCheck,
+  faChartBar,
+  faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons'
 import {
   faTwitter, faFacebook, faInstagram, faGithub,
@@ -63,7 +69,13 @@ library.add(
   faRedo,
   faFlask,
   faCircle,
-  faCalendar
+  faCalendar,
+  faCompass,
+  faChevronLeft,
+  faChevronRight,
+  faCheck,
+  faChartBar,
+  faExclamationTriangle
 )
 
 

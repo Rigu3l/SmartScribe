@@ -20,22 +20,40 @@ body {
 }
 
 .theme-light body {
-  background-color: #f8fafc; /* slate-50 */
-  color: #0f172a; /* slate-900 */
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
 }
 
-/* Enhanced light theme colors for better readability */
+/* Apply CSS variables to common elements in light theme */
 .theme-light {
-  --bg-primary: #f8fafc; /* slate-50 */
-  --bg-secondary: #ffffff; /* white */
-  --bg-tertiary: #f1f5f9; /* slate-100 */
-  --text-primary: #0f172a; /* slate-900 */
-  --text-secondary: #475569; /* slate-600 */
-  --text-tertiary: #64748b; /* slate-500 */
-  --border-primary: #e2e8f0; /* slate-200 */
-  --border-secondary: #cbd5e1; /* slate-300 */
-  --accent-primary: #2563eb; /* blue-600 */
-  --accent-hover: #1d4ed8; /* blue-700 */
+  background-color: var(--bg-primary);
+  color: var(--text-primary);
+}
+
+.theme-light .bg-white {
+  background-color: var(--bg-secondary) !important;
+}
+
+.theme-light .text-gray-700 {
+  color: var(--text-primary) !important;
+}
+
+.theme-light .border-gray-200 {
+  border-color: var(--border-primary) !important;
+}
+
+/* True light theme colors for proper light appearance */
+.theme-light {
+  --bg-primary: #ffffff; /* pure white - main background */
+  --bg-secondary: #f8fafc; /* very light gray - card backgrounds */
+  --bg-tertiary: #f1f5f9; /* light gray - hover states */
+  --text-primary: #1e293b; /* dark slate - primary text */
+  --text-secondary: #64748b; /* medium gray - secondary text */
+  --text-tertiary: #94a3b8; /* light gray - tertiary text */
+  --border-primary: #e2e8f0; /* light border - borders */
+  --border-secondary: #cbd5e1; /* medium border - secondary borders */
+  --accent-primary: #3b82f6; /* blue-500 - primary accent */
+  --accent-hover: #2563eb; /* blue-600 - hover accent */
 }
 
 .theme-dark {

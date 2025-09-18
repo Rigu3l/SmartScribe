@@ -1,7 +1,10 @@
 <template>
   <Header @open-profile-modal="openProfileModal">
       <!-- Quiz Main Content -->
-      <main class="flex-1 p-4 sm:p-6 ml-0 md:ml-0 transition-all duration-300 ease-in-out" style="width: 100vw; max-width: 100vw;">
+      <main :class="[
+        'flex-1 p-4 sm:p-6 ml-0 md:ml-0 transition-all duration-300 ease-in-out',
+        store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-900' : 'bg-white'
+      ]" style="width: 100vw; max-width: 100vw;">
         <div v-if="isLoading" class="flex justify-center items-center h-full">
           <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-3xl sm:text-4xl text-blue-500" />
         </div>
@@ -9,7 +12,7 @@
         <div v-else-if="error" class="flex flex-col items-center justify-center h-full">
           <font-awesome-icon :icon="['fas', 'times']" class="text-4xl text-red-400 mb-4" />
           <h2 class="text-xl font-medium mb-2">Error Loading Quiz</h2>
-          <p class="text-gray-400 mb-4">{{ error }}</p>
+          <p :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-600'" class="mb-4">{{ error }}</p>
           <router-link to="/notes" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
             Back to Notes
           </router-link>
@@ -20,15 +23,24 @@
           <div class="mb-6">
             <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-4">
               <div>
-                <h1 class="text-2xl sm:text-3xl font-bold mb-2">Quizzes</h1>
-                <p class="text-gray-400">Create and manage your study quizzes</p>
+                <h1 :class="[
+                  'font-bold mb-2',
+                  fontSizeClasses.heading,
+                  store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+                ]">Quizzes</h1>
+                <p :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-600'">Create and manage your study quizzes</p>
               </div>
               <div class="flex space-x-3 mt-4 sm:mt-0">
                 <button @click="openQuizOptions" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition" :disabled="isGeneratingQuiz">
                   <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
                   {{ isGeneratingQuiz ? 'Generating...' : 'Create New Quiz' }}
                 </button>
-                <router-link to="/notes" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700 transition">
+                <router-link to="/notes" :class="[
+                  'px-4 py-2 rounded-md transition',
+                  store.getters['app/getCurrentTheme'] === 'dark'
+                    ? 'bg-gray-600 hover:bg-gray-700'
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                ]">
                   <font-awesome-icon :icon="['fas', 'angle-left']" class="mr-2" />
                   Back to Notes
                 </router-link>
@@ -40,11 +52,23 @@
 
 
           <!-- Saved Quizzes Section -->
-          <div class="bg-gray-800 rounded-lg p-6">
+          <div :class="[
+            'rounded-lg p-6',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-gray-200'
+          ]">
             <div class="flex justify-between items-center mb-6">
-              <h3 class="text-xl font-semibold">Your Quizzes</h3>
+              <h3 :class="[
+                'font-semibold',
+                fontSizeClasses.heading,
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+              ]">Your Quizzes</h3>
               <div class="flex space-x-2">
-                <button @click="debugQuizStatus" class="text-gray-400 hover:text-gray-300 text-sm">
+                <button @click="debugQuizStatus" :class="[
+                  'text-sm',
+                  store.getters['app/getCurrentTheme'] === 'dark'
+                    ? 'text-gray-400 hover:text-gray-300'
+                    : 'text-gray-600 hover:text-gray-800'
+                ]">
                   <font-awesome-icon :icon="['fas', 'info-circle']" class="mr-1" />
                   Debug
                 </button>
@@ -62,14 +86,27 @@
             <!-- Loading State -->
             <div v-if="isLoadingSavedQuizzes" class="flex justify-center py-8">
               <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-2xl text-blue-500" />
-              <span class="ml-2 text-gray-400">Loading your quizzes...</span>
+              <span :class="[
+                'ml-2',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              ]">Loading your quizzes...</span>
             </div>
 
             <!-- Empty State -->
-            <div v-else-if="savedQuizzes.length === 0" class="text-center py-12 text-gray-400">
+            <div v-else-if="savedQuizzes.length === 0" :class="[
+              'text-center py-12',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            ]">
               <font-awesome-icon :icon="['fas', 'book-open']" class="text-6xl mb-6" />
-              <h3 class="text-xl font-semibold mb-4">No Quizzes Yet</h3>
-              <p class="text-gray-400 mb-6">Create your first quiz to start studying!</p>
+              <h3 :class="[
+                'font-semibold mb-4',
+                fontSizeClasses.heading,
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+              ]">No Quizzes Yet</h3>
+              <p :class="[
+                'mb-6',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-600'
+              ]">Create your first quiz to start studying!</p>
               <button @click="openNoteSelector" class="px-6 py-3 bg-blue-600 rounded-md hover:bg-blue-700 transition" :disabled="isGeneratingQuiz">
                 <font-awesome-icon :icon="['fas', 'plus']" class="mr-2" />
                 {{ isGeneratingQuiz ? 'Generating...' : 'Create Your First Quiz' }}
@@ -81,7 +118,12 @@
               <div
                 v-for="quiz in savedQuizzes"
                 :key="quiz.id"
-                class="bg-gray-700 rounded-lg p-5 hover:bg-gray-600 transition-all duration-200 cursor-pointer transform hover:scale-105 relative"
+                :class="[
+                  'rounded-lg p-5 transition-all duration-200 cursor-pointer transform hover:scale-105 relative',
+                  store.getters['app/getCurrentTheme'] === 'dark'
+                    ? 'bg-gray-700 hover:bg-gray-600'
+                    : 'bg-white border border-gray-200 shadow-sm hover:shadow-md hover:bg-gray-50'
+                ]"
                 @click="startQuiz(quiz.id)"
               >
                 <!-- Completion Status Indicator -->
@@ -89,14 +131,30 @@
                 <div v-else class="absolute top-2 right-2 w-3 h-3 bg-gray-500 rounded-full" title="Not taken"></div>
                 <div class="flex items-start justify-between mb-4">
                   <div class="flex-1">
-                    <h4 class="font-semibold text-white text-lg mb-2">{{ quiz.title }}</h4>
-                    <div class="text-sm text-gray-400 mb-2">
+                    <h4 :class="[
+                      'font-semibold mb-2',
+                      fontSizeClasses.body,
+                      store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+                    ]">{{ quiz.title }}</h4>
+                    <div :class="[
+                      'mb-2',
+                      fontSizeClasses.label,
+                      store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    ]">
                       <span class="text-xs">ID: {{ quiz.id }}</span>
                     </div>
-                    <p class="text-sm text-gray-400 mb-2">
+                    <p :class="[
+                      'mb-2',
+                      fontSizeClasses.label,
+                      store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    ]">
                       Created: {{ new Date(quiz.created_at).toLocaleDateString() }}
                     </p>
-                    <div class="flex items-center text-sm text-gray-300">
+                    <div :class="[
+                      'flex items-center',
+                      fontSizeClasses.label,
+                      store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    ]">
                       <font-awesome-icon :icon="['fas', 'question-circle']" class="mr-1" />
                       {{ quiz.questionCount }} questions
                     </div>
@@ -105,35 +163,69 @@
                     <div class="text-2xl font-bold mb-1" :class="quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0 ? (quiz.accuracy >= 80 ? 'text-green-400' : quiz.accuracy >= 60 ? 'text-yellow-400' : 'text-red-400') : 'text-gray-500'">
                       {{ quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0 ? quiz.accuracy + '%' : 'Not taken' }}
                     </div>
-                    <div class="text-xs text-gray-400 mb-2">{{ quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0 ? 'Accuracy' : 'Status' }}</div>
+                    <div :class="[
+                      'mb-2',
+                      fontSizeClasses.small,
+                      store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    ]">{{ quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0 ? 'Accuracy' : 'Status' }}</div>
                     <div class="text-sm">
                       <span class="text-green-400 font-medium">{{ (quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0) ? quiz.score : 0 }}</span>
-                      <span class="text-gray-500 mx-1">/</span>
+                      <span :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-500' : 'text-gray-400'" class="mx-1">/</span>
                       <span class="text-red-400 font-medium">{{ (quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0) ? (quiz.questionCount - quiz.score) : 0 }}</span>
                     </div>
-                    <div class="text-xs text-gray-400">Correct/Incorrect</div>
+                    <div :class="[
+                      '',
+                      fontSizeClasses.small,
+                      store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                    ]">Correct/Incorrect</div>
                   </div>
                 </div>
 
                 <!-- Performance Analysis -->
-                <div class="bg-gray-600 rounded-lg p-3 mb-4">
-                  <h5 class="text-sm font-semibold mb-2 text-gray-200">Performance Statistics</h5>
+                <div :class="[
+                  'rounded-lg p-3 mb-4',
+                  store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-600' : 'bg-gray-100'
+                ]">
+                  <h5 :class="[
+                    'font-semibold mb-2',
+                    fontSizeClasses.label,
+                    store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-200' : 'text-gray-800'
+                  ]">Performance Statistics</h5>
                   <div class="grid grid-cols-3 gap-2 text-center">
                     <div>
                       <div class="text-lg font-bold text-green-400">{{ (quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0) ? quiz.score : 0 }}</div>
-                      <div class="text-xs text-gray-400">Correct</div>
+                      <div :class="[
+                        '',
+                        fontSizeClasses.small,
+                        store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      ]">Correct</div>
                     </div>
                     <div>
                       <div class="text-lg font-bold text-red-400">{{ (quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0) ? (quiz.questionCount - quiz.score) : 0 }}</div>
-                      <div class="text-xs text-gray-400">Incorrect</div>
+                      <div :class="[
+                        '',
+                        fontSizeClasses.small,
+                        store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      ]">Incorrect</div>
                     </div>
                     <div>
                       <div class="text-lg font-bold text-blue-400">{{ quiz.score !== null && quiz.score !== undefined && quiz.questionCount > 0 ? (quiz.accuracy || 0) + '%' : 'N/A' }}</div>
-                      <div class="text-xs text-gray-400">Accuracy</div>
+                      <div :class="[
+                        '',
+                        fontSizeClasses.small,
+                        store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                      ]">Accuracy</div>
                     </div>
                   </div>
-                  <div class="mt-2 pt-2 border-t border-gray-500">
-                    <div class="text-xs text-gray-300 text-center">
+                  <div :class="[
+                    'mt-2 pt-2 border-t',
+                    store.getters['app/getCurrentTheme'] === 'dark' ? 'border-gray-500' : 'border-gray-300'
+                  ]">
+                    <div :class="[
+                      'text-center',
+                      fontSizeClasses.small,
+                      store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                    ]">
                       <span class="font-medium">Difficulty:</span> {{ quiz.difficulty || 'Medium' }}
                       <span class="mx-2">•</span>
                       <span class="font-medium">Type:</span> {{ getQuizTypeDisplay(quiz.quiz_type || 'multiple_choice') }}
@@ -144,13 +236,17 @@
                 </div>
 
                 <div class="flex items-center justify-between">
-                  <span class="text-sm text-gray-400">
+                  <span :class="[
+                    '',
+                    fontSizeClasses.label,
+                    store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  ]">
                     Difficulty: {{ quiz.difficulty || 'Medium' }}
                   </span>
                   <div class="flex space-x-2">
                     <button
                       @click.stop="startQuiz(quiz.id)"
-                      class="px-3 py-1 bg-blue-600 text-white text-sm rounded-md hover:bg-blue-700 transition"
+                      class="px-3 py-1 bg-gray-500 text-white text-sm rounded-md hover:bg-gray-600 transition"
                     >
                       <font-awesome-icon :icon="['fas', 'play']" class="mr-1" />
                       Take Quiz
@@ -171,17 +267,33 @@
       </main>
 
   <!-- Delete Confirmation Modal -->
-    <div v-if="showDeleteConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+  <div v-if="showDeleteConfirmation" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
+    <div :class="[
+      'rounded-lg p-6 w-full max-w-md mx-4',
+      store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-gray-200'
+    ]">
         <div class="flex items-center mb-4">
           <div class="ml-4">
-            <h3 class="text-lg font-semibold text-white">Delete Quiz</h3>
-            <p class="text-sm text-gray-300 mt-1">Are you sure you want to delete this quiz? This action cannot be undone.</p>
+            <h3 :class="[
+              'font-semibold',
+              fontSizeClasses.body,
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+            ]">Delete Quiz</h3>
+            <p :class="[
+              'mt-1',
+              fontSizeClasses.label,
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            ]">Are you sure you want to delete this quiz? This action cannot be undone.</p>
           </div>
         </div>
 
         <div class="flex justify-end space-x-3">
-          <button @click="cancelDelete" class="px-4 py-2 bg-gray-600 text-white rounded-md hover:bg-gray-700 transition">
+          <button @click="cancelDelete" :class="[
+            'px-4 py-2 rounded-md transition',
+            store.getters['app/getCurrentTheme'] === 'dark'
+              ? 'bg-gray-600 text-white hover:bg-gray-700'
+              : 'bg-gray-200 text-gray-900 hover:bg-gray-300'
+          ]">
             Cancel
           </button>
           <button @click="proceedDelete" class="px-4 py-2 bg-red-600 text-white rounded-md hover:bg-red-700 transition">
@@ -193,10 +305,19 @@
 
     <!-- Note Selector Modal -->
     <div v-if="showNoteSelector" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-gray-800 rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto">
+      <div :class="[
+        'rounded-lg p-6 w-full max-w-2xl mx-4 max-h-[80vh] overflow-y-auto',
+        store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-gray-200'
+      ]">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-semibold">Select Notes for Quiz Generation</h2>
-          <button @click="closeNoteSelector" class="text-gray-400 hover:text-white">
+          <h2 :class="[
+            'font-semibold',
+            fontSizeClasses.heading,
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+          ]">Select Notes for Quiz Generation</h2>
+          <button @click="closeNoteSelector" :class="[
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'
+          ]">
             <font-awesome-icon :icon="['fas', 'times']" class="text-xl" />
           </button>
         </div>
@@ -204,21 +325,33 @@
         <!-- Loading State -->
         <div v-if="isLoadingNotes" class="flex justify-center py-8">
           <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-2xl text-blue-500" />
-          <span class="ml-2 text-gray-400">Loading your notes...</span>
+          <span :class="[
+            'ml-2',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-600'
+          ]">Loading your notes...</span>
         </div>
 
         <!-- Notes List -->
         <div v-else-if="availableNotes.length > 0" class="space-y-4">
           <!-- Selection Controls -->
           <div class="flex justify-between items-center mb-4">
-            <div class="text-sm text-gray-400">
+            <div :class="[
+              '',
+              fontSizeClasses.label,
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-600'
+            ]">
               {{ selectedNotes.length }} of {{ availableNotes.length }} notes selected
             </div>
             <div class="flex space-x-2">
               <button @click="selectAllNotes" class="px-3 py-1 text-sm bg-blue-600 rounded-md hover:bg-blue-700 transition">
                 Select All
               </button>
-              <button @click="deselectAllNotes" class="px-3 py-1 text-sm bg-gray-600 rounded-md hover:bg-gray-700 transition">
+              <button @click="deselectAllNotes" :class="[
+                'px-3 py-1 text-sm rounded-md transition',
+                store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gray-600 hover:bg-gray-700 text-white'
+                  : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+              ]">
                 Deselect All
               </button>
             </div>
@@ -229,8 +362,12 @@
             <div
               v-for="note in availableNotes"
               :key="note.id"
-              class="bg-gray-700 rounded-lg p-4 cursor-pointer transition-all"
-              :class="note.selected ? 'ring-2 ring-blue-500 bg-gray-600' : 'hover:bg-gray-600'"
+              :class="[
+                'rounded-lg p-4 cursor-pointer transition-all',
+                note.selected
+                  ? 'ring-2 ring-blue-500 ' + (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-600' : 'bg-blue-50')
+                  : (store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700 hover:bg-gray-600' : 'bg-white border border-gray-200 hover:bg-gray-50')
+              ]"
               @click="toggleNoteSelection(note.id)"
             >
               <div class="flex items-start space-x-3">
@@ -241,11 +378,23 @@
                   readonly
                 />
                 <div class="flex-1">
-                  <h3 class="font-medium text-white mb-2">{{ note.title || 'Untitled Note' }}</h3>
-                  <p class="text-sm text-gray-300 mb-2 line-clamp-2">
+                  <h3 :class="[
+                    'font-medium mb-2',
+                    fontSizeClasses.body,
+                    store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+                  ]">{{ note.title || 'Untitled Note' }}</h3>
+                  <p :class="[
+                    'mb-2 line-clamp-2',
+                    fontSizeClasses.label,
+                    store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-600'
+                  ]">
                     {{ note.original_text ? note.original_text.substring(0, 100) + '...' : 'No content available' }}
                   </p>
-                  <div class="text-xs text-gray-400">
+                  <div :class="[
+                    '',
+                    fontSizeClasses.small,
+                    store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                  ]">
                     Created: {{ new Date(note.created_at).toLocaleDateString() }}
                   </div>
                 </div>
@@ -255,15 +404,23 @@
         </div>
 
         <!-- Empty State -->
-        <div v-else class="text-center py-8 text-gray-400">
+        <div v-else :class="[
+          'text-center py-8',
+          store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-600'
+        ]">
           <font-awesome-icon :icon="['fas', 'book']" class="text-4xl mb-4" />
-          <p class="text-lg mb-2">No notes available</p>
-          <p class="text-sm">Create some notes first to generate quizzes</p>
+          <p class="mb-2">No notes available</p>
+          <p class="">Create some notes first to generate quizzes</p>
         </div>
 
         <!-- Action Buttons -->
         <div class="flex justify-end space-x-4 mt-6">
-          <button @click="closeNoteSelector" class="px-4 py-2 bg-gray-600 rounded-md hover:bg-gray-700 transition">
+          <button @click="closeNoteSelector" :class="[
+            'px-4 py-2 rounded-md transition',
+            store.getters['app/getCurrentTheme'] === 'dark'
+              ? 'bg-gray-600 hover:bg-gray-700 text-white'
+              : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+          ]">
             Cancel
           </button>
           <button
@@ -280,27 +437,43 @@
 
     <!-- Quiz Options Modal -->
     <div v-if="showQuizOptions" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
+      <div :class="[
+        'rounded-lg p-6 w-full max-w-md mx-4',
+        store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-gray-200'
+      ]">
         <div class="flex justify-between items-center mb-6">
-          <h2 class="text-xl font-semibold">Quiz Options</h2>
-          <button @click="closeQuizOptions" class="text-gray-400 hover:text-white">
+          <h2 :class="[
+            'font-semibold',
+            fontSizeClasses.heading,
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+          ]">Quiz Options</h2>
+          <button @click="closeQuizOptions" :class="[
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'
+          ]">
             <font-awesome-icon :icon="['fas', 'times']" class="text-xl" />
           </button>
         </div>
 
         <!-- Difficulty Selection -->
         <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-300 mb-3">Difficulty Level</label>
+          <label :class="[
+            'block font-medium mb-3',
+            fontSizeClasses.label,
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          ]">Difficulty Level</label>
           <div class="grid grid-cols-3 gap-3">
             <button
               v-for="difficulty in ['easy', 'medium', 'hard']"
               :key="difficulty"
               @click="selectedDifficulty = difficulty"
               :class="[
-                'px-4 py-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium capitalize',
+                'px-4 py-3 rounded-lg border-2 transition-all duration-200 font-medium capitalize',
+                fontSizeClasses.label,
                 selectedDifficulty === difficulty
                   ? 'border-blue-500 bg-blue-500/20 text-blue-400'
-                  : 'border-gray-600 bg-gray-700/30 text-gray-400 hover:border-gray-500'
+                  : store.getters['app/getCurrentTheme'] === 'dark'
+                    ? 'border-gray-600 bg-gray-700/30 text-gray-400 hover:border-gray-500'
+                    : 'border-gray-300 bg-gray-100/50 text-gray-600 hover:border-gray-400'
               ]"
             >
               <font-awesome-icon
@@ -314,17 +487,24 @@
 
         <!-- Quantity Selection -->
         <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-300 mb-3">Number of Questions</label>
+          <label :class="[
+            'block font-medium mb-3',
+            fontSizeClasses.label,
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          ]">Number of Questions</label>
           <div class="grid grid-cols-2 gap-3">
             <button
               v-for="quantity in [5, 10, 15, 20]"
               :key="quantity"
               @click="selectedQuantity = quantity"
               :class="[
-                'px-4 py-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium',
+                'px-4 py-3 rounded-lg border-2 transition-all duration-200 font-medium',
+                fontSizeClasses.label,
                 selectedQuantity === quantity
                   ? 'border-blue-500 bg-blue-500/20 text-blue-400'
-                  : 'border-gray-600 bg-gray-700/30 text-gray-400 hover:border-gray-500'
+                  : store.getters['app/getCurrentTheme'] === 'dark'
+                    ? 'border-gray-600 bg-gray-700/30 text-gray-400 hover:border-gray-500'
+                    : 'border-gray-300 bg-gray-100/50 text-gray-600 hover:border-gray-400'
               ]"
             >
               <font-awesome-icon :icon="['fas', 'question-circle']" class="mr-2" />
@@ -335,17 +515,24 @@
 
         <!-- Quiz Type Selection -->
         <div class="mb-6">
-          <label class="block text-sm font-medium text-gray-300 mb-3">Quiz Type</label>
+          <label :class="[
+            'block font-medium mb-3',
+            fontSizeClasses.label,
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          ]">Quiz Type</label>
           <div class="space-y-3">
             <button
               v-for="type in ['multiple_choice', 'true_false', 'mixed']"
               :key="type"
               @click="selectedQuizType = type"
               :class="[
-                'w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 text-sm font-medium text-left',
+                'w-full px-4 py-3 rounded-lg border-2 transition-all duration-200 font-medium text-left',
+                fontSizeClasses.label,
                 selectedQuizType === type
                   ? 'border-blue-500 bg-blue-500/20 text-blue-400'
-                  : 'border-gray-600 bg-gray-700/30 text-gray-400 hover:border-gray-500'
+                  : store.getters['app/getCurrentTheme'] === 'dark'
+                    ? 'border-gray-600 bg-gray-700/30 text-gray-400 hover:border-gray-500'
+                    : 'border-gray-300 bg-gray-100/50 text-gray-600 hover:border-gray-400'
               ]"
             >
               <font-awesome-icon
@@ -359,7 +546,13 @@
 
         <!-- Action Buttons -->
         <div class="flex space-x-4">
-          <button @click="closeQuizOptions" class="flex-1 px-4 py-3 bg-gray-600 rounded-lg hover:bg-gray-700 transition-colors text-white font-medium">
+          <button @click="closeQuizOptions" :class="[
+            'flex-1 px-4 py-3 rounded-lg transition-colors font-medium',
+            fontSizeClasses.label,
+            store.getters['app/getCurrentTheme'] === 'dark'
+              ? 'bg-gray-600 hover:bg-gray-700 text-white'
+              : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+          ]">
             Cancel
           </button>
           <button
@@ -483,6 +676,20 @@ export default {
     // Use global theme classes from store
     const themeClasses = computed(() => {
       return store.getters['app/getThemeClasses'];
+    });
+
+    // Use global font size classes from store
+    const fontSizeClasses = computed(() => {
+      try {
+        return store.getters['app/getFontSizeClasses'];
+      } catch (error) {
+        return {
+          heading: 'text-xl',
+          body: 'text-base',
+          label: 'text-sm',
+          small: 'text-xs'
+        };
+      }
     });
 
 
@@ -1326,6 +1533,7 @@ Check console for detailed quiz data.`)
       debugQuizStatus,
       getQuizTypeDisplay,
       themeClasses,
+      fontSizeClasses,
       store,
       // Quiz options
       showQuizOptions,

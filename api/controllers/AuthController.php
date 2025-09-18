@@ -1207,4 +1207,78 @@ class AuthController extends BaseController {
         }
     }
 
+    public function deleteAccount() {
+        try {
+            // Authenticate user first
+            if (!$this->authenticateUser()) {
+                $this->unauthorizedResponse();
+                return;
+            }
+
+            // Get user ID from header
+            $userId = $this->getUserId();
+
+            if (!$userId) {
+                $this->unauthorizedResponse();
+                return;
+            }
+
+            // Start transaction for data consistency
+            $this->db->beginTransaction();
+
+            try {
+                // Delete user-related data in correct order to avoid foreign key constraints
+
+                // 1. Delete password reset tokens
+                $stmt = $this->db->prepare("DELETE FROM password_reset_tokens WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 2. Delete user tokens
+                $stmt = $this->db->prepare("DELETE FROM user_tokens WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 3. Delete study sessions
+                $stmt = $this->db->prepare("DELETE FROM study_sessions WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 4. Delete learning goals
+                $stmt = $this->db->prepare("DELETE FROM learning_goals WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 5. Delete summaries
+                $stmt = $this->db->prepare("DELETE FROM summaries WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 6. Delete quizzes
+                $stmt = $this->db->prepare("DELETE FROM quizzes WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 7. Delete notes (this should be last as other tables might reference it)
+                $stmt = $this->db->prepare("DELETE FROM notes WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 8. Finally, delete the user record
+                $stmt = $this->db->prepare("DELETE FROM users WHERE id = ?");
+                $result = $stmt->execute([$userId]);
+
+                if (!$result) {
+                    throw new Exception('Failed to delete user record');
+                }
+
+                // Commit transaction
+                $this->db->commit();
+
+                $this->successResponse(null, 'Account deleted successfully');
+
+            } catch (Exception $e) {
+                // Rollback transaction on error
+                $this->db->rollBack();
+                throw $e;
+            }
+
+        } catch (Exception $e) {
+            $this->errorResponse('Failed to delete account: ' . $e->getMessage());
+        }
+    }
+
 }

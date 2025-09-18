@@ -2,10 +2,15 @@
   <Header @open-profile-modal="openProfileModal">
 
       <!-- Notes Main Content -->
-      <main class="flex-1 p-4 md:p-6 transition-all duration-300 ease-in-out">
+      <main class="flex-1 p-4 md:p-6 transition-all duration-300 ease-in-out min-h-screen"
+            :style="{ backgroundColor: store.getters['app/getCurrentTheme'] === 'dark' ? '#111827' : '#ffffff' }">
         <div class="flex justify-between items-center mb-6">
           <div class="flex items-center space-x-4">
-            <h1 class="text-2xl font-bold">My Notes</h1>
+            <h1 :class="[
+              'font-bold',
+              fontSizeClasses.heading,
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+            ]">My Notes</h1>
           </div>
           <div class="flex space-x-3">
             <div class="relative">
@@ -69,25 +74,42 @@
         </div>
 
         <!-- Error State -->
-        <div v-if="notesError" class="bg-red-800 rounded-lg p-6 text-center">
+        <div v-if="notesError" :class="[
+          'rounded-lg p-6 text-center',
+          store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-red-800' : 'bg-red-50 border border-red-200'
+        ]">
           <div class="mb-4">
             <font-awesome-icon :icon="['fas', 'times']" class="text-4xl text-red-400" />
           </div>
-          <h3 class="text-xl font-medium mb-2">Unable to Load Notes</h3>
-          <p class="text-red-300 mb-4">{{ notesError || 'An error occurred while loading your notes.' }}</p>
+          <h3 :class="[
+            'text-xl font-medium mb-2',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+          ]">Unable to Load Notes</h3>
+          <p :class="[
+            'mb-4',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-red-300' : 'text-red-700'
+          ]">{{ notesError || 'An error occurred while loading your notes.' }}</p>
           <div class="flex justify-center space-x-3">
             <button @click="refreshNotes()" class="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 transition">
               <font-awesome-icon :icon="['fas', 'redo']" class="mr-2" />
               Try Again
             </button>
-            <button @click="clearError()" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
+            <button @click="clearError()" :class="[
+              'px-4 py-2 rounded-md transition',
+              store.getters['app/getCurrentTheme'] === 'dark'
+                ? 'bg-gray-700 hover:bg-gray-600'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+            ]">
               Dismiss
             </button>
           </div>
         </div>
 
         <!-- Loading State -->
-        <div v-else-if="loadingNotes && notes.length === 0" class="text-center py-8 text-gray-400">
+        <div v-else-if="loadingNotes && notes.length === 0" :class="[
+          'text-center py-8',
+          store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-600'
+        ]">
           <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin text-3xl mb-3" />
           <p class="text-lg">Loading your notes...</p>
         </div>
@@ -109,7 +131,13 @@
                     <font-awesome-icon :icon="['fas', 'star']" :class="note.isFavorite ? 'text-yellow-500' : themeClasses.secondaryText + ' opacity-50'" />
                   </button>
                   <div class="relative">
-                    <button @click.stop="showNoteMenu(note.id)" :class="themeClasses.secondaryText" class="hover:text-white p-2 rounded-md hover:bg-gray-700 transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center">
+                    <button @click.stop="showNoteMenu(note.id)" :class="[
+                      themeClasses.secondaryText,
+                      'p-2 rounded-md transition-colors min-w-[44px] min-h-[44px] flex items-center justify-center',
+                      store.getters['app/getCurrentTheme'] === 'dark'
+                        ? 'hover:text-white hover:bg-gray-700'
+                        : 'hover:text-gray-900 hover:bg-gray-200'
+                    ]">
                       <font-awesome-icon :icon="['fas', 'ellipsis-v']" />
                     </button>
                     
@@ -170,7 +198,7 @@
           <div class="mb-4">
             <font-awesome-icon :icon="['fas', 'book']" :class="themeClasses.secondaryText" class="text-4xl" />
           </div>
-          <h3 :class="themeClasses.text" class="text-xl font-medium mb-2">No Notes Yet</h3>
+          <h3 :class="[themeClasses.text, fontSizeClasses.heading, 'font-medium mb-2']">No Notes Yet</h3>
           <p :class="themeClasses.secondaryText" class="mb-4">Start by scanning your study materials or creating a new note.</p>
           <div class="flex justify-center space-x-4">
             <button @click="openCamera" :class="themeClasses.buttonPrimary" class="px-4 py-2 rounded-md transition">
@@ -190,20 +218,34 @@
       @click="closeDeleteModal"
     >
       <div
-        class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4"
+        :class="[
+          'rounded-lg p-6 w-full max-w-sm mx-4',
+          store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-gray-200'
+        ]"
         @click.stop
       >
         <div class="flex items-center mb-4">
           <font-awesome-icon :icon="['fas', 'times']" class="text-red-400 text-xl mr-3" />
-          <h3 class="text-lg font-medium">Delete Note</h3>
+          <h3 :class="[
+            'text-lg font-medium',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+          ]">Delete Note</h3>
         </div>
-        <p class="text-gray-300 mb-6">
+        <p :class="[
+          'mb-6',
+          store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+        ]">
           Are you sure you want to delete this note? This action cannot be undone.
         </p>
         <div class="flex justify-end space-x-3">
           <button
             @click="closeDeleteModal"
-            class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition"
+            :class="[
+              'px-4 py-2 rounded-md transition',
+              store.getters['app/getCurrentTheme'] === 'dark'
+                ? 'bg-gray-700 hover:bg-gray-600'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+            ]"
           >
             Cancel
           </button>
@@ -219,15 +261,24 @@
 
     <!-- Profile Modal -->
     <div v-if="showProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-      <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4">
+      <div :class="[
+        'rounded-lg p-6 w-full max-w-sm mx-4',
+        store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-gray-200'
+      ]">
         <div class="flex items-center mb-4">
           <font-awesome-icon :icon="['fas', 'user']" class="text-blue-400 text-xl mr-3" />
-          <h3 class="text-lg font-medium">User Profile</h3>
+          <h3 :class="[
+            'text-lg font-medium',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+          ]">User Profile</h3>
         </div>
 
         <!-- Profile Picture Section -->
         <div class="flex flex-col items-center mb-6">
-          <div class="w-24 h-24 rounded-full overflow-hidden bg-gray-600 mb-3">
+          <div :class="[
+            'w-24 h-24 rounded-full overflow-hidden mb-3',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
+          ]">
             <img
               v-if="user && user.profilePicture"
               :key="user.profilePicture"
@@ -237,35 +288,73 @@
               @error="handleImageError"
               @load="handleImageLoad"
             />
-            <div v-else class="w-full h-full bg-gray-600 flex items-center justify-center">
-              <font-awesome-icon :icon="['fas', 'user']" class="text-white text-2xl" />
+            <div v-else :class="[
+              'w-full h-full flex items-center justify-center',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-600' : 'bg-gray-200'
+            ]">
+              <font-awesome-icon :icon="['fas', 'user']" :class="[
+                'text-2xl',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-600'
+              ]" />
             </div>
           </div>
-          <p class="text-sm text-gray-400 mb-2">Profile picture can be changed in Settings</p>
+          <p :class="[
+            'text-sm mb-2',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-600'
+          ]">Profile picture can be changed in Settings</p>
         </div>
 
         <div class="space-y-4">
           <div>
-            <label class="block text-sm font-medium mb-2">Full Name</label>
-            <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+            <label :class="[
+              'block text-sm font-medium mb-2',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            ]">Full Name</label>
+            <div :class="[
+              'w-full px-3 py-2 rounded-md',
+              store.getters['app/getCurrentTheme'] === 'dark'
+                ? 'bg-gray-700 border border-gray-600 text-gray-300'
+                : 'bg-gray-100 border border-gray-300 text-gray-900'
+            ]">
               {{ user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || 'User') }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium mb-2">Email</label>
-            <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+            <label :class="[
+              'block text-sm font-medium mb-2',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            ]">Email</label>
+            <div :class="[
+              'w-full px-3 py-2 rounded-md',
+              store.getters['app/getCurrentTheme'] === 'dark'
+                ? 'bg-gray-700 border border-gray-600 text-gray-300'
+                : 'bg-gray-100 border border-gray-300 text-gray-900'
+            ]">
               {{ user?.email || 'user@example.com' }}
             </div>
           </div>
           <div>
-            <label class="block text-sm font-medium mb-2">Member Since</label>
-            <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+            <label :class="[
+              'block text-sm font-medium mb-2',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            ]">Member Since</label>
+            <div :class="[
+              'w-full px-3 py-2 rounded-md',
+              store.getters['app/getCurrentTheme'] === 'dark'
+                ? 'bg-gray-700 border border-gray-600 text-gray-300'
+                : 'bg-gray-100 border border-gray-300 text-gray-900'
+            ]">
               {{ user?.memberSince || new Date().toLocaleDateString() }}
             </div>
           </div>
         </div>
         <div class="flex justify-end space-x-3 mt-6">
-          <button @click="closeProfileModal" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
+          <button @click="closeProfileModal" :class="[
+            'px-4 py-2 rounded-md transition',
+            store.getters['app/getCurrentTheme'] === 'dark'
+              ? 'bg-gray-700 hover:bg-gray-600'
+              : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+          ]">
             Close
           </button>
         </div>
@@ -391,6 +480,20 @@ export default {
     // Use global theme classes from store
     const themeClasses = computed(() => {
       return store.getters['app/getThemeClasses'];
+    });
+
+    // Use global font size classes from store
+    const fontSizeClasses = computed(() => {
+      try {
+        return store.getters['app/getFontSizeClasses'];
+      } catch (error) {
+        return {
+          heading: 'text-xl',
+          body: 'text-base',
+          label: 'text-sm',
+          small: 'text-xs'
+        };
+      }
     });
 
 
@@ -876,6 +979,7 @@ export default {
 
       // Theme classes
       themeClasses,
+      fontSizeClasses,
 
       // Store for theme access
       store

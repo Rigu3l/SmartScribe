@@ -34,15 +34,6 @@
           >
             Appearance
           </button>
-          <button
-            @click="activeTab = 'notifications'"
-            :class="[
-              'px-4 py-2 font-medium',
-              activeTab === 'notifications' ? 'border-b-2 border-blue-500 text-blue-500' : 'text-gray-400 hover:text-white'
-            ]"
-          >
-            Notifications
-          </button>
         </div>
         
         <!-- Account Settings -->
@@ -228,118 +219,33 @@
               <span class="transition-all duration-300" :class="[themeClasses.secondaryText, fontSizeClasses.small]">A</span>
               <input
                 :value="store.getters['app/getFontSize']"
-                @input="store.dispatch('app/setFontSize', parseInt($event.target.value))"
+                @input="handleFontSizeChange($event)"
+                @keydown="handleFontSizeKeydown($event)"
                 type="range"
                 min="12"
-                max="20"
-                class="w-full h-2 rounded-lg appearance-none cursor-pointer transition-colors duration-300"
+                max="24"
+                step="1"
+                class="w-full h-2 rounded-lg appearance-none cursor-pointer transition-colors duration-300 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 :class="themeClasses.button"
+                aria-label="Font size slider"
+                role="slider"
+                :aria-valuemin="12"
+                :aria-valuemax="24"
+                :aria-valuenow="store.getters['app/getFontSize']"
+                :aria-valuetext="`${store.getters['app/getFontSize']} pixels`"
               />
               <span class="transition-all duration-300" :class="[themeClasses.text, fontSizeClasses.body]">A</span>
             </div>
-            <p class="mt-2 transition-all duration-300" :class="[themeClasses.secondaryText, fontSizeClasses.label]">Current font size: {{ store.getters['app/getFontSize'] }}px</p>
+            <div class="flex justify-between items-center mt-2">
+              <p class="transition-all duration-300" :class="[themeClasses.secondaryText, fontSizeClasses.label]">Current font size: {{ store.getters['app/getFontSize'] }}px</p>
+              <button @click="resetFontSize" class="px-3 py-1 text-sm rounded-md transition-colors" :class="themeClasses.button">
+                Reset to Default
+              </button>
+            </div>
           </div>
 
         </div>
         
-        <!-- Notifications Settings -->
-        <div v-if="activeTab === 'notifications'" class="space-y-6">
-          <div class="rounded-lg p-6" :class="themeClasses.card">
-            <h2 class="font-semibold mb-4" :class="[themeClasses.text, fontSizeClasses.body]">Email Notifications</h2>
-            <div class="space-y-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-medium" :class="themeClasses.text">Weekly Summary</p>
-                  <p class="text-sm" :class="themeClasses.secondaryText">Receive a weekly summary of your study progress</p>
-                </div>
-                <button
-                  @click="settings.notifications.weeklySummary = !settings.notifications.weeklySummary"
-                  :class="settings.notifications.weeklySummary
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-600 text-white'"
-                  class="px-4 py-2 rounded transition"
-                  >
-                  {{ settings.notifications.weeklySummary ? 'ON' : 'OFF' }}
-                </button>
-              </div>
-              
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-medium" :class="themeClasses.text">Study Reminders</p>
-                  <p class="text-sm" :class="themeClasses.secondaryText">Receive reminders for your study goals</p>
-                </div>
-                <button
-                  @click="settings.notifications.studyReminders = !settings.notifications.studyReminders"
-                  :class="settings.notifications.studyReminders
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-600 text-white'"
-                  class="px-4 py-2 rounded transition"
-                  >
-                  {{ settings.notifications.studyReminders ? 'ON' : 'OFF' }}
-                </button>
-              </div>
-              
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-medium" :class="themeClasses.text">New Features</p>
-                  <p class="text-sm" :class="themeClasses.secondaryText">Receive updates about new features and improvements</p>
-                </div>
-                <button
-                  @click="settings.notifications.newFeatures = !settings.notifications.newFeatures"
-                  :class="settings.notifications.newFeatures
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-600 text-white'"
-                  class="px-4 py-2 rounded transition"
-                  >
-                  {{ settings.notifications.newFeatures ? 'ON' : 'OFF' }}
-                </button>
-              </div>
-            </div>
-            <div class="mt-6">
-              <button @click="saveNotificationSettings" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
-                <font-awesome-icon :icon="['fas', 'save']" class="mr-2" />
-                Save Notification Settings
-              </button>
-            </div>
-          </div>
-          
-          <div class="rounded-lg p-6" :class="themeClasses.card">
-            <h2 class="font-semibold mb-4" :class="[themeClasses.text, fontSizeClasses.body]">In-App Notifications</h2>
-            <div class="space-y-4">
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-medium" :class="themeClasses.text">Quiz Results</p>
-                  <p class="text-sm" :class="themeClasses.secondaryText">Show notifications for quiz results</p>
-                </div>
-                <button
-                  @click="settings.notifications.quizResults = !settings.notifications.quizResults"
-                  :class="settings.notifications.quizResults
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-600 text-white'"
-                  class="px-4 py-2 rounded transition"
-                  >
-                  {{ settings.notifications.quizResults ? 'ON' : 'OFF' }}
-                </button>
-              </div>
-              
-              <div class="flex items-center justify-between">
-                <div>
-                  <p class="font-medium" :class="themeClasses.text">Goal Progress</p>
-                  <p class="text-sm" :class="themeClasses.secondaryText">Show notifications for goal progress updates</p>
-                </div>
-                <button
-                  @click="settings.notifications.goalProgress = !settings.notifications.goalProgress"
-                  :class="settings.notifications.goalProgress
-                  ? 'bg-green-600 text-white'
-                  : 'bg-gray-600 text-white'"
-                  class="px-4 py-2 rounded transition"
-                  >
-                  {{ settings.notifications.goalProgress ? 'ON' : 'OFF' }}
-                </button>
-              </div>
-            </div>
-          </div>
-        </div>
         
       </main>
 </Header>
@@ -348,7 +254,7 @@
 <script>
 import { ref, reactive, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';
-import { useNotifications } from '@/composables/useNotifications';
+import { useRouter } from 'vue-router';
 import { useUserProfile } from '@/composables/useUserProfile';
 import api from '@/services/api';
 import Header from '@/components/Header.vue';
@@ -360,17 +266,8 @@ export default {
   },
   setup() {
     const store = useStore();
+    const router = useRouter();
 
-    // Use the shared notifications composable
-    const {
-      showNotifications,
-      notifications,
-      unreadNotifications,
-      toggleNotifications,
-      closeNotifications,
-      markAsRead,
-      markAllAsRead
-    } = useNotifications();
 
     // Use the shared user profile composable
     const {
@@ -408,13 +305,6 @@ export default {
       },
       set fontSize(value) {
         store.dispatch('app/setFontSize', value);
-      },
-      notifications: {
-        weeklySummary: false,
-        studyReminders: false,
-        newFeatures:  false,
-        quizResults: false,
-        goalProgress: false
       },
     });
 
@@ -455,15 +345,21 @@ export default {
     // Load settings from backend
     const loadSettings = async () => {
       try {
+        console.log('🔤 Loading settings from backend...');
         const response = await api.getSettings();
         if (response.data.success) {
+          console.log('🔤 Settings loaded from backend:', response.data.data);
           Object.assign(settings, response.data.data);
+          // Also save to localStorage as backup
+          localStorage.setItem('smartscribe_settings', JSON.stringify(response.data.data));
         }
       } catch (error) {
+        console.error('🔤 Failed to load settings from backend:', error);
         // Fallback to localStorage
         const savedSettings = localStorage.getItem('smartscribe_settings');
         if (savedSettings) {
           const parsed = JSON.parse(savedSettings);
+          console.log('🔤 Using localStorage fallback settings:', parsed);
           Object.assign(settings, parsed);
         }
       }
@@ -472,16 +368,18 @@ export default {
     // Save settings to backend and localStorage
     const saveSettings = async () => {
       try {
+        console.log('🔤 Saving settings to backend:', settings);
         const response = await api.updateSettings(settings);
         if (response.data.success) {
-          // Settings saved successfully
+          console.log('🔤 Settings saved to backend successfully');
         }
       } catch (error) {
-        // Error saving settings to backend
+        console.error('🔤 Error saving settings to backend:', error);
       }
 
       // Always save to localStorage as fallback
       localStorage.setItem('smartscribe_settings', JSON.stringify(settings));
+      console.log('🔤 Settings saved to localStorage as fallback');
     };
 
     // Show message function
@@ -571,19 +469,41 @@ export default {
       }
     };
 
-    // Save notification settings
-    const saveNotificationSettings = () => {
-      saveSettings();
-      showMessage('Notification settings saved!');
-    };
 
 
     // Delete account
-    const deleteAccount = () => {
+    const deleteAccount = async () => {
       if (confirm('Are you sure you want to delete your account? This action cannot be undone.')) {
-        // In a real app, you would make an API call here
-        // await fetch('/api/user/delete', { method: 'DELETE' });
-        showMessage('Account deletion is not implemented in demo mode', 'error');
+        try {
+          isLoading.value = true;
+
+          const response = await api.deleteAccount();
+
+          if (response.data.success) {
+            showMessage('Account deleted successfully. You will be logged out now.', 'success');
+
+            // Clear user data and redirect to login after a short delay
+            setTimeout(async () => {
+              // Use the logout function from composable
+              const { logout: logoutUser } = useUserProfile();
+              await logoutUser();
+
+              // Redirect to login page
+              store.dispatch('auth/logout');
+              router.push('/login');
+            }, 2000);
+          } else {
+            showMessage(response.data.message || 'Failed to delete account', 'error');
+          }
+        } catch (error) {
+          console.error('Account deletion error:', error);
+          const errorMessage = error.response?.data?.message ||
+                              error.response?.data?.error ||
+                              'Failed to delete account';
+          showMessage(errorMessage, 'error');
+        } finally {
+          isLoading.value = false;
+        }
       }
     };
 
@@ -697,6 +617,63 @@ export default {
       }
     };
 
+    // Handle font size change with logging
+    const handleFontSizeChange = (event) => {
+      const newSize = parseInt(event.target.value);
+      console.log('🔤 Font size slider changed to:', newSize);
+      console.log('🔤 Event target value:', event.target.value, 'Type:', typeof event.target.value);
+      store.dispatch('app/setFontSize', newSize);
+    };
+
+    // Reset font size to default
+    const resetFontSize = () => {
+      console.log('🔤 Resetting font size to default (16px)');
+      store.dispatch('app/setFontSize', 16);
+      showMessage('Font size reset to default (16px)');
+    };
+
+    // Handle keyboard navigation for font size slider
+    const handleFontSizeKeydown = (event) => {
+      const currentSize = store.getters['app/getFontSize'];
+      let newSize = currentSize;
+
+      switch (event.key) {
+        case 'ArrowUp':
+        case 'ArrowRight':
+          event.preventDefault();
+          newSize = Math.min(currentSize + 1, 24);
+          break;
+        case 'ArrowDown':
+        case 'ArrowLeft':
+          event.preventDefault();
+          newSize = Math.max(currentSize - 1, 12);
+          break;
+        case 'Home':
+          event.preventDefault();
+          newSize = 12;
+          break;
+        case 'End':
+          event.preventDefault();
+          newSize = 24;
+          break;
+        case 'PageUp':
+          event.preventDefault();
+          newSize = Math.min(currentSize + 4, 24);
+          break;
+        case 'PageDown':
+          event.preventDefault();
+          newSize = Math.max(currentSize - 4, 12);
+          break;
+        default:
+          return; // Don't prevent default for other keys
+      }
+
+      if (newSize !== currentSize) {
+        console.log('🔤 Font size changed via keyboard to:', newSize);
+        store.dispatch('app/setFontSize', newSize);
+      }
+    };
+
     // Load settings and user profile on mount
     onMounted(async () => {
       await Promise.all([
@@ -711,6 +688,7 @@ export default {
     return {
       activeTab,
       user,
+      router,
       passwords,
       settings,
       themeClasses,
@@ -722,7 +700,6 @@ export default {
       messageType,
       saveProfile,
       updatePassword,
-      saveNotificationSettings,
       deleteAccount,
       fetchUserProfile,
       uploadProfilePicture,
@@ -736,13 +713,9 @@ export default {
       closeUserMenu,
       openProfileModal,
       logout,
-      showNotifications,
-      notifications,
-      unreadNotifications,
-      toggleNotifications,
-      closeNotifications,
-      markAsRead,
-      markAllAsRead,
+      handleFontSizeChange,
+      resetFontSize,
+      handleFontSizeKeydown,
       store,
       // Add composable functions
       loadUserProfile,

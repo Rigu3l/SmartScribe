@@ -131,6 +131,9 @@ export default {
   uploadProfilePicture(formData) {
     return api.post('?resource=auth&action=upload-profile-picture', formData)
   },
+  deleteAccount() {
+    return api.delete('?resource=auth&action=delete-account')
+  },
   
   // Notes
   getNotes() {

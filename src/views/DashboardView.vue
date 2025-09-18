@@ -10,23 +10,45 @@
 
       <!-- Added title input modal -->
       <div v-if="showTitleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-          <h3 class="text-xl font-semibold mb-4">
+        <div :class="[
+          'rounded-lg p-6 w-full max-w-md mx-4',
+          store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-slate-200'
+        ]">
+          <h3 :class="[
+            'text-xl font-semibold mb-4',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+          ]">
             {{ pendingImageData && pendingImageData.type === 'quick_note' ? 'Save Quick Note' : 'Add Note Title' }}
           </h3>
           <div class="mb-4">
-            <label class="block text-sm font-medium mb-2">Title</label>
-            <input 
-              v-model="noteTitle" 
-              type="text" 
+            <label :class="[
+              'block text-sm font-medium mb-2',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            ]">Title</label>
+            <input
+              v-model="noteTitle"
+              type="text"
               placeholder="Enter a title for your note..."
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :class="[
+                'w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gray-700 border border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-500'
+              ]"
               @keyup.enter="saveNoteWithTitle"
             />
           </div>
           <div class="mb-4">
-            <label class="block text-sm font-medium mb-2">Preview</label>
-            <div class="bg-gray-700 p-3 rounded-md max-h-32 overflow-y-auto text-sm text-gray-300">
+            <label :class="[
+              'block text-sm font-medium mb-2',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            ]">Preview</label>
+            <div :class="[
+              'p-3 rounded-md max-h-32 overflow-y-auto text-sm',
+              store.getters['app/getCurrentTheme'] === 'dark'
+                ? 'bg-gray-700 text-gray-300'
+                : 'bg-gray-100 text-gray-700'
+            ]">
               <div v-if="isProcessingFile" class="flex items-center space-x-2">
                 <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin" />
                 <span>Processing file...</span>
@@ -64,16 +86,30 @@
 
       <!-- Delete Confirmation Modal -->
       <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4">
+        <div :class="[
+          'rounded-lg p-6 w-full max-w-sm mx-4',
+          store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-slate-200'
+        ]">
           <div class="flex items-center mb-4">
             <font-awesome-icon :icon="['fas', 'times']" class="text-red-400 text-xl mr-3" />
-            <h3 class="text-lg font-medium">Delete Note</h3>
+            <h3 :class="[
+              'text-lg font-medium',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+            ]">Delete Note</h3>
           </div>
-          <p class="text-gray-300 mb-6">
+          <p :class="[
+            'mb-6',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          ]">
             Are you sure you want to delete "<strong>{{ noteToDelete.title }}</strong>"? This action cannot be undone.
           </p>
           <div class="flex justify-end space-x-3">
-            <button @click="closeDeleteModal" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
+            <button @click="closeDeleteModal" :class="[
+              'px-4 py-2 rounded-md transition',
+              store.getters['app/getCurrentTheme'] === 'dark'
+                ? 'bg-gray-700 hover:bg-gray-600'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+            ]">
               Cancel
             </button>
             <button @click="deleteNote" class="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 transition">
@@ -85,10 +121,16 @@
 
       <!-- Profile Modal -->
       <div v-if="showProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4">
+        <div :class="[
+          'rounded-lg p-6 w-full max-w-sm mx-4',
+          store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-slate-200'
+        ]">
           <div class="flex items-center mb-4">
             <font-awesome-icon :icon="['fas', 'user']" class="text-blue-400 text-xl mr-3" />
-            <h3 class="text-lg font-medium">User Profile</h3>
+            <h3 :class="[
+              'text-lg font-medium',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+            ]">User Profile</h3>
           </div>
 
           <!-- Profile Picture Section -->
@@ -107,31 +149,63 @@
                 <font-awesome-icon :icon="['fas', 'user']" :class="themeClasses.text" class="text-2xl" />
               </div>
             </div>
-            <p class="text-sm text-gray-400 mb-2">Profile picture can be changed in Settings</p>
+            <p :class="[
+              'text-sm mb-2',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-700'
+            ]">Profile picture can be changed in Settings</p>
           </div>
   
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Full Name</label>
-              <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+              <label :class="[
+                'block text-sm font-medium mb-2',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              ]">Full Name</label>
+              <div :class="[
+                'w-full px-3 py-2 rounded-md',
+                store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gray-700 border border-gray-600 text-gray-300'
+                  : 'bg-gray-100 border border-gray-300 text-gray-900'
+              ]">
                 {{ user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || 'User') }}
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium mb-2">Email</label>
-              <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+              <label :class="[
+                'block text-sm font-medium mb-2',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              ]">Email</label>
+              <div :class="[
+                'w-full px-3 py-2 rounded-md',
+                store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gray-700 border border-gray-600 text-gray-300'
+                  : 'bg-gray-100 border border-gray-300 text-gray-900'
+              ]">
                 {{ user?.email || 'user@example.com' }}
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium mb-2">Member Since</label>
-              <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+              <label :class="[
+                'block text-sm font-medium mb-2',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              ]">Member Since</label>
+              <div :class="[
+                'w-full px-3 py-2 rounded-md',
+                store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gray-700 border border-gray-600 text-gray-300'
+                  : 'bg-gray-100 border border-gray-300 text-gray-900'
+              ]">
                 {{ user?.memberSince || new Date().toLocaleDateString() }}
               </div>
             </div>
           </div>
           <div class="flex justify-end space-x-3 mt-6">
-            <button @click="closeProfileModal" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
+            <button @click="closeProfileModal" :class="[
+              'px-4 py-2 rounded-md transition',
+              store.getters['app/getCurrentTheme'] === 'dark'
+                ? 'bg-gray-700 hover:bg-gray-600'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+            ]">
               Close
             </button>
           </div>
@@ -139,9 +213,14 @@
       </div>
 
       <!-- Main Dashboard -->
-      <main :class="themeClasses.mainContent" class="flex-1 p-4 md:p-6 transition-all duration-300 ease-in-out">
+      <main :class="themeClasses.mainContent" class="flex-1 p-4 md:p-6 transition-all duration-300 ease-in-out min-h-screen"
+            :style="{ backgroundColor: store.getters['app/getCurrentTheme'] === 'dark' ? '#111827' : '#ffffff' }">
         <div class="flex justify-between items-center mb-6">
-          <h1 class="text-2xl font-bold">Dashboard</h1>
+          <h1 :class="[
+            'font-bold',
+            fontSizeClasses.heading,
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+          ]">Dashboard</h1>
           <div class="flex items-center space-x-4">
           </div>
         </div>
@@ -156,7 +235,7 @@
         <!-- Create New Note Section -->
         <div :class="themeClasses.card" class="rounded-lg p-4 mb-4">
           <div class="mb-4">
-            <h2 class="text-base font-medium" :class="themeClasses.text">Create New Note</h2>
+            <h2 :class="[fontSizeClasses.body, 'font-medium', themeClasses.text]">Create New Note</h2>
           </div>
 
           <div class="space-y-4">
@@ -171,11 +250,11 @@
                 ]"
               ></textarea>
               <div class="flex justify-between items-center mt-1">
-                <span class="text-xs" :class="themeClasses.secondaryText">{{ quickNoteContent.length }}</span>
+                <span class="text-sm" :class="themeClasses.secondaryText">{{ quickNoteContent.length }}</span>
                 <button
                   @click="clearQuickNote"
                   v-if="quickNoteContent.trim()"
-                  class="text-xs"
+                  class="text-sm"
                   :class="themeClasses.secondaryText"
                 >
                   Clear
@@ -186,7 +265,7 @@
             <!-- Separator -->
             <div class="flex items-center">
               <div class="flex-1 border-t" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'border-gray-600' : 'border-gray-300'"></div>
-              <span class="px-2 text-xs" :class="themeClasses.secondaryText">or</span>
+              <span class="px-2 text-sm" :class="themeClasses.secondaryText">or</span>
               <div class="flex-1 border-t" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'border-gray-600' : 'border-gray-300'"></div>
             </div>
 
@@ -251,13 +330,13 @@
           <div class="flex justify-between items-center mb-6">
             <div class="flex items-center space-x-3">
               <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <font-awesome-icon :icon="['fas', 'clock']" class="text-white text-sm" />
+                <font-awesome-icon :icon="['fas', 'clock']" class="text-white text-base" />
               </div>
-              <h2 class="text-xl font-semibold">Recent Notes</h2>
+              <h2 :class="[fontSizeClasses.heading, 'font-semibold', themeClasses.text]">Recent Notes</h2>
             </div>
             <router-link to="/notes" class="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors duration-200">
               <span class="text-sm font-medium">View All</span>
-              <font-awesome-icon :icon="['fas', 'arrow-right']" class="text-xs" />
+              <font-awesome-icon :icon="['fas', 'arrow-right']" class="text-sm" />
             </router-link>
           </div>
 
@@ -265,14 +344,19 @@
           <div v-if="loadingNotes" class="text-center py-12">
             <div class="inline-flex items-center space-x-3">
               <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin text-2xl text-blue-400" />
-              <p class="text-gray-400">Loading your recent notes...</p>
+              <p :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-700'">Loading your recent notes...</p>
             </div>
           </div>
 
           <!-- Notes list -->
           <div v-else-if="recentNotes.length > 0" class="space-y-4">
             <div v-for="(note, index) in recentNotes" :key="note.id || index"
-                 class="group relative bg-gradient-to-r from-gray-800 to-gray-750 rounded-xl p-5 border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/20 transform hover:-translate-y-0.5">
+                 :class="[
+                   'group relative rounded-xl p-5 transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5',
+                   store.getters['app/getCurrentTheme'] === 'dark'
+                     ? 'bg-gradient-to-r from-gray-800 to-gray-750 border border-gray-700 hover:border-gray-600 hover:shadow-gray-900/20'
+                     : 'bg-white border border-gray-200 shadow-sm hover:shadow-md hover:bg-gray-50'
+                 ]">
               <!-- Note header -->
               <div class="flex items-start justify-between mb-3">
                 <div class="flex items-start space-x-4 flex-grow cursor-pointer" @click="viewNote(note.id)">
@@ -283,15 +367,24 @@
 
                   <!-- Note content -->
                   <div class="flex-grow min-w-0">
-                    <h3 class="font-semibold text-white group-hover:text-blue-400 transition-colors duration-200 truncate">
+                    <h3 :class="[
+                      'font-semibold group-hover:text-blue-400 transition-colors duration-200 truncate',
+                      store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+                    ]">
                       {{ note.title }}
                     </h3>
                     <div class="flex items-center space-x-3 mt-1">
-                      <div class="flex items-center space-x-1 text-gray-400 text-xs">
+                      <div :class="[
+                        'flex items-center space-x-1 text-sm',
+                        store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-700'
+                      ]">
                         <font-awesome-icon :icon="['fas', 'clock']" />
                         <span>{{ getTimeAgo(note.createdAt) }}</span>
                       </div>
-                      <div class="flex items-center space-x-1 text-gray-400 text-xs">
+                      <div :class="[
+                        'flex items-center space-x-1 text-sm',
+                        store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-700'
+                      ]">
                         <font-awesome-icon :icon="['fas', 'align-left']" />
                         <span>{{ note.wordCount }} words</span>
                       </div>
@@ -316,23 +409,39 @@
 
               <!-- Note preview -->
               <div class="ml-14">
-                <p class="text-sm text-gray-300 line-clamp-2 leading-relaxed">{{ note.summary }}</p>
+                <p :class="[
+                  'text-sm line-clamp-2 leading-relaxed',
+                  store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                ]">{{ note.summary }}</p>
 
                 <!-- Tags and metadata -->
                 <div class="flex items-center justify-between mt-4">
                   <div class="flex flex-wrap gap-2">
                     <span v-for="(tag, tagIndex) in note.tags" :key="tagIndex"
-                          class="px-3 py-1 bg-gradient-to-r from-gray-700 to-gray-600 text-gray-300 rounded-full text-xs font-medium border border-gray-600">
+                          :class="[
+                            'px-3 py-1 rounded-full text-sm font-medium border',
+                            store.getters['app/getCurrentTheme'] === 'dark'
+                              ? 'bg-gradient-to-r from-gray-700 to-gray-600 text-gray-300 border-gray-600'
+                              : 'bg-gray-100 text-gray-800 border-gray-300'
+                          ]">
                       {{ tag }}
                     </span>
                     <span v-if="note.tags.length === 0"
-                          class="px-3 py-1 bg-gray-700/50 text-gray-500 rounded-full text-xs">
+                          :class="[
+                            'px-3 py-1 rounded-full text-sm',
+                            store.getters['app/getCurrentTheme'] === 'dark'
+                              ? 'bg-gray-700/50 text-gray-500'
+                              : 'bg-gray-200 text-gray-600'
+                          ]">
                       No tags
                     </span>
                   </div>
 
                   <!-- Reading time indicator -->
-                  <div class="flex items-center space-x-1 text-gray-500 text-xs">
+                  <div :class="[
+                    'flex items-center space-x-1 text-sm',
+                    store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-500' : 'text-gray-700'
+                  ]">
                     <font-awesome-icon :icon="['fas', 'eye']" />
                     <span>{{ note.readingTime }} min read</span>
                   </div>
@@ -345,13 +454,30 @@
           </div>
 
           <!-- Empty state -->
-          <div v-else class="text-center py-12">
+          <div v-else :class="[
+            'text-center py-12',
+            store.getters['app/getCurrentTheme'] === 'dark' ? '' : 'text-gray-900'
+          ]">
             <div class="max-w-md mx-auto">
-              <div class="w-20 h-20 bg-gradient-to-br from-gray-700 to-gray-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <font-awesome-icon :icon="['fas', 'book-open']" class="text-3xl text-gray-400" />
+              <div :class="[
+                'w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6',
+                store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gradient-to-br from-gray-700 to-gray-600'
+                  : 'bg-gray-100'
+              ]">
+                <font-awesome-icon :icon="['fas', 'book-open']" :class="[
+                  'text-3xl',
+                  store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                ]" />
               </div>
-              <h3 class="text-lg font-semibold text-white mb-2">No notes yet</h3>
-              <p class="text-gray-400 mb-6 leading-relaxed">
+              <h3 :class="[
+                'text-lg font-semibold mb-2',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+              ]">No notes yet</h3>
+              <p :class="[
+                'mb-6 leading-relaxed',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-700'
+              ]">
                 Start building your knowledge base by scanning your first note, uploading images with OCR text extraction, or creating one from scratch.
               </p>
               <div class="flex flex-col sm:flex-row gap-3 justify-center">
@@ -360,8 +486,12 @@
                   <font-awesome-icon :icon="['fas', 'camera']" />
                   <span>Scan Note</span>
                 </button>
-                <button @click="createNewNote"
-                        class="inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white rounded-lg transition-all duration-200">
+                <button @click="createNewNote" :class="[
+                  'inline-flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200',
+                  store.getters['app/getCurrentTheme'] === 'dark'
+                    ? 'bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white'
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                ]">
                   <font-awesome-icon :icon="['fas', 'plus']" />
                   <span>Create Note</span>
                 </button>
@@ -550,6 +680,20 @@ export default {
           secondaryText: 'text-gray-400',
           input: 'bg-gray-700 border-gray-600 text-white',
           button: 'bg-gray-700 hover:bg-gray-600'
+        };
+      }
+    });
+
+    // Use global font size classes from store
+    const fontSizeClasses = computed(() => {
+      try {
+        return store.getters['app/getFontSizeClasses'];
+      } catch (error) {
+        return {
+          heading: 'text-xl',
+          body: 'text-base',
+          label: 'text-sm',
+          small: 'text-xs'
         };
       }
     });
@@ -1131,6 +1275,7 @@ export default {
 
       // Theme classes
       themeClasses,
+      fontSizeClasses,
 
       // Store for theme access
       store

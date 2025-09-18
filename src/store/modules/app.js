@@ -18,7 +18,7 @@ const state = {
   optimisticUpdates: [],
 
   // Global theme settings
-  theme: 'dark', // 'dark', 'light', 'system'
+  theme: 'light', // 'dark', 'light', 'system'
   fontSize: 16,
 
   // Sidebar visibility
@@ -63,12 +63,12 @@ const getters = {
     if (isDark) {
       return {
         main: 'bg-gray-900 text-white',
-        header: 'bg-gray-800 border-b border-gray-700',
-        sidebar: 'bg-gray-800 border-r border-gray-700',
+        header: 'bg-gray-800 border-b border-gray-700 text-white',
+        sidebar: 'bg-gray-800 border-r border-gray-700 text-white',
         mainContent: 'bg-gray-900',
         card: 'bg-gray-800 border border-gray-700 shadow-lg',
         text: 'text-white',
-        secondaryText: 'text-gray-300',
+        secondaryText: 'text-gray-200',
         tertiaryText: 'text-gray-400',
         input: 'bg-gray-700 border-gray-600 text-white placeholder-gray-400 focus:border-blue-500 focus:ring-blue-500',
         button: 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600',
@@ -80,35 +80,40 @@ const getters = {
         focus: 'focus:bg-gray-600 focus:border-blue-500'
       };
     } else {
-      // Enhanced light theme for better readability
+      // True light theme with proper light colors
       return {
-        main: 'bg-slate-50 text-slate-900',
-        header: 'bg-white border-b border-slate-200 shadow-sm',
-        sidebar: 'bg-slate-100 border-r border-slate-200',
-        mainContent: 'bg-slate-50',
-        card: 'bg-white border border-slate-200 shadow-sm hover:shadow-md transition-shadow',
-        text: 'text-slate-900',
-        secondaryText: 'text-slate-600',
-        tertiaryText: 'text-slate-500',
-        input: 'bg-white border-slate-300 text-slate-900 placeholder-slate-400 focus:border-blue-500 focus:ring-blue-500 shadow-sm',
-        button: 'bg-slate-200 hover:bg-slate-300 text-slate-700 border border-slate-300 hover:border-slate-400',
+        main: 'bg-white text-gray-900',
+        header: 'bg-white border-b border-gray-200 shadow-sm text-gray-900',
+        sidebar: 'bg-gray-50 border-r border-gray-200 text-gray-900',
+        mainContent: 'bg-white',
+        card: 'bg-white border border-gray-200 shadow-sm hover:shadow-md transition-shadow hover:bg-gray-50',
+        text: 'text-gray-900',
+        secondaryText: 'text-gray-700',
+        tertiaryText: 'text-gray-500',
+        input: 'bg-white border-gray-300 text-gray-900 placeholder-gray-500 focus:border-blue-500 focus:ring-blue-500 shadow-sm',
+        button: 'bg-gray-100 hover:bg-gray-200 text-gray-900 border border-gray-300 hover:border-gray-400',
         buttonPrimary: 'bg-blue-600 hover:bg-blue-700 text-white border border-blue-600 shadow-sm',
-        buttonSecondary: 'bg-slate-500 hover:bg-slate-600 text-white border border-slate-500 shadow-sm',
+        buttonSecondary: 'bg-gray-600 hover:bg-gray-700 text-white border border-gray-600 shadow-sm',
         link: 'text-blue-600 hover:text-blue-700',
-        border: 'border-slate-200',
-        hover: 'hover:bg-slate-100',
-        focus: 'focus:bg-slate-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
+        border: 'border-gray-200',
+        hover: 'hover:bg-gray-50',
+        focus: 'focus:bg-gray-50 focus:border-blue-500 focus:ring-2 focus:ring-blue-500/20'
       };
     }
   },
   getFontSizeClasses: (state) => {
     const size = state.fontSize;
-    return {
-      heading: size >= 18 ? 'text-xl' : size >= 16 ? 'text-lg' : 'text-base',
-      body: size >= 16 ? 'text-base' : 'text-sm',
+    console.log('🔤 getFontSizeClasses called with size:', size);
+
+    const classes = {
+      heading: size >= 20 ? 'text-2xl' : size >= 18 ? 'text-xl' : size >= 16 ? 'text-lg' : 'text-base',
+      body: size >= 18 ? 'text-lg' : size >= 16 ? 'text-base' : size >= 14 ? 'text-sm' : 'text-xs',
       label: size >= 16 ? 'text-sm' : 'text-xs',
-      small: 'text-xs'
+      small: size >= 14 ? 'text-xs' : 'text-xs' // Keep small consistent but could be adjusted
     };
+
+    console.log('🔤 Computed font size classes:', classes);
+    return classes;
   },
 };
 
@@ -277,8 +282,19 @@ const actions = {
   },
 
   setFontSize({ commit, dispatch }, fontSize) {
+    console.log('🔤 setFontSize called with:', fontSize, 'Type:', typeof fontSize);
+    console.log('🔤 Previous font size:', state.fontSize);
+
+    if (typeof fontSize !== 'number' || fontSize < 12 || fontSize > 24) {
+      console.error('🔤 Invalid font size:', fontSize, 'Must be number between 12-24');
+      return;
+    }
+
     commit('SET_FONT_SIZE', fontSize);
+    console.log('🔤 Font size committed to:', fontSize);
+
     dispatch('saveThemeSettings');
+    console.log('🔤 Font size change completed');
   },
 
   setSidebarVisible({ commit, dispatch }, visible) {
@@ -337,8 +353,13 @@ const actions = {
       sidebarVisible: state.sidebarVisible
     };
     console.log('🎨 saveThemeSettings: Settings to save:', settings);
-    localStorage.setItem('smartscribe_theme_settings', JSON.stringify(settings));
-    console.log('🎨 saveThemeSettings: Settings saved to localStorage');
+    try {
+      localStorage.setItem('smartscribe_theme_settings', JSON.stringify(settings));
+      console.log('🎨 saveThemeSettings: Settings saved to localStorage successfully');
+      console.log('🔤 Font size saved:', state.fontSize);
+    } catch (error) {
+      console.error('🎨 saveThemeSettings: Error saving to localStorage:', error);
+    }
   },
 
   loadThemeSettings({ commit, dispatch }) {
@@ -358,14 +379,18 @@ const actions = {
         }
         if (settings.fontSize) {
           console.log('🎨 loadThemeSettings: Setting font size to:', settings.fontSize);
+          console.log('🔤 Loading font size from localStorage:', settings.fontSize, 'Type:', typeof settings.fontSize);
           commit('SET_FONT_SIZE', settings.fontSize);
+          console.log('🔤 Font size loaded and committed');
+        } else {
+          console.log('🔤 No font size found in saved settings, using default');
         }
         if (typeof settings.sidebarVisible === 'boolean') {
           console.log('🎨 loadThemeSettings: Setting sidebar visible to:', settings.sidebarVisible);
           commit('SET_SIDEBAR_VISIBLE', settings.sidebarVisible);
         }
         // Apply the loaded theme
-        const themeToApply = settings.theme || 'dark';
+        const themeToApply = settings.theme || 'light';
         console.log('🎨 loadThemeSettings: Applying theme:', themeToApply);
         dispatch('applyTheme', themeToApply);
       } catch (error) {
@@ -374,7 +399,7 @@ const actions = {
     } else {
       console.log('🎨 loadThemeSettings: No saved settings found, applying default theme');
       // Apply default theme
-      dispatch('applyTheme', 'dark');
+      dispatch('applyTheme', 'light');
     }
   },
 

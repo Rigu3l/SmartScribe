@@ -107,6 +107,17 @@ try {
                 case 'validate-reset-token':
                    $controller->validateResetToken();
                    break;
+                case 'delete-account':
+                    if ($_SERVER['REQUEST_METHOD'] === 'DELETE') {
+                        $controller->deleteAccount();
+                    } else {
+                        http_response_code(405);
+                        echo json_encode([
+                            'success' => false,
+                            'error' => 'Method not allowed'
+                        ]);
+                    }
+                    break;
                 default:
                     http_response_code(404);
                     echo json_encode([

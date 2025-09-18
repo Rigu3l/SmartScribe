@@ -1,13 +1,13 @@
 <template>
-  <div class="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
+  <div :class="`min-h-screen ${themeClasses.main}`">
     <!-- Header -->
-    <header class="bg-gray-800/50 backdrop-blur-sm border-b border-gray-700/50 sticky top-0 z-10">
+    <header :class="`backdrop-blur-sm sticky top-0 z-10 ${themeClasses.header}`">
       <div class="max-w-4xl mx-auto px-4 py-4">
         <div class="flex items-center justify-between">
           <div class="flex items-center space-x-4">
             <router-link
               to="/quizzes"
-              class="flex items-center space-x-2 text-gray-400 hover:text-white transition-colors"
+              :class="`flex items-center space-x-2 transition-colors ${themeClasses.secondaryText} hover:${themeClasses.text}`"
             >
               <font-awesome-icon :icon="['fas', 'angle-left']" />
               <span>Back to Quizzes</span>
@@ -15,22 +15,22 @@
           </div>
 
           <div class="text-center">
-            <h1 class="text-xl font-bold text-white">{{ quizTitle }}</h1>
+            <h1 :class="`font-bold ${themeClasses.text} ${fontSizeClasses.heading}`">{{ quizTitle }}</h1>
           </div>
 
           <div class="flex items-center space-x-4">
-            <div class="text-sm text-gray-400">
+            <div :class="`${themeClasses.secondaryText} ${fontSizeClasses.label}`">
               Question {{ currentQuestionIndex + 1 }} of {{ quizQuestions.length }}
             </div>
             <!-- Study Time Display -->
             <div class="flex items-center space-x-2 text-sm">
-              <font-awesome-icon :icon="['fas', 'clock']" class="text-blue-400" />
-              <span class="text-gray-300">{{ formattedElapsedTime }}</span>
-              <div v-if="isTracking" class="flex items-center space-x-1 text-green-400">
-                <font-awesome-icon :icon="['fas', 'circle']" class="animate-pulse text-xs" />
-                <span class="text-xs">Auto-tracking</span>
+              <font-awesome-icon :icon="['fas', 'clock']" class="text-blue-600" />
+              <span :class="themeClasses.secondaryText">{{ formattedElapsedTime }}</span>
+              <div v-if="isTracking" class="flex items-center space-x-1 text-green-600">
+                <font-awesome-icon :icon="['far', 'circle']" class="animate-pulse text-xs" />
+                <span :class="fontSizeClasses.small">Auto-tracking</span>
               </div>
-              <div v-else class="text-xs text-gray-500">
+              <div v-else :class="`${themeClasses.tertiaryText} ${fontSizeClasses.small}`">
                 Auto-tracking paused
               </div>
             </div>
@@ -44,7 +44,7 @@
       <!-- Loading State -->
       <div v-if="isLoading" class="flex flex-col items-center justify-center min-h-96">
         <div class="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mb-4"></div>
-        <p class="text-gray-400">Loading quiz...</p>
+        <p :class="themeClasses.secondaryText">Loading quiz...</p>
       </div>
 
       <!-- Error State -->
@@ -52,8 +52,8 @@
         <div class="text-red-400 mb-4">
           <font-awesome-icon :icon="['fas', 'exclamation-triangle']" class="text-4xl" />
         </div>
-        <h2 class="text-xl font-semibold text-white mb-2">Error Loading Quiz</h2>
-        <p class="text-gray-400 mb-6 text-center">{{ error }}</p>
+        <h2 :class="`font-semibold ${themeClasses.text} mb-2 ${fontSizeClasses.heading}`">Error Loading Quiz</h2>
+        <p :class="`${themeClasses.secondaryText} mb-6 text-center`">{{ error }}</p>
         <router-link
           to="/quizzes"
           class="px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors"
@@ -67,10 +67,10 @@
         <!-- Progress Bar -->
         <div class="mb-8">
           <div class="flex justify-between items-center mb-2">
-            <span class="text-sm font-medium text-gray-300">Progress</span>
-            <span class="text-sm text-gray-400">{{ answeredQuestionsCount }}/{{ quizQuestions.length }} answered</span>
+            <span :class="`font-medium ${themeClasses.secondaryText} ${fontSizeClasses.label}`">Progress</span>
+            <span :class="`${themeClasses.tertiaryText} ${fontSizeClasses.label}`">{{ answeredQuestionsCount }}/{{ quizQuestions.length }} answered</span>
           </div>
-          <div class="w-full bg-gray-700 rounded-full h-2">
+          <div :class="`w-full rounded-full h-2 ${themeClasses.border}`">
             <div
               class="bg-gradient-to-r from-blue-500 to-purple-600 h-2 rounded-full transition-all duration-500 ease-out"
               :style="{ width: `${(answeredQuestionsCount / quizQuestions.length) * 100}%` }"
@@ -79,7 +79,7 @@
         </div>
 
         <!-- Question Card -->
-        <div class="bg-gray-800/50 backdrop-blur-sm rounded-xl border border-gray-700/50 p-8 mb-8">
+        <div :class="`${themeClasses.card} backdrop-blur-sm rounded-xl p-8 mb-8`">
           <!-- Question Header -->
           <div class="flex items-start justify-between mb-6">
             <div class="flex-1">
@@ -87,11 +87,11 @@
                 <div class="flex items-center justify-center w-8 h-8 bg-blue-600 rounded-full text-white font-bold text-sm">
                   {{ currentQuestionIndex + 1 }}
                 </div>
-                <div class="text-sm text-gray-400">
+                <div :class="`${themeClasses.secondaryText} ${fontSizeClasses.label}`">
                   {{ getQuestionType(quizQuestions[currentQuestionIndex]) }}
                 </div>
               </div>
-              <h2 class="text-xl font-semibold text-white leading-relaxed">
+              <h2 :class="`font-semibold ${themeClasses.text} leading-relaxed ${fontSizeClasses.heading}`">
                 {{ quizQuestions[currentQuestionIndex].text }}
               </h2>
             </div>
@@ -108,8 +108,8 @@
                 :for="`q${currentQuestionIndex}-o${optionIndex}`"
                 class="flex items-center space-x-4 p-4 rounded-lg border-2 transition-all duration-200 cursor-pointer group"
                 :class="{
-                  'border-blue-500 bg-blue-500/10 text-blue-100': quizQuestions[currentQuestionIndex].selectedAnswer === optionIndex,
-                  'border-gray-600 hover:border-gray-500 bg-gray-700/30 text-gray-300 hover:bg-gray-700/50': quizQuestions[currentQuestionIndex].selectedAnswer !== optionIndex
+                  'border-blue-500 bg-blue-500/10 text-blue-900': quizQuestions[currentQuestionIndex].selectedAnswer === optionIndex,
+                  [`${themeClasses.border} hover:border-gray-500 bg-gray-200/30 ${themeClasses.secondaryText} hover:bg-gray-200/50`]: quizQuestions[currentQuestionIndex].selectedAnswer !== optionIndex
                 }"
               >
                 <input
@@ -128,12 +128,12 @@
                     class="flex items-center justify-center w-6 h-6 rounded-full border-2 text-xs font-bold"
                     :class="{
                       'border-blue-500 bg-blue-500 text-white': quizQuestions[currentQuestionIndex].selectedAnswer === optionIndex,
-                      'border-gray-400 text-gray-400': quizQuestions[currentQuestionIndex].selectedAnswer !== optionIndex
+                      [`${themeClasses.border} ${themeClasses.tertiaryText}`]: quizQuestions[currentQuestionIndex].selectedAnswer !== optionIndex
                     }"
                   >
                     {{ String.fromCharCode(65 + optionIndex) }}
                   </div>
-                  <span class="text-sm leading-relaxed">{{ option }}</span>
+                  <span :class="`leading-relaxed ${fontSizeClasses.label}`">{{ option }}</span>
                 </div>
               </label>
             </div>
@@ -143,9 +143,9 @@
         <!-- Navigation and Controls -->
         <div class="flex flex-col space-y-6">
           <!-- Question Navigation - Enhanced Premium Design -->
-          <div class="relative bg-gradient-to-br from-gray-800/60 via-gray-900/60 to-gray-800/60 backdrop-blur-xl rounded-2xl border border-gray-700/30 p-6 shadow-2xl overflow-hidden">
+          <div :class="`relative backdrop-blur-xl rounded-2xl p-6 shadow-2xl overflow-hidden ${themeClasses.card}`">
             <!-- Background Pattern -->
-            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/5 via-purple-500/5 to-pink-500/5"></div>
+            <div class="absolute inset-0 bg-gradient-to-br from-blue-500/10 via-purple-500/10 to-pink-500/10"></div>
             <div class="absolute top-0 left-0 w-full h-1 bg-gradient-to-r from-blue-500 via-purple-500 to-pink-500"></div>
 
             <!-- Header with Enhanced Styling -->
@@ -154,7 +154,7 @@
                 <div class="w-8 h-8 bg-gradient-to-br from-blue-500 to-purple-600 rounded-lg flex items-center justify-center shadow-lg">
                   <font-awesome-icon :icon="['fas', 'compass']" class="text-white text-sm" />
                 </div>
-                <h3 class="text-xl font-bold text-white bg-gradient-to-r from-white to-gray-300 bg-clip-text text-transparent">
+                <h3 :class="`font-bold ${themeClasses.text} bg-gradient-to-r from-gray-900 to-gray-700 bg-clip-text text-transparent ${fontSizeClasses.heading}`">
                   Question Navigator
                 </h3>
               </div>
@@ -163,15 +163,15 @@
               <div class="flex items-center space-x-4">
                 <div class="flex items-center space-x-2 px-3 py-1 bg-blue-500/10 rounded-full border border-blue-500/20">
                   <div class="w-2 h-2 bg-gradient-to-r from-blue-400 to-blue-600 rounded-full animate-pulse"></div>
-                  <span class="text-xs font-medium text-blue-300">Current</span>
+                  <span :class="`font-medium text-blue-700 ${fontSizeClasses.small}`">Current</span>
                 </div>
                 <div class="flex items-center space-x-2 px-3 py-1 bg-green-500/10 rounded-full border border-green-500/20">
                   <div class="w-2 h-2 bg-gradient-to-r from-green-400 to-green-600 rounded-full"></div>
-                  <span class="text-xs font-medium text-green-300">Answered</span>
+                  <span :class="`font-medium text-green-700 ${fontSizeClasses.small}`">Answered</span>
                 </div>
-                <div class="flex items-center space-x-2 px-3 py-1 bg-gray-700/10 rounded-full border border-gray-600/20">
-                  <div class="w-2 h-2 bg-gray-600 rounded-full"></div>
-                  <span class="text-xs font-medium text-gray-400">Pending</span>
+                <div class="flex items-center space-x-2 px-3 py-1 bg-gray-300/10 rounded-full border border-gray-400/20">
+                  <div class="w-2 h-2 bg-gray-400 rounded-full"></div>
+                  <span :class="`font-medium ${themeClasses.secondaryText} ${fontSizeClasses.small}`">Pending</span>
                 </div>
               </div>
             </div>
@@ -182,11 +182,11 @@
                 v-for="(question, index) in quizQuestions"
                 :key="`nav-${index}`"
                 @click="goToQuestion(index)"
-                class="group relative aspect-square rounded-xl border-2 transition-all duration-300 flex items-center justify-center text-sm font-bold hover:scale-110 hover:rotate-3 transform-gpu"
+                class="group relative aspect-square rounded-xl border-2 transition-all duration-300 flex items-center justify-center font-bold hover:scale-110 hover:rotate-3 transform-gpu"
                 :class="{
                   'border-blue-400 bg-gradient-to-br from-blue-500/20 to-blue-600/20 text-blue-300 shadow-xl shadow-blue-500/30 ring-2 ring-blue-400/50': currentQuestionIndex === index,
-                  'border-gray-600 bg-gradient-to-br from-gray-700/40 to-gray-800/40 text-gray-400 hover:border-gray-500 hover:bg-gradient-to-br hover:from-gray-600/50 hover:to-gray-700/50 hover:shadow-lg hover:shadow-gray-500/20': currentQuestionIndex !== index && question.selectedAnswer === null,
-                  'border-green-500 bg-gradient-to-br from-green-500/20 to-green-600/20 text-green-300 hover:shadow-lg hover:shadow-green-500/20': question.selectedAnswer !== null && currentQuestionIndex !== index
+                  [`${themeClasses.border} bg-gradient-to-br from-gray-300/40 to-gray-200/40 ${themeClasses.secondaryText} hover:border-gray-500 hover:bg-gradient-to-br hover:from-gray-400/50 hover:to-gray-300/50 hover:shadow-lg hover:shadow-gray-500/20`]: currentQuestionIndex !== index && question.selectedAnswer === null,
+                  'border-green-500 bg-gradient-to-br from-green-500/20 to-green-600/20 text-green-700 hover:shadow-lg hover:shadow-green-500/20': question.selectedAnswer !== null && currentQuestionIndex !== index
                 }"
               >
                 <!-- Glow Effect for Current Question -->
@@ -198,7 +198,7 @@
                 </span>
 
                 <!-- Hover Effect Overlay -->
-                <div class="absolute inset-0 rounded-xl bg-white/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
+                <div class="absolute inset-0 rounded-xl bg-gray-900/5 opacity-0 group-hover:opacity-100 transition-opacity duration-200"></div>
               </button>
             </div>
 
@@ -212,8 +212,8 @@
               :disabled="currentQuestionIndex === 0"
               class="flex items-center space-x-2 px-6 py-3 rounded-lg transition-all duration-200"
               :class="currentQuestionIndex === 0
-                ? 'bg-gray-700/50 text-gray-500 cursor-not-allowed'
-                : 'bg-gray-700 hover:bg-gray-600 text-white hover:scale-105'"
+                ? `${themeClasses.button} cursor-not-allowed opacity-50`
+                : `${themeClasses.button} hover:scale-105`"
             >
               <font-awesome-icon :icon="['fas', 'chevron-left']" />
               <span>Previous</span>
@@ -224,7 +224,7 @@
               <button
                 v-if="currentQuestionIndex < quizQuestions.length - 1"
                 @click="nextQuestion"
-                class="flex items-center space-x-2 px-8 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-all duration-200 text-white hover:scale-105 shadow-lg"
+                :class="`${themeClasses.buttonPrimary} flex items-center space-x-2 px-8 py-3 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg`"
               >
                 <span>Next</span>
                 <font-awesome-icon :icon="['fas', 'chevron-right']" />
@@ -234,10 +234,10 @@
                 v-else-if="!quizCompleted"
                 @click="checkAnswers"
                 :disabled="!allQuestionsAnswered"
-                class="flex items-center space-x-2 px-8 py-3 rounded-lg transition-all duration-200 text-white hover:scale-105 shadow-lg"
+                class="flex items-center space-x-2 px-8 py-3 rounded-lg transition-all duration-200 hover:scale-105 shadow-lg"
                 :class="allQuestionsAnswered
-                  ? 'bg-green-600 hover:bg-green-700'
-                  : 'bg-gray-700/50 text-gray-500 cursor-not-allowed'"
+                  ? 'bg-green-600 hover:bg-green-700 text-white'
+                  : `${themeClasses.button} cursor-not-allowed opacity-50`"
               >
                 <font-awesome-icon :icon="['fas', 'check']" />
                 <span>Submit Quiz</span>
@@ -258,13 +258,13 @@
 
         <!-- Results Modal -->
         <div v-if="showResults" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-          <div class="bg-gray-800 rounded-xl max-w-2xl w-full max-h-90vh overflow-y-auto">
+          <div :class="`${themeClasses.card} rounded-xl max-w-2xl w-full max-h-90vh overflow-y-auto`">
             <div class="p-6">
               <div class="flex items-center justify-between mb-6">
-                <h2 class="text-2xl font-bold text-white">Quiz Results</h2>
+                <h2 :class="`font-bold ${themeClasses.text} ${fontSizeClasses.heading}`">Quiz Results</h2>
                 <button
                   @click="showResults = false"
-                  class="text-gray-400 hover:text-white transition-colors"
+                  :class="`${themeClasses.secondaryText} hover:${themeClasses.text} transition-colors`"
                 >
                   <font-awesome-icon :icon="['fas', 'times']" />
                 </button>
@@ -275,28 +275,28 @@
                 <div class="text-6xl font-bold mb-2" :class="quizScore === quizQuestions.length ? 'text-green-400' : quizScore >= quizQuestions.length * 0.7 ? 'text-yellow-400' : 'text-red-400'">
                   {{ Math.round((quizScore / quizQuestions.length) * 100) }}%
                 </div>
-                <p class="text-gray-300 text-lg">
+                <p :class="`${themeClasses.secondaryText} ${fontSizeClasses.body}`">
                   {{ quizScore }} out of {{ quizQuestions.length }} correct
                 </p>
               </div>
 
               <!-- Performance Stats -->
               <div class="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
-                <div class="bg-gray-700/50 rounded-lg p-4 text-center">
-                  <div class="text-2xl font-bold text-green-400 mb-1">{{ quizScore }}</div>
-                  <div class="text-sm text-gray-400">Correct</div>
+                <div :class="`${themeClasses.hover} rounded-lg p-4 text-center`">
+                  <div class="text-2xl font-bold text-green-600 mb-1">{{ quizScore }}</div>
+                  <div :class="`${themeClasses.secondaryText} ${fontSizeClasses.label}`">Correct</div>
                 </div>
-                <div class="bg-gray-700/50 rounded-lg p-4 text-center">
-                  <div class="text-2xl font-bold text-red-400 mb-1">{{ quizQuestions.length - quizScore }}</div>
-                  <div class="text-sm text-gray-400">Incorrect</div>
+                <div :class="`${themeClasses.hover} rounded-lg p-4 text-center`">
+                  <div class="text-2xl font-bold text-red-600 mb-1">{{ quizQuestions.length - quizScore }}</div>
+                  <div :class="`${themeClasses.secondaryText} ${fontSizeClasses.label}`">Incorrect</div>
                 </div>
-                <div class="bg-gray-700/50 rounded-lg p-4 text-center">
-                  <div class="text-2xl font-bold text-blue-400 mb-1">{{ Math.round((quizScore / quizQuestions.length) * 100) }}%</div>
-                  <div class="text-sm text-gray-400">Accuracy</div>
+                <div :class="`${themeClasses.hover} rounded-lg p-4 text-center`">
+                  <div class="text-2xl font-bold text-blue-600 mb-1">{{ Math.round((quizScore / quizQuestions.length) * 100) }}%</div>
+                  <div :class="`${themeClasses.secondaryText} ${fontSizeClasses.label}`">Accuracy</div>
                 </div>
-                <div class="bg-gray-700/50 rounded-lg p-4 text-center">
-                  <div class="text-2xl font-bold text-purple-400 mb-1">{{ quizQuestions.length }}</div>
-                  <div class="text-sm text-gray-400">Total Questions</div>
+                <div :class="`${themeClasses.hover} rounded-lg p-4 text-center`">
+                  <div class="text-2xl font-bold text-purple-600 mb-1">{{ quizQuestions.length }}</div>
+                  <div :class="`${themeClasses.secondaryText} ${fontSizeClasses.label}`">Total Questions</div>
                 </div>
               </div>
 
@@ -304,7 +304,7 @@
               <div class="flex space-x-4">
                 <button
                   @click="retakeQuiz"
-                  class="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-blue-600 hover:bg-blue-700 rounded-lg transition-colors text-white"
+                  :class="`${themeClasses.buttonPrimary} flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-lg transition-colors`"
                 >
                   <font-awesome-icon :icon="['fas', 'redo']" />
                   <span>Retake Quiz</span>
@@ -312,7 +312,7 @@
 
                 <router-link
                   to="/quizzes"
-                  class="flex-1 flex items-center justify-center space-x-2 px-6 py-3 bg-gray-600 hover:bg-gray-700 rounded-lg transition-colors text-white text-center"
+                  :class="`${themeClasses.button} flex-1 flex items-center justify-center space-x-2 px-6 py-3 rounded-lg transition-colors text-center`"
                 >
                   <font-awesome-icon :icon="['fas', 'angle-left']" />
                   <span>Back to Quizzes</span>
@@ -330,6 +330,7 @@
 <script>
 import { ref, onMounted, computed, nextTick } from 'vue'
 import { useRoute } from 'vue-router'
+import { useStore } from 'vuex'
 import { useStudyTime } from '@/composables/useStudyTime'
 import api from '@/services/api'
 
@@ -337,6 +338,7 @@ export default {
   name: 'QuizTakingView',
   setup() {
     const route = useRoute()
+    const store = useStore()
 
     // State
     const routeParams = route.params
@@ -417,6 +419,40 @@ export default {
     const incorrectAnswersCount = computed(() => getIncorrectAnswersCount())
     const currentAccuracy = computed(() => getCurrentAccuracy())
     const unansweredQuestionsCount = computed(() => getUnansweredQuestionsCount())
+
+    // Use global font size classes from store
+    const fontSizeClasses = computed(() => {
+      try {
+        return store.getters['app/getFontSizeClasses'];
+      } catch (error) {
+        return {
+          heading: 'text-xl',
+          body: 'text-base',
+          label: 'text-sm',
+          small: 'text-xs'
+        };
+      }
+    });
+
+    // Use global theme classes from store
+    const themeClasses = computed(() => {
+      try {
+        return store.getters['app/getThemeClasses'];
+      } catch (error) {
+        return {
+          main: 'bg-gray-900 text-white',
+          header: 'bg-gray-800 border-b border-gray-700 text-white',
+          card: 'bg-gray-800 border border-gray-700 shadow-lg',
+          text: 'text-white',
+          secondaryText: 'text-gray-200',
+          tertiaryText: 'text-gray-400',
+          border: 'border-gray-700',
+          button: 'bg-gray-700 hover:bg-gray-600 text-white border border-gray-600',
+          buttonPrimary: 'bg-blue-600 hover:bg-blue-700 text-white border border-blue-600',
+          hover: 'hover:bg-gray-700'
+        };
+      }
+    });
 
     // Helper functions
     const shuffleArray = (array) => {
@@ -857,7 +893,11 @@ Unanswered: ${getUnansweredQuestionsCount()}`)
       shuffleArray,
       // Study time tracking
       isTracking,
-      formattedElapsedTime
+      formattedElapsedTime,
+      // Font size classes
+      fontSizeClasses,
+      // Theme classes
+      themeClasses
     }
   }
 }
