@@ -198,26 +198,25 @@
     </main>
 
     <!-- Footer -->
-    <footer class="p-4 bg-gray-800 text-gray-400 flex justify-between items-center text-sm">
-      <div class="flex space-x-4">
-        <a href="#" class="hover:text-white">Docs</a>
-        <a href="#" class="hover:text-white">Guides</a>
-        <a href="#" class="hover:text-white">Help</a>
-        <a href="#" class="hover:text-white">Contact</a>
-      </div>
-      <div>© 2025 SmartScribe Inc.</div>
-    </footer>
+    <AppFooter
+      :links="footerLinks"
+      :copyright="copyrightText"
+    />
   </div>
 </template>
 
 <script>
 import logo from '@/assets/image/logo.jpg'
+import AppFooter from '@/components/Footer.vue'
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 
 export default {
   name: 'SignupView',
+  components: {
+    AppFooter
+  },
   setup() {
     const router = useRouter();
     const store = useStore();
@@ -236,6 +235,15 @@ export default {
 
     const passwordInput = ref(null);
     const confirmPasswordInput = ref(null);
+
+    // Footer configuration
+    const footerLinks = [
+      { text: 'Privacy Policy', href: '#' },
+      { text: 'Terms of Service', href: '#' },
+      { text: 'Help Center', href: '#' }
+    ];
+
+    const copyrightText = '© 2025 SmartScribe. All rights reserved.';
 
     const redirectToLogin = () => {
       showSuccessModal.value = false;
@@ -383,7 +391,9 @@ export default {
       passwordVisible,
       confirmPasswordVisible,
       handleGoogleSignup,
-      handleFacebookSignup
+      handleFacebookSignup,
+      footerLinks,
+      copyrightText
     };
   }
 }

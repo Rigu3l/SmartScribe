@@ -59,15 +59,36 @@
       </div>
     </main>
 
-    <footer class="p-4 bg-gray-800 text-gray-400 flex justify-center items-center text-sm">
-      <div>© 2025 SmartScribe Inc.</div>
-    </footer>
+    <AppFooter
+      :links="footerLinks"
+      :copyright="copyrightText"
+    />
 </div>
 </template>
 
 <script>
+import AppFooter from '@/components/Footer.vue'
+
 export default {
   name: 'HomeView',
+  components: {
+    AppFooter
+  },
+  setup() {
+    // Footer configuration
+    const footerLinks = [
+      { text: 'Privacy Policy', href: '#' },
+      { text: 'Terms of Service', href: '#' },
+      { text: 'Help Center', href: '#' }
+    ];
+
+    const copyrightText = '© 2025 SmartScribe. All rights reserved.';
+
+    return {
+      footerLinks,
+      copyrightText
+    };
+  },
   mounted() {
     // Ensure proper styling is applied
     document.body.classList.add('loaded');

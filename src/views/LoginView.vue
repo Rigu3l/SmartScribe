@@ -150,27 +150,25 @@
     </main>
 
     <!-- Footer -->
-    <footer class="p-6 text-center text-gray-400 text-sm">
-      <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-6">
-        <a href="#" class="hover:text-gray-300 transition-colors">Privacy Policy</a>
-        <a href="#" class="hover:text-gray-300 transition-colors">Terms of Service</a>
-        <a href="#" class="hover:text-gray-300 transition-colors">Help Center</a>
-      </div>
-      <div class="mt-4 text-gray-500">
-        © 2025 SmartScribe. All rights reserved.
-      </div>
-    </footer>
+    <AppFooter
+      :links="footerLinks"
+      :copyright="copyrightText"
+    />
 </div>
 </template>
 
 <script>
 import logo from '@/assets/image/logo.jpg'
+import AppFooter from '@/components/Footer.vue'
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 
 export default {
   name: 'LoginView',
+  components: {
+    AppFooter
+  },
   setup() {
     const router = useRouter();
     const store = useStore();
@@ -181,6 +179,15 @@ export default {
     const errorMessage = ref('');
 
     const passwordVisible = ref(false);
+
+    // Footer configuration
+    const footerLinks = [
+      { text: 'Privacy Policy', href: '#' },
+      { text: 'Terms of Service', href: '#' },
+      { text: 'Help Center', href: '#' }
+    ];
+
+    const copyrightText = '© 2025 SmartScribe. All rights reserved.';
 
     const handleLogin = async () => {
       try {
@@ -303,7 +310,9 @@ export default {
       handleGoogleLogin,
       handleFacebookLogin,
       passwordVisible,
-      logo
+      logo,
+      footerLinks,
+      copyrightText
     };
   }
 }
