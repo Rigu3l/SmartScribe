@@ -131,10 +131,20 @@ export default {
   uploadProfilePicture(formData) {
     return api.post('?resource=auth&action=upload-profile-picture', formData)
   },
+  deleteAccount() {
+    return api.delete('?resource=auth&action=delete-account')
+  },
   
   // Notes
   getNotes() {
-    return api.get('?resource=notes')
+    // Add cache-busting parameter to prevent browser caching
+    const cacheBust = Date.now();
+    return api.get(`?resource=notes&_t=${cacheBust}`, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    })
   },
   getNote(id) {
     return api.get(`?resource=notes&id=${id}`)
@@ -167,7 +177,9 @@ export default {
       formData.append('text', noteData.text)
     }
     if (noteData.is_favorite !== undefined) {
-      formData.append('is_favorite', noteData.is_favorite ? '1' : '0')
+      const favoriteValue = noteData.is_favorite ? '1' : '0';
+      console.log('🔄 API: Setting is_favorite to:', favoriteValue, '(from boolean:', noteData.is_favorite, ')');
+      formData.append('is_favorite', favoriteValue);
     }
     if (noteData.summary) {
       formData.append('summary', noteData.summary)
@@ -176,7 +188,13 @@ export default {
       formData.append('keywords', noteData.keywords)
     }
 
-    return api.post(`?resource=notes&id=${id}`, formData)
+    // Add cache-busting headers
+    return api.post(`?resource=notes&id=${id}`, formData, {
+      headers: {
+        'Cache-Control': 'no-cache',
+        'Pragma': 'no-cache'
+      }
+    })
   },
   deleteNote(id) {
     return api.delete(`?resource=notes&id=${id}`)
@@ -257,10 +275,19 @@ export default {
     return api.get('?resource=quizzes')
   },
   getQuiz(id) {
-    return api.get(`?resource=quizzes&id=${id}`)
+    console.log('🔄 API getQuiz: Starting with quizId:', id)
+    const result = api.get(`?resource=quizzes&id=${id}`)
+    console.log('🔄 API getQuiz: Request promise created')
+    return result
   },
   createQuiz(noteId, options) {
-    return api.post('?resource=quizzes', { note_id: noteId, ...options })
+    console.log('🔄 API createQuiz: Starting with noteId:', noteId)
+    console.log('🔄 API createQuiz: Options:', options)
+    const requestData = { note_id: noteId, ...options }
+    console.log('🔄 API createQuiz: Full request data:', requestData)
+    const result = api.post('?resource=quizzes', requestData)
+    console.log('🔄 API createQuiz: Request promise created')
+    return result
   },
   updateQuiz(id, data) {
     return api.put(`?resource=quizzes&id=${id}`, data)
@@ -280,5 +307,45 @@ export default {
     return api.get(`?resource=export&id=${noteId}&format=${format}`, {
       responseType: 'blob' // Important for file downloads
     })
+  },
+
+  // Study Sessions
+  startStudySession(sessionData) {
+    return api.post('?resource=study-sessions&action=start', sessionData)
+  },
+  endStudySession(sessionData) {
+    return api.post('?resource=study-sessions&action=end', sessionData)
+  },
+  updateStudySessionActivity(sessionData) {
+    return api.post('?resource=study-sessions&action=update-activity', sessionData)
+  },
+  getActiveStudySession() {
+    return api.get('?resource=study-sessions&action=active')
+  },
+  getStudySessionStats(startDate = null, endDate = null) {
+    let url = '?resource=study-sessions&action=stats'
+    if (startDate) url += `&start_date=${startDate}`
+    if (endDate) url += `&end_date=${endDate}`
+    return api.get(url)
+  },
+  getDailyStudyStats(startDate, endDate) {
+    return api.get(`?resource=study-sessions&action=daily-stats&start_date=${startDate}&end_date=${endDate}`)
+  },
+  getStudyStreak() {
+    return api.get('?resource=study-sessions&action=streak')
+  },
+
+  // Generic methods for resources that don't have specific methods yet
+  get(url, config = {}) {
+    return api.get(url, config)
+  },
+  post(url, data = {}, config = {}) {
+    return api.post(url, data, config)
+  },
+  put(url, data = {}, config = {}) {
+    return api.put(url, data, config)
+  },
+  delete(url, config = {}) {
+    return api.delete(url, config)
   }
 }

@@ -1,101 +1,31 @@
 <template>
-  <div class="min-h-screen flex flex-col bg-gray-900 text-white overflow-x-hidden">
-    <!-- Header (same as other pages) -->
-    <header class="p-3 sm:p-4 bg-gray-800 flex justify-between items-center">
-      <div class="text-lg sm:text-xl font-bold">SmartScribe</div>
-      <div class="flex items-center space-x-2 sm:space-x-4">
-        <button class="text-gray-400 hover:text-white p-2">
-          <font-awesome-icon :icon="['fas', 'bell']" class="text-sm sm:text-base" />
-        </button>
-        <div class="w-6 h-6 sm:w-8 sm:h-8 bg-gray-600 rounded-full"></div>
-      </div>
-    </header>
+  <Header @open-profile-modal="openProfileModal">
 
-    <!-- Main Content -->
-    <div class="flex flex-grow">
-      <!-- Mobile Menu Button -->
-      <button
-        @click="sidebarOpen = !sidebarOpen"
-        class="md:hidden fixed top-20 left-4 z-50 bg-gray-800 p-2 rounded-md shadow-lg"
-      >
-        <font-awesome-icon :icon="['fas', sidebarOpen ? 'times' : 'bars']" />
-      </button>
+    <!-- Mobile Menu Button -->
+    <button
+      @click="sidebarOpen = !sidebarOpen"
+      :class="`md:hidden fixed top-20 left-4 z-50 ${themeClasses.card} p-2 rounded-md shadow-lg`"
+    >
+      <font-awesome-icon :icon="['fas', sidebarOpen ? 'times' : 'bars']" />
+    </button>
 
-      <!-- Sidebar Overlay for Mobile -->
-      <div
-        v-if="sidebarOpen"
-        @click="sidebarOpen = false"
-        class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
-      ></div>
+    <!-- Sidebar Overlay for Mobile -->
+    <div
+      v-if="sidebarOpen"
+      @click="sidebarOpen = false"
+      class="md:hidden fixed inset-0 bg-black bg-opacity-50 z-40"
+    ></div>
 
-      <!-- Sidebar -->
-      <aside
-        :class="[
-          'bg-gray-800 p-4 transition-all duration-300 ease-in-out',
-          sidebarOpen ? 'translate-x-0' : '-translate-x-full md:translate-x-0',
-          'fixed md:relative z-50 md:z-auto',
-          'w-64 md:w-64 max-w-full',
-          'min-h-screen md:min-h-0',
-          'top-0 left-0 md:top-auto md:left-auto',
-          'overflow-hidden'
-        ]"
-      >
-        <nav class="mt-16 md:mt-0">
-          <ul class="space-y-2">
-            <li>
-              <router-link
-                to="/dashboard"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'home']" />
-                <span>Dashboard</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/notes"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md bg-gray-700"
-              >
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>My Notes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/progress"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'chart-line']" />
-                <span>Progress</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link
-                to="/settings"
-                @click="sidebarOpen = false"
-                class="flex items-center space-x-2 p-2 rounded-md hover:bg-gray-700 transition"
-              >
-                <font-awesome-icon :icon="['fas', 'cog']" />
-                <span>Settings</span>
-              </router-link>
-            </li>
-          </ul>
-        </nav>
-      </aside>
-
-      <!-- Note Editor Main Content -->
-      <main class="flex-grow p-4 sm:p-6 ml-0 md:ml-0" style="width: 100vw; max-width: 100vw;">
+    <!-- Note Editor Main Content -->
+    <main :class="`${themeClasses.mainContent} flex-1 p-4 sm:p-6 transition-all duration-300 ease-in-out`">
         <div v-if="isLoading" class="flex justify-center items-center h-full">
           <font-awesome-icon :icon="['fas', 'spinner']" spin class="text-4xl text-blue-500" />
         </div>
 
         <div v-else-if="error" class="flex flex-col items-center justify-center h-full">
-          <font-awesome-icon :icon="['fas', 'times']" class="text-4xl text-red-400 mb-4" />
-          <h2 class="text-xl font-medium mb-2">Error Loading Note</h2>
-          <p class="text-gray-400 mb-4">{{ error }}</p>
+           <font-awesome-icon :icon="['fas', 'times']" class="text-4xl text-red-400 mb-4" />
+           <h2 :class="`${themeClasses.text} font-medium mb-2 ${fontSizeClasses.heading}`">Error Loading Note</h2>
+           <p :class="`${themeClasses.tertiaryText} mb-4`">{{ error }}</p>
           <router-link to="/notes" class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition">
             Back to Notes
           </router-link>
@@ -108,30 +38,30 @@
                 <h1 class="text-xl sm:text-2xl font-bold flex-1">
                   <input
                     v-model="note.title"
-                    class="bg-transparent border-b border-gray-700 focus:border-blue-500 focus:outline-none pb-1 w-full text-lg sm:text-xl"
+                    :class="`bg-transparent ${themeClasses.border} focus:border-blue-500 focus:outline-none pb-1 w-full ${fontSizeClasses.heading} ${themeClasses.text}`"
                     placeholder="Note Title"
                   />
                 </h1>
               </div>
-              <p class="text-gray-400 text-xs sm:text-sm">Last edited: {{ note.lastEdited }}</p>
+              <p :class="`${themeClasses.tertiaryText} ${fontSizeClasses.label}`">Last edited: {{ note.lastEdited }}</p>
             </div>
             <div class="flex space-x-2 sm:space-x-3 w-full sm:w-auto">
               <button @click="saveNote" :disabled="isSaving" class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base bg-blue-600 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed">
                 <font-awesome-icon :icon="isSaving ? ['fas', 'spinner'] : ['fas', 'save']" :spin="isSaving" class="mr-2" />
                 {{ isSaving ? 'Saving...' : 'Save' }}
               </button>
-              <button @click="showExportOptions = !showExportOptions" class="flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base bg-gray-700 rounded-md hover:bg-gray-600 transition relative">
+              <button @click="showExportOptions = !showExportOptions" :class="`flex-1 sm:flex-none px-3 py-2 sm:px-4 sm:py-2 text-sm sm:text-base ${themeClasses.button} rounded-md transition relative`">
                 <font-awesome-icon :icon="['fas', 'file-export']" class="mr-2" /> Export
 
                 <!-- Export Options Dropdown -->
-                <div v-if="showExportOptions" class="absolute right-0 mt-2 w-48 sm:w-56 bg-gray-800 rounded-md shadow-lg py-1 z-10 max-w-full">
-                  <button @click="exportNote('pdf')" class="block w-full text-left px-4 py-2 hover:bg-gray-700">
+                <div v-if="showExportOptions" :class="`absolute right-0 mt-2 w-48 sm:w-56 ${themeClasses.card} rounded-md shadow-lg py-1 z-10 max-w-full`">
+                  <button @click="exportNote('pdf')" :class="`block w-full text-left px-4 py-2 ${themeClasses.hover}`">
                     <font-awesome-icon :icon="['fas', 'file-code']" class="mr-2" /> HTML for PDF conversion
                   </button>
-                  <button @click="exportNote('word')" class="block w-full text-left px-4 py-2 hover:bg-gray-700">
+                  <button @click="exportNote('word')" :class="`block w-full text-left px-4 py-2 ${themeClasses.hover}`">
                     <font-awesome-icon :icon="['fas', 'file-word']" class="mr-2" /> Word Document (.doc)
                   </button>
-                  <button @click="exportNote('text')" class="block w-full text-left px-4 py-2 hover:bg-gray-700">
+                  <button @click="exportNote('text')" :class="`block w-full text-left px-4 py-2 ${themeClasses.hover}`">
                     <font-awesome-icon :icon="['fas', 'file-alt']" class="mr-2" /> Plain Text (.txt)
                   </button>
                 </div>
@@ -141,19 +71,19 @@
 
         <div class="grid grid-cols-1 gap-4 sm:gap-6" style="grid-template-columns: 1fr;">
           <!-- Original Text (OCR Result) -->
-          <div class="bg-gray-800 rounded-lg p-4 sm:p-6">
-            <h2 class="text-base sm:text-lg font-semibold mb-4">Original Text</h2>
+          <div :class="`${themeClasses.card} rounded-lg p-4 sm:p-6`">
+            <h2 :class="`${themeClasses.text} font-semibold mb-4 ${fontSizeClasses.body}`">Original Text</h2>
             <div class="relative">
               <textarea
                 v-model="note.originalText"
-                class="w-full h-64 sm:h-96 bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base overflow-x-hidden resize-none"
+                :class="`w-full h-64 sm:h-96 ${themeClasses.input} rounded-lg p-3 sm:p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base overflow-x-hidden resize-none`"
                 placeholder="OCR extracted text will appear here"
               ></textarea>
               <div class="absolute top-2 right-2 flex space-x-2">
-                <button title="Edit Original Text" class="p-1 bg-gray-600 rounded hover:bg-gray-500">
+                <button title="Edit Original Text" :class="`p-1 ${themeClasses.button} rounded`">
                   <font-awesome-icon :icon="['fas', 'edit']" class="text-xs sm:text-sm" />
                 </button>
-                <button title="Rescan" class="p-1 bg-gray-600 rounded hover:bg-gray-500">
+                <button title="Rescan" :class="`p-1 ${themeClasses.button} rounded`">
                   <font-awesome-icon :icon="['fas', 'camera']" class="text-xs sm:text-sm" />
                 </button>
               </div>
@@ -161,23 +91,23 @@
 
             <!-- Highlighted Text Display -->
             <div v-if="note.keywords.length > 0 && note.originalText" class="mt-4">
-              <h3 class="text-sm font-medium text-gray-300 mb-2">Highlighted Keywords:</h3>
+              <h3 :class="`${themeClasses.secondaryText} text-sm font-medium mb-2`">Highlighted Keywords:</h3>
               <div
-                class="w-full min-h-32 max-h-64 bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 text-sm sm:text-base overflow-y-auto border border-gray-600"
+                :class="`w-full min-h-32 max-h-64 ${themeClasses.input} rounded-lg p-3 sm:p-4 text-sm sm:text-base overflow-y-auto border ${themeClasses.border}`"
                 v-html="highlightedOriginalText"
               ></div>
             </div>
           </div>
 
           <!-- AI Generated Summary -->
-          <div class="bg-gray-800 rounded-lg p-4 sm:p-6">
+          <div :class="`${themeClasses.card} rounded-lg p-4 sm:p-6`">
             <div class="flex flex-col justify-between items-start mb-4 space-y-2" style="flex-direction: column !important;">
-              <h2 class="text-base sm:text-lg font-semibold">AI Summary</h2>
+              <h2 :class="`${themeClasses.text} font-semibold ${fontSizeClasses.body}`">AI Summary</h2>
               <div class="flex items-center space-x-2 w-full sm:w-auto">
-                <span class="text-xs sm:text-sm text-gray-400">Length:</span>
+                <span :class="`${themeClasses.tertiaryText} text-xs sm:text-sm`">Length:</span>
                 <select
                   v-model="summaryLength"
-                  class="bg-gray-700 rounded px-2 py-1 sm:p-1 text-xs sm:text-sm flex-1 sm:flex-none"
+                  :class="`${themeClasses.input} rounded px-2 py-1 sm:p-1 text-xs sm:text-sm flex-1 sm:flex-none`"
                 >
                   <option value="auto">Auto</option>
                   <option value="short">Short</option>
@@ -186,7 +116,7 @@
                 </select>
                 <select
                   v-model="summaryFormat"
-                  class="bg-gray-700 rounded px-2 py-1 sm:p-1 text-xs sm:text-sm flex-1 sm:flex-none ml-2"
+                  :class="`${themeClasses.input} rounded px-2 py-1 sm:p-1 text-xs sm:text-sm flex-1 sm:flex-none ml-2`"
                 >
                   <option value="paragraph">Paragraph</option>
                   <option value="bullet_points">Bullet Points</option>
@@ -196,15 +126,15 @@
             <div class="relative">
               <textarea
                 v-model="note.summary"
-                class="w-full h-64 sm:h-96 bg-gray-700 rounded-lg p-3 sm:p-4 text-gray-200 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base overflow-x-hidden resize-none whitespace-pre-line"
+                :class="`w-full h-64 sm:h-96 ${themeClasses.input} rounded-lg p-3 sm:p-4 focus:outline-none focus:ring-2 focus:ring-blue-500 text-sm sm:text-base overflow-x-hidden resize-none whitespace-pre-line`"
                 placeholder="AI-generated summary will appear here"
                 style="white-space: pre-line;"
               ></textarea>
               <div class="absolute top-2 right-2 flex space-x-2">
-                <button @click="generateSummary" :disabled="generatingSummary" title="Regenerate Summary" class="p-1 bg-gray-600 rounded hover:bg-gray-500 disabled:opacity-50 disabled:cursor-not-allowed">
+                <button @click="generateSummary" :disabled="generatingSummary" title="Regenerate Summary" :class="`p-1 ${themeClasses.button} rounded disabled:opacity-50 disabled:cursor-not-allowed`">
                   <font-awesome-icon :icon="['fas', 'sync-alt']" class="text-xs sm:text-sm" :spin="generatingSummary" />
                 </button>
-                <button title="Copy to Clipboard" class="p-1 bg-gray-600 rounded hover:bg-gray-500">
+                <button title="Copy to Clipboard" :class="`p-1 ${themeClasses.button} rounded`">
                   <font-awesome-icon :icon="['fas', 'copy']" class="text-xs sm:text-sm" />
                 </button>
               </div>
@@ -213,8 +143,8 @@
         </div>
 
         <!-- Keywords and Tags -->
-        <div class="mt-6 bg-gray-800 rounded-lg p-4 sm:p-6">
-          <h2 class="text-base sm:text-lg font-semibold mb-4">Keywords & Tags</h2>
+        <div :class="`mt-6 ${themeClasses.card} rounded-lg p-4 sm:p-6`">
+          <h2 :class="`${themeClasses.text} font-semibold mb-4 ${fontSizeClasses.body}`">Keywords & Tags</h2>
           <div class="flex flex-wrap gap-2 mb-4">
             <span
               v-for="(keyword, index) in note.keywords"
@@ -229,18 +159,24 @@
             <input
               v-model="newKeyword"
               @keyup.enter="addKeyword"
-              class="px-2 py-1 sm:px-3 sm:py-1 bg-gray-700 rounded-full text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-0"
+              :class="`px-2 py-1 sm:px-3 sm:py-1 ${themeClasses.input} rounded-full text-xs sm:text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 flex-1 min-w-0`"
               placeholder="Add keyword..."
             />
           </div>
-          <button @click="extractKeywords" class="px-3 py-2 sm:px-3 sm:py-1 bg-gray-700 rounded text-sm hover:bg-gray-600 transition w-full sm:w-auto">
+          <button @click="extractKeywords" :class="`px-3 py-2 sm:px-3 sm:py-1 ${themeClasses.button} rounded text-sm transition w-full sm:w-auto`">
             <font-awesome-icon :icon="['fas', 'magic']" class="mr-1" /> Auto-extract Keywords
           </button>
         </div>
         </div>
       </main>
-    </div>
-  </div>
+
+    <!-- Camera Modal -->
+    <CameraModal
+      :show="showCameraModal"
+      @close="closeCameraModal"
+      @photo-captured="handlePhotoCaptured"
+    />
+  </Header>
 </template>
 
 <script>
@@ -248,9 +184,15 @@ import { ref, onMounted, computed } from 'vue';
 import { useStore } from 'vuex';
 import { useRouter, useRoute } from 'vue-router';
 import api from '@/services/api';
+import Header from '@/components/Header.vue';
+import CameraModal from '@/components/CameraModal.vue';
 
 export default {
   name: 'NoteEditorView',
+  components: {
+    Header,
+    CameraModal
+  },
   setup() {
     const store = useStore();
     const router = useRouter();
@@ -276,6 +218,51 @@ export default {
      const generatingSummary = ref(false);
      const showExportOptions = ref(false);
      const sidebarOpen = ref(false);
+     const showCameraModal = ref(false);
+
+     // Use global theme classes from store
+     const themeClasses = computed(() => {
+       try {
+         const classes = store.getters['app/getThemeClasses'];
+         return classes && typeof classes === 'object' ? classes : {
+           main: 'bg-gray-900 text-white',
+           header: 'bg-gray-800',
+           sidebar: 'bg-gray-800',
+           mainContent: '',
+           card: 'bg-gray-800',
+           text: 'text-white',
+           secondaryText: 'text-gray-400',
+           input: 'bg-gray-700 border-gray-600 text-white',
+           button: 'bg-gray-700 hover:bg-gray-600'
+         };
+       } catch (error) {
+         return {
+           main: 'bg-gray-900 text-white',
+           header: 'bg-gray-800',
+           sidebar: 'bg-gray-800',
+           mainContent: '',
+           card: 'bg-gray-800',
+           text: 'text-white',
+           secondaryText: 'text-gray-400',
+           input: 'bg-gray-700 border-gray-600 text-white',
+           button: 'bg-gray-700 hover:bg-gray-600'
+         };
+       }
+     });
+
+     // Use global font size classes from store
+     const fontSizeClasses = computed(() => {
+       try {
+         return store.getters['app/getFontSizeClasses'];
+       } catch (error) {
+         return {
+           heading: 'text-xl',
+           body: 'text-base',
+           label: 'text-sm',
+           small: 'text-xs'
+         };
+       }
+     });
 
    // Computed property to highlight keywords in the original text
    const highlightedOriginalText = computed(() => {
@@ -346,6 +333,19 @@ export default {
     });
 
     const saveNote = async () => {
+      console.log('🔄 saveNote called - Current state:', {
+        isSaving: isSaving.value,
+        noteId: note.value.id,
+        title: note.value.title,
+        timestamp: new Date().toISOString()
+      });
+
+      // Prevent multiple concurrent saves
+      if (isSaving.value) {
+        console.log('⚠️ Save already in progress, ignoring duplicate save request');
+        return;
+      }
+
       try {
         // Check if user is authenticated
         const userData = localStorage.getItem('user');
@@ -385,6 +385,7 @@ export default {
 
         // Set saving state
         isSaving.value = true;
+        console.log('✅ Saving state set to true');
 
         // Update last edited timestamp
         note.value.lastEdited = new Date().toLocaleString();
@@ -397,7 +398,7 @@ export default {
           keywords: note.value.keywords.join(',')
         };
 
-        console.log('Saving note:', {
+        console.log('📝 Saving note:', {
           hasId: !!note.value.id,
           noteId: note.value.id,
           noteData: noteData,
@@ -405,18 +406,19 @@ export default {
         });
 
         // Log current localStorage state for debugging
-        console.log('Current localStorage state:', {
+        console.log('🔑 Current localStorage state:', {
           token: !!localStorage.getItem('token'),
           user: localStorage.getItem('user')
         });
 
         if (note.value.id) {
           // Update existing note
-          console.log('Updating existing note with ID:', note.value.id);
+          console.log('🔄 Updating existing note with ID:', note.value.id);
           const response = await api.updateNote(note.value.id, noteData);
-          console.log('Update response:', response.data);
+          console.log('📤 Update response:', response.data);
 
           if (response.data.success) {
+            console.log('✅ Note updated successfully!');
             alert('Note updated successfully!');
             router.push('/notes?refresh=true');
           } else {
@@ -424,12 +426,13 @@ export default {
           }
         } else {
           // Create new note
-          console.log('Creating new note');
+          console.log('🆕 Creating new note');
           const response = await api.createNote(noteData);
-          console.log('Create response:', response.data);
+          console.log('📤 Create response:', response.data);
 
           if (response.data.success) {
-            note.value.id = response.data.note_id;
+            console.log('✅ Note created successfully with ID:', response.data.note_id || response.data.data?.note_id);
+            note.value.id = response.data.note_id || response.data.data?.note_id;
             alert('Note saved successfully!');
             router.push('/notes?refresh=true');
           } else {
@@ -659,6 +662,35 @@ export default {
       }
     };
 
+    const showProfileModal = ref(false);
+
+    const openProfileModal = () => {
+      showProfileModal.value = true;
+    };
+
+    const closeProfileModal = () => {
+      showProfileModal.value = false;
+    };
+
+    const openCamera = () => {
+      showCameraModal.value = true;
+    };
+
+    const closeCameraModal = () => {
+      showCameraModal.value = false;
+    };
+
+    const handlePhotoCaptured = (photoData) => {
+      // Update the note's original text with the captured OCR text
+      if (photoData && photoData.originalText) {
+        note.value.originalText = photoData.originalText;
+        // Optionally generate summary automatically
+        generateSummary();
+      }
+      // Close the modal
+      showCameraModal.value = false;
+    };
+
     return {
       note,
       summaryLength,
@@ -673,6 +705,8 @@ export default {
       generatingSummary,
       showExportOptions,
       sidebarOpen,
+      themeClasses,
+      fontSizeClasses,
       highlightedOriginalText,
       saveNote,
       generateSummary,
@@ -682,7 +716,14 @@ export default {
       generateQuiz,
       checkQuizAnswers,
       resetQuiz,
-      exportNote
+      exportNote,
+      showProfileModal,
+      openProfileModal,
+      closeProfileModal,
+      showCameraModal,
+      openCamera,
+      closeCameraModal,
+      handlePhotoCaptured
     };
   }
 }

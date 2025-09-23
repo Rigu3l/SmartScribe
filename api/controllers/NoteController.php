@@ -1,11 +1,13 @@
 <?php
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Note.php';
+require_once __DIR__ . '/../models/Goal.php';
 require_once __DIR__ . '/../helpers/FileUpload.php';
 require_once __DIR__ . '/../services/AIKeywordService.php';
 
 class NoteController extends BaseController {
     private $note;
+    private $goal;
     private $keywordService;
 
     public function __construct($db = null) {
@@ -22,6 +24,14 @@ class NoteController extends BaseController {
             error_log("NoteController::__construct() - Note model instantiated");
         } catch (Exception $e) {
             error_log("NoteController::__construct() - Error instantiating Note model: " . $e->getMessage());
+            throw $e;
+        }
+
+        try {
+            $this->goal = new Goal($this->db);
+            error_log("NoteController::__construct() - Goal model instantiated");
+        } catch (Exception $e) {
+            error_log("NoteController::__construct() - Error instantiating Goal model: " . $e->getMessage());
             throw $e;
         }
 
@@ -76,6 +86,12 @@ class NoteController extends BaseController {
 
             $notes = $stmt->fetchAll(PDO::FETCH_ASSOC);
             error_log("NoteController::index() - Query executed, found " . count($notes) . " notes");
+
+            // Debug is_favorite values
+            foreach ($notes as $index => $note) {
+                error_log("NoteController::index() - Note $index: is_favorite = '" . $note['is_favorite'] . "' (type: " . gettype($note['is_favorite']) . ")");
+            }
+
             error_log("NoteController::index() - About to call successResponse");
 
             $this->successResponse($notes, 'Notes retrieved successfully');
@@ -159,6 +175,25 @@ class NoteController extends BaseController {
 
             error_log("NoteController::store() - Note creation result: " . ($noteId ? "Success (ID: $noteId)" : "Failed"));
 
+            // DEBUG: Check for goals that need updating
+            if ($noteId) {
+                error_log("NoteController::store() - Checking for goals to update for user $userId");
+
+                // Query for active goals with target_type = 'notes'
+                $goalQuery = "SELECT id, title, target_value, current_value, status FROM learning_goals
+                             WHERE user_id = :user_id AND target_type = 'notes' AND status = 'active'";
+                $goalStmt = $this->db->prepare($goalQuery);
+                $goalStmt->bindParam(':user_id', $userId);
+                $goalStmt->execute();
+                $activeGoals = $goalStmt->fetchAll(PDO::FETCH_ASSOC);
+
+                error_log("NoteController::store() - Found " . count($activeGoals) . " active note goals for user $userId");
+
+                foreach ($activeGoals as $goal) {
+                    error_log("NoteController::store() - Goal ID {$goal['id']}: {$goal['title']} - Current: {$goal['current_value']}/{$goal['target_value']} - Status: {$goal['status']}");
+                }
+            }
+
             if ($noteId) {
                 // Auto-extract keywords from the note content
                 $keywords = $this->keywordService->extractKeywords($this->sanitizeInput($text), 5);
@@ -173,6 +208,15 @@ class NoteController extends BaseController {
                 $updateStmt->execute();
 
                 error_log("NoteController::store() - Keywords extracted and saved: " . $keywordsString);
+
+                // Update goal progress for this user
+                try {
+                    $goalsUpdated = $this->goal->updateProgressForNotes($userId);
+                    error_log("NoteController::store() - Updated $goalsUpdated goals for user $userId");
+                } catch (Exception $e) {
+                    error_log("NoteController::store() - Error updating goals: " . $e->getMessage());
+                    // Don't fail the note creation if goal update fails
+                }
 
                 $this->successResponse([
                     'note_id' => $noteId,
@@ -232,21 +276,15 @@ class NoteController extends BaseController {
     }
 
     public function update($id) {
-        error_log("NoteController::update() - ===== UPDATE REQUEST STARTED =====");
-        error_log("NoteController::update() - Note ID: $id");
-
         // Authenticate user first
         if (!$this->authenticateUser()) {
-            error_log("NoteController::update() - Authentication failed");
             $this->unauthorizedResponse();
             return;
         }
 
         $userId = $this->getUserId();
-        error_log("NoteController::update() - User ID: $userId");
 
         if (!$userId) {
-            error_log("NoteController::update() - No user ID found");
             $this->unauthorizedResponse();
             return;
         }
@@ -255,16 +293,14 @@ class NoteController extends BaseController {
         $text = $_POST['text'] ?? NULL;
         $summary = $_POST['summary'] ?? NULL;
         $keywords = $_POST['keywords'] ?? NULL;
+        $isFavoriteRaw = $_POST['is_favorite'] ?? NULL;
         $isFavorite = isset($_POST['is_favorite']) ? (bool)$_POST['is_favorite'] : NULL;
 
-        error_log("NoteController::update() - Received data:");
-        error_log("NoteController::update() - Title: " . ($title ?: 'NULL'));
-        error_log("NoteController::update() - Text: " . ($text ? substr($text, 0, 50) . '...' : 'NULL'));
-        error_log("NoteController::update() - is_favorite: " . ($isFavorite !== NULL ? ($isFavorite ? 'true' : 'false') : 'NULL'));
+        error_log("🔄 NoteController::update() - Raw is_favorite from POST: '" . $isFavoriteRaw . "' (type: " . gettype($isFavoriteRaw) . ")");
+        error_log("🔄 NoteController::update() - Converted is_favorite: " . ($isFavorite ? 'true' : 'false') . " (type: " . gettype($isFavorite) . ")");
 
         // For favorite updates, we only need the is_favorite field
         $isFavoriteOnly = ($title === NULL && $text === NULL && $isFavorite !== NULL);
-        error_log("NoteController::update() - Is favorite-only update: " . ($isFavoriteOnly ? 'YES' : 'NO'));
 
         if (!$isFavoriteOnly && (!$title || !$text)) {
             error_log("NoteController::update() - Validation failed: missing required fields");
@@ -326,22 +362,11 @@ class NoteController extends BaseController {
         $stmt->bindParam(':user_id', $userId);
 
         if ($stmt->execute()) {
-            error_log("NoteController::update() - Database update successful");
-            // If summary or keywords were provided, we could store them separately
-            // For now, we'll just log them since the table doesn't support them
-            if ($summary) {
-                error_log("Note update: Summary provided but not stored (table doesn't have summary column): " . substr($summary, 0, 100));
-            }
-            if ($keywords) {
-                error_log("Note update: Keywords provided but not stored (table doesn't have keywords column): " . $keywords);
-            }
-
             echo json_encode([
                 "success" => true,
                 "message" => "Note updated successfully"
             ]);
         } else {
-            error_log("NoteController::update() - Database update failed");
             http_response_code(500);
             echo json_encode([
                 "success" => false,

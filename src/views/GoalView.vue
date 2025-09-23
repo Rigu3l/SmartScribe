@@ -231,7 +231,7 @@
                       store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
                     ]">
                       <div class="flex items-center space-x-1">
-                        <font-awesome-icon :icon="['fas', 'target']" />
+                        <font-awesome-icon :icon="['fas', 'bullseye']" />
                         <span>{{ goal.target_type.replace('_', ' ').toUpperCase() }}</span>
                       </div>
                       <div v-if="goal.deadline" class="flex items-center space-x-1">
@@ -283,9 +283,9 @@
             fontSizeClasses.heading,
             store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
           ]">{{ isEditing ? 'Edit Goal' : 'Create New Goal' }}</h2>
-           <button @click="closeGoalModal" :class="[
-             store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'
-           ]">
+          <button @click="closeGoalModal" :class="[
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400 hover:text-white' : 'text-gray-500 hover:text-gray-700'
+          ]">
             <font-awesome-icon :icon="['fas', 'times']" class="text-xl" />
           </button>
         </div>
@@ -449,7 +449,7 @@ import api from '@/services/api'
 import Header from '@/components/Header.vue'
 
 export default {
-  name: 'GoalsView',
+  name: 'GoalView',
   components: {
     Header
   },

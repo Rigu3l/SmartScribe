@@ -227,7 +227,7 @@ export function useNotifications() {
         {
           label: 'Set New Goal',
           action: 'navigate',
-          data: '/progress'
+          data: '/goals'
         }
       ]
     });

@@ -1,20 +1,15 @@
 # public/.htaccess
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /SmartScribe-main/public/
+  RewriteBase /
 
-  # CORS headers
-  Header set Access-Control-Allow-Origin "*"
-  Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-  Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-User-ID, X-Requested-With"
-  Header set Access-Control-Allow-Credentials "true"
 
-  # Handle API requests - Fix the rewrite rule to properly match the full path
-  RewriteCond %{REQUEST_URI} ^/SmartScribe-main/public/api/(.*)$
-  RewriteRule ^api/(.*)$ index.php?resource=$1 [QSA,L]
+  # API requests are handled by Vue proxy - don't rewrite here
+  # RewriteCond %{REQUEST_URI} ^/api/(.*)$
+  # RewriteRule ^api/(.*)$ ../api/index.php [QSA,L]
 
   # Allow direct access to uploaded files
-  RewriteCond %{REQUEST_URI} ^/SmartScribe-main/public/uploads/.*$
+  RewriteCond %{REQUEST_URI} ^/uploads/.*$
   RewriteRule . - [L]
 
   # Handle Vue Router (for SPA)

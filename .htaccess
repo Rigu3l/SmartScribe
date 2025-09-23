@@ -1,20 +1,22 @@
-# public/.htaccess
+# Production .htaccess for SmartScribe
 <IfModule mod_rewrite.c>
   RewriteEngine On
-  RewriteBase /SmartScribe-main/
+  RewriteBase /
 
-  # CORS headers
-  Header set Access-Control-Allow-Origin "*"
-  Header set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-  Header set Access-Control-Allow-Headers "Content-Type, Authorization, X-User-ID, X-Requested-With"
-  Header set Access-Control-Allow-Credentials "true"
 
-  # Handle API requests
-  RewriteCond %{REQUEST_URI} ^/SmartScribe-main/api/.*
-  RewriteRule ^api/(.*)$ index.php [L]
+  # Handle API requests - support both /api/ and /SmartScribe/api/
+  RewriteCond %{REQUEST_URI} ^/SmartScribe/api/.*
+  RewriteRule ^SmartScribe/api/(.*)$ api/index.php [QSA,L]
+
+  RewriteCond %{REQUEST_URI} ^/api/.*
+  RewriteRule ^api/(.*)$ api/index.php [QSA,L]
 
   # Allow direct access to uploaded files
-  RewriteCond %{REQUEST_URI} ^/SmartScribe-main/uploads/.*
+  RewriteCond %{REQUEST_URI} ^/uploads/.*
+  RewriteRule . - [L]
+
+  # Allow direct access to PHP files in root
+  RewriteCond %{REQUEST_URI} \.php$
   RewriteRule . - [L]
 
   # Handle Vue Router (for SPA)

@@ -1,10 +1,11 @@
 <template>
-  <div class="flex flex-col min-h-screen bg-gray-900 text-white" style="background-color: #111827 !important; color: white !important;">
-    <header class="p-4 flex justify-between items-center">
+  <div class="min-h-screen flex flex-col bg-gray-900 text-white overflow-x-hidden">
+    <!-- Header -->
+    <header class="p-6 flex justify-between items-center">
       <div class="text-xl font-bold">SmartScribe</div>
       <div class="space-x-2">
         <router-link to="/login" class="px-4 py-2 border border-white rounded-md hover:bg-gray-800 transition">Sign In</router-link>
-        <router-link to="/signup" class="px-4 py-2 bg-white text-gray-900 rounded-md hover:bg-gray-200 transition">Sign Up</router-link>
+        <router-link to="/signup" class="px-4 py-2 bg-white text-gray-900 rounded-md hover:bg-gray-200 transition">Get Started</router-link>
       </div>
     </header>
 
@@ -58,15 +59,36 @@
       </div>
     </main>
 
-    <footer class="p-4 bg-gray-800 text-gray-400 flex justify-center items-center text-sm">
-      <div>© 2025 SmartScribe Inc.</div>
-    </footer>
-  </div>
+    <AppFooter
+      :links="footerLinks"
+      :copyright="copyrightText"
+    />
+</div>
 </template>
 
 <script>
+import AppFooter from '@/components/Footer.vue'
+
 export default {
   name: 'HomeView',
+  components: {
+    AppFooter
+  },
+  setup() {
+    // Footer configuration
+    const footerLinks = [
+      { text: 'Privacy Policy', href: '#' },
+      { text: 'Terms of Service', href: '#' },
+      { text: 'Help Center', href: '#' }
+    ];
+
+    const copyrightText = '© 2025 SmartScribe. All rights reserved.';
+
+    return {
+      footerLinks,
+      copyrightText
+    };
+  },
   mounted() {
     // Ensure proper styling is applied
     document.body.classList.add('loaded');

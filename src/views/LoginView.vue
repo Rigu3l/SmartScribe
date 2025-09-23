@@ -2,16 +2,10 @@
   <div class="min-h-screen flex flex-col bg-gray-900 text-white overflow-x-hidden">
     <!-- Header -->
     <header class="p-6 flex justify-between items-center">
-      <router-link to="/" class="text-xl sm:text-2xl font-bold text-white hover:text-blue-400 transition-colors">
-        SmartScribe
-      </router-link>
-      <div class="flex space-x-3">
-        <router-link to="/contact" class="px-4 py-2 text-sm sm:text-base text-gray-400 hover:text-white transition-colors">
-          Contact
-        </router-link>
-        <router-link to="/signup" class="px-4 py-2 text-sm sm:text-base bg-blue-600 text-white rounded-lg hover:bg-blue-700 transition-colors">
-          Sign Up
-        </router-link>
+      <div class="text-xl font-bold">SmartScribe</div>
+      <div class="space-x-2">
+        <router-link to="/signup" class="px-4 py-2 border border-white rounded-md hover:bg-gray-800 transition">Sign Up</router-link>
+        <router-link to="/contact" class="px-4 py-2 bg-white text-gray-900 rounded-md hover:bg-gray-200 transition">Contact</router-link>
       </div>
     </header>
 
@@ -156,27 +150,25 @@
     </main>
 
     <!-- Footer -->
-    <footer class="p-6 text-center text-gray-400 text-sm">
-      <div class="flex flex-col sm:flex-row justify-center items-center space-y-2 sm:space-y-0 sm:space-x-6">
-        <a href="#" class="hover:text-gray-300 transition-colors">Privacy Policy</a>
-        <a href="#" class="hover:text-gray-300 transition-colors">Terms of Service</a>
-        <a href="#" class="hover:text-gray-300 transition-colors">Help Center</a>
-      </div>
-      <div class="mt-4 text-gray-500">
-        © 2025 SmartScribe. All rights reserved.
-      </div>
-    </footer>
-  </div>
+    <AppFooter
+      :links="footerLinks"
+      :copyright="copyrightText"
+    />
+</div>
 </template>
 
 <script>
 import logo from '@/assets/image/logo.jpg'
+import AppFooter from '@/components/Footer.vue'
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 
 export default {
   name: 'LoginView',
+  components: {
+    AppFooter
+  },
   setup() {
     const router = useRouter();
     const store = useStore();
@@ -187,6 +179,15 @@ export default {
     const errorMessage = ref('');
 
     const passwordVisible = ref(false);
+
+    // Footer configuration
+    const footerLinks = [
+      { text: 'Privacy Policy', href: '#' },
+      { text: 'Terms of Service', href: '#' },
+      { text: 'Help Center', href: '#' }
+    ];
+
+    const copyrightText = '© 2025 SmartScribe. All rights reserved.';
 
     const handleLogin = async () => {
       try {
@@ -309,7 +310,9 @@ export default {
       handleGoogleLogin,
       handleFacebookLogin,
       passwordVisible,
-      logo
+      logo,
+      footerLinks,
+      copyrightText
     };
   }
 }

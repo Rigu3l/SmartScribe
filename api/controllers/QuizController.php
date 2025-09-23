@@ -1,13 +1,16 @@
 <?php
 require_once __DIR__ . '/BaseController.php';
 require_once __DIR__ . '/../models/Quiz.php';
+require_once __DIR__ . '/../models/Goal.php';
 
 class QuizController extends BaseController {
     private $quiz;
+    private $goal;
 
     public function __construct() {
         parent::__construct();
         $this->quiz = new Quiz($this->db);
+        $this->goal = new Goal($this->db);
     }
 
     public function index() {
@@ -28,7 +31,17 @@ class QuizController extends BaseController {
         $stmt->bindParam(':user_id', $userId);
         $stmt->execute();
 
-        $this->successResponse($stmt->fetchAll());
+        $quizzes = $stmt->fetchAll();
+
+        // Debug: Log quiz data to see what fields are present
+        error_log("QUIZ INDEX: Retrieved " . count($quizzes) . " quizzes");
+        if (count($quizzes) > 0) {
+            error_log("QUIZ INDEX: First quiz data: " . json_encode($quizzes[0]));
+            error_log("QUIZ INDEX: First quiz difficulty: " . ($quizzes[0]['difficulty'] ?? 'NOT SET'));
+            error_log("QUIZ INDEX: First quiz quiz_type: " . ($quizzes[0]['quiz_type'] ?? 'NOT SET'));
+        }
+
+        $this->successResponse($quizzes);
     }
 
     public function store() {
@@ -82,6 +95,8 @@ class QuizController extends BaseController {
         $this->quiz->note_id = $data['note_id'];
         $this->quiz->user_id = $userId;
         $this->quiz->questions = json_encode($data['questions']);
+        $this->quiz->difficulty = $data['difficulty'] ?? 'medium';
+        $this->quiz->quiz_type = $data['quiz_type'] ?? 'multiple_choice';
         $this->quiz->score = $data['score'] ?? null;
         $this->quiz->title = $data['title'] ?? 'Generated Quiz';
         $this->quiz->total_questions = is_array($data['questions']) ? count($data['questions']) : 0;
@@ -107,6 +122,16 @@ class QuizController extends BaseController {
 
         if ($quizId) {
             error_log("QUIZ STORE: Quiz created successfully with ID: $quizId");
+
+            // Update goal progress for this user
+            try {
+                $goalsUpdated = $this->goal->updateProgressForQuizzes($userId);
+                error_log("QuizController::store() - Updated $goalsUpdated quiz goals for user $userId");
+            } catch (Exception $e) {
+                error_log("QuizController::store() - Error updating quiz goals: " . $e->getMessage());
+                // Don't fail the quiz creation if goal update fails
+            }
+
             $this->successResponse([
                 "quiz_id" => $quizId
             ], 'Quiz created successfully', 201);
@@ -183,6 +208,26 @@ class QuizController extends BaseController {
             $params[':questions'] = json_encode($data['questions']);
         }
 
+        if (isset($data['difficulty'])) {
+            $updateFields[] = "difficulty = :difficulty";
+            $params[':difficulty'] = $data['difficulty'];
+        }
+
+        if (isset($data['quiz_type'])) {
+            $updateFields[] = "quiz_type = :quiz_type";
+            $params[':quiz_type'] = $data['quiz_type'];
+        }
+
+        if (isset($data['title'])) {
+            $updateFields[] = "title = :title";
+            $params[':title'] = $data['title'];
+        }
+
+        if (isset($data['note_title'])) {
+            $updateFields[] = "note_title = :note_title";
+            $params[':note_title'] = $data['note_title'];
+        }
+
         if (empty($updateFields)) {
             $this->badRequestResponse('No valid fields to update');
             return;
@@ -192,6 +237,17 @@ class QuizController extends BaseController {
         $stmt = $this->db->prepare($query);
 
         if ($stmt->execute($params)) {
+            // If score was updated, update accuracy goals
+            if (isset($data['score'])) {
+                try {
+                    $accuracyGoalsUpdated = $this->goal->updateProgressForAccuracy($userId);
+                    error_log("QuizController::update() - Updated $accuracyGoalsUpdated accuracy goals for user $userId after score update");
+                } catch (Exception $e) {
+                    error_log("QuizController::update() - Error updating accuracy goals: " . $e->getMessage());
+                    // Don't fail the quiz update if goal update fails
+                }
+            }
+
             $this->successResponse(null, 'Quiz updated successfully');
         } else {
             $this->errorResponse('Failed to update quiz');

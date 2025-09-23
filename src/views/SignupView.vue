@@ -1,16 +1,7 @@
-<template>
-  <div class="min-h-screen flex flex-col bg-gray-900 text-white">
-    <!-- Header -->
-    <header class="p-4 flex justify-between items-center">
-      <router-link to="/" class="text-xl font-bold">SmartScribe</router-link>
-      <div class="space-x-2">
-        <router-link to="/login" class="px-4 py-2 border border-white rounded-md hover:bg-gray-800 transition">Sign In</router-link>
-        <router-link to="/contact" class="px-4 py-2 bg-white text-gray-900 rounded-md hover:bg-gray-200 transition">Contact</router-link>
-      </div>
-    </header>
-
-    <!-- Main Content -->
-    <main class="flex-grow flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-8" style="min-height: calc(100vh - 200px);">
+  <template>
+  <div class="min-h-screen flex flex-col">
+  <!-- Main Content -->
+    <main class="flex-grow flex items-center justify-center px-4 py-8 sm:px-6 sm:py-12 lg:px-8">
       <div class="bg-gray-800 rounded-2xl shadow-2xl p-8 sm:p-10 w-full max-w-md border border-gray-700">
         <!-- Logo Section -->
         <div class="flex justify-center mb-8">
@@ -207,26 +198,25 @@
     </main>
 
     <!-- Footer -->
-    <footer class="p-4 bg-gray-800 text-gray-400 flex justify-between items-center text-sm">
-      <div class="flex space-x-4">
-        <a href="#" class="hover:text-white">Docs</a>
-        <a href="#" class="hover:text-white">Guides</a>
-        <a href="#" class="hover:text-white">Help</a>
-        <a href="#" class="hover:text-white">Contact</a>
-      </div>
-      <div>© 2025 SmartScribe Inc.</div>
-    </footer>
+    <AppFooter
+      :links="footerLinks"
+      :copyright="copyrightText"
+    />
   </div>
 </template>
 
 <script>
 import logo from '@/assets/image/logo.jpg'
+import AppFooter from '@/components/Footer.vue'
 import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 
 export default {
   name: 'SignupView',
+  components: {
+    AppFooter
+  },
   setup() {
     const router = useRouter();
     const store = useStore();
@@ -245,6 +235,15 @@ export default {
 
     const passwordInput = ref(null);
     const confirmPasswordInput = ref(null);
+
+    // Footer configuration
+    const footerLinks = [
+      { text: 'Privacy Policy', href: '#' },
+      { text: 'Terms of Service', href: '#' },
+      { text: 'Help Center', href: '#' }
+    ];
+
+    const copyrightText = '© 2025 SmartScribe. All rights reserved.';
 
     const redirectToLogin = () => {
       showSuccessModal.value = false;
@@ -284,7 +283,7 @@ export default {
         // Create Google Sign-In client
         const googleClient = window.google.accounts.oauth2.initTokenClient({
           client_id: clientId,
-          scope: 'openid email profile',
+          scope: 'openid https://www.googleapis.com/auth/userinfo.email https://www.googleapis.com/auth/userinfo.profile',
           callback: async (response) => {
             if (response.error) {
               console.error('❌ Google OAuth error:', response);
@@ -295,6 +294,7 @@ export default {
 
             try {
               console.log('🔐 Google OAuth successful, sending to backend');
+              console.log('🔐 Access token length:', response.access_token.length);
 
               // Send the access token to backend for verification
               await store.dispatch('auth/googleLogin', response.access_token);
@@ -391,7 +391,9 @@ export default {
       passwordVisible,
       confirmPasswordVisible,
       handleGoogleSignup,
-      handleFacebookSignup
+      handleFacebookSignup,
+      footerLinks,
+      copyrightText
     };
   }
 }

@@ -1,51 +1,5 @@
 <template>
-  <div :class="themeClasses.main" class="min-h-screen flex flex-col">
-    <!-- Reusable Header Component -->
-    <AppHeader
-      @toggle-sidebar="handleSidebarToggle"
-      @open-profile-modal="openProfileModal"
-    />
-
-    <!-- Main Content -->
-    <div class="flex flex-grow transition-all duration-300">
-      <!-- Sidebar -->
-      <aside v-if="sidebarVisible" class="w-64 p-4 transition-all duration-300 ease-in-out" :class="themeClasses.sidebar">
-        <nav>
-          <ul class="space-y-2">
-            <li>
-              <router-link to="/dashboard" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-700' : 'bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'home']" />
-                <span>Dashboard</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/notes" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>My Notes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/quizzes" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'book']" />
-                <span>Quizzes</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/progress" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'chart-line']" />
-                <span>Progress</span>
-              </router-link>
-            </li>
-            <li>
-              <router-link to="/settings" class="flex items-center space-x-2 p-2 rounded-md" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'hover:bg-gray-700' : 'hover:bg-gray-200'">
-                <font-awesome-icon :icon="['fas', 'cog']" />
-                <span>Settings</span>
-              </router-link>
-            </li>
-          </ul>
-
-        </nav>
-      </aside>
+  <Header @open-profile-modal="openProfileModal">
 
       <div
         v-if="showSaveConfirmation"
@@ -56,23 +10,45 @@
 
       <!-- Added title input modal -->
       <div v-if="showTitleModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-md mx-4">
-          <h3 class="text-xl font-semibold mb-4">
+        <div :class="[
+          'rounded-lg p-6 w-full max-w-md mx-4',
+          store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-slate-200'
+        ]">
+          <h3 :class="[
+            'text-xl font-semibold mb-4',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+          ]">
             {{ pendingImageData && pendingImageData.type === 'quick_note' ? 'Save Quick Note' : 'Add Note Title' }}
           </h3>
           <div class="mb-4">
-            <label class="block text-sm font-medium mb-2">Title</label>
-            <input 
-              v-model="noteTitle" 
-              type="text" 
+            <label :class="[
+              'block text-sm font-medium mb-2',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            ]">Title</label>
+            <input
+              v-model="noteTitle"
+              type="text"
               placeholder="Enter a title for your note..."
-              class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+              :class="[
+                'w-full px-3 py-2 rounded-md focus:outline-none focus:ring-2 focus:ring-blue-500',
+                store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gray-700 border border-gray-600 text-white placeholder-gray-400'
+                  : 'bg-white border border-gray-300 text-gray-900 placeholder-gray-500'
+              ]"
               @keyup.enter="saveNoteWithTitle"
             />
           </div>
           <div class="mb-4">
-            <label class="block text-sm font-medium mb-2">Preview</label>
-            <div class="bg-gray-700 p-3 rounded-md max-h-32 overflow-y-auto text-sm text-gray-300">
+            <label :class="[
+              'block text-sm font-medium mb-2',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+            ]">Preview</label>
+            <div :class="[
+              'p-3 rounded-md max-h-32 overflow-y-auto text-sm',
+              store.getters['app/getCurrentTheme'] === 'dark'
+                ? 'bg-gray-700 text-gray-300'
+                : 'bg-gray-100 text-gray-700'
+            ]">
               <div v-if="isProcessingFile" class="flex items-center space-x-2">
                 <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin" />
                 <span>Processing file...</span>
@@ -96,11 +72,11 @@
             <button
               @click="saveNoteWithTitle"
               class="px-4 py-2 bg-blue-600 rounded-md hover:bg-blue-700 transition disabled:opacity-50 disabled:cursor-not-allowed"
-              :disabled="!noteTitle.trim() || isProcessingFile"
+              :disabled="!noteTitle.trim() || isProcessingFile || isSavingNote"
             >
-              <span v-if="isProcessingFile" class="flex items-center space-x-2">
+              <span v-if="isProcessingFile || isSavingNote" class="flex items-center space-x-2">
                 <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin" />
-                <span>Saving...</span>
+                <span>{{ isProcessingFile ? 'Processing...' : 'Saving...' }}</span>
               </span>
               <span v-else>{{ pendingImageData && pendingImageData.type === 'quick_note' ? 'Save Quick Note' : 'Save Note' }}</span>
             </button>
@@ -110,16 +86,30 @@
 
       <!-- Delete Confirmation Modal -->
       <div v-if="showDeleteModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4">
+        <div :class="[
+          'rounded-lg p-6 w-full max-w-sm mx-4',
+          store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-slate-200'
+        ]">
           <div class="flex items-center mb-4">
             <font-awesome-icon :icon="['fas', 'times']" class="text-red-400 text-xl mr-3" />
-            <h3 class="text-lg font-medium">Delete Note</h3>
+            <h3 :class="[
+              'text-lg font-medium',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+            ]">Delete Note</h3>
           </div>
-          <p class="text-gray-300 mb-6">
+          <p :class="[
+            'mb-6',
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+          ]">
             Are you sure you want to delete "<strong>{{ noteToDelete.title }}</strong>"? This action cannot be undone.
           </p>
           <div class="flex justify-end space-x-3">
-            <button @click="closeDeleteModal" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
+            <button @click="closeDeleteModal" :class="[
+              'px-4 py-2 rounded-md transition',
+              store.getters['app/getCurrentTheme'] === 'dark'
+                ? 'bg-gray-700 hover:bg-gray-600'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+            ]">
               Cancel
             </button>
             <button @click="deleteNote" class="px-4 py-2 bg-red-600 rounded-md hover:bg-red-700 transition">
@@ -131,10 +121,16 @@
 
       <!-- Profile Modal -->
       <div v-if="showProfileModal" class="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50">
-        <div class="bg-gray-800 rounded-lg p-6 w-full max-w-sm mx-4">
+        <div :class="[
+          'rounded-lg p-6 w-full max-w-sm mx-4',
+          store.getters['app/getCurrentTheme'] === 'dark' ? 'bg-gray-800' : 'bg-white border border-slate-200'
+        ]">
           <div class="flex items-center mb-4">
             <font-awesome-icon :icon="['fas', 'user']" class="text-blue-400 text-xl mr-3" />
-            <h3 class="text-lg font-medium">User Profile</h3>
+            <h3 :class="[
+              'text-lg font-medium',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+            ]">User Profile</h3>
           </div>
 
           <!-- Profile Picture Section -->
@@ -153,31 +149,63 @@
                 <font-awesome-icon :icon="['fas', 'user']" :class="themeClasses.text" class="text-2xl" />
               </div>
             </div>
-            <p class="text-sm text-gray-400 mb-2">Profile picture can be changed in Settings</p>
+            <p :class="[
+              'text-sm mb-2',
+              store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-700'
+            ]">Profile picture can be changed in Settings</p>
           </div>
   
           <div class="space-y-4">
             <div>
-              <label class="block text-sm font-medium mb-2">Full Name</label>
-              <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+              <label :class="[
+                'block text-sm font-medium mb-2',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              ]">Full Name</label>
+              <div :class="[
+                'w-full px-3 py-2 rounded-md',
+                store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gray-700 border border-gray-600 text-gray-300'
+                  : 'bg-gray-100 border border-gray-300 text-gray-900'
+              ]">
                 {{ user?.firstName && user?.lastName ? `${user.firstName} ${user.lastName}` : (user?.name || 'User') }}
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium mb-2">Email</label>
-              <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+              <label :class="[
+                'block text-sm font-medium mb-2',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              ]">Email</label>
+              <div :class="[
+                'w-full px-3 py-2 rounded-md',
+                store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gray-700 border border-gray-600 text-gray-300'
+                  : 'bg-gray-100 border border-gray-300 text-gray-900'
+              ]">
                 {{ user?.email || 'user@example.com' }}
               </div>
             </div>
             <div>
-              <label class="block text-sm font-medium mb-2">Member Since</label>
-              <div class="w-full px-3 py-2 bg-gray-700 border border-gray-600 rounded-md text-gray-300">
+              <label :class="[
+                'block text-sm font-medium mb-2',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+              ]">Member Since</label>
+              <div :class="[
+                'w-full px-3 py-2 rounded-md',
+                store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gray-700 border border-gray-600 text-gray-300'
+                  : 'bg-gray-100 border border-gray-300 text-gray-900'
+              ]">
                 {{ user?.memberSince || new Date().toLocaleDateString() }}
               </div>
             </div>
           </div>
           <div class="flex justify-end space-x-3 mt-6">
-            <button @click="closeProfileModal" class="px-4 py-2 bg-gray-700 rounded-md hover:bg-gray-600 transition">
+            <button @click="closeProfileModal" :class="[
+              'px-4 py-2 rounded-md transition',
+              store.getters['app/getCurrentTheme'] === 'dark'
+                ? 'bg-gray-700 hover:bg-gray-600'
+                : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+            ]">
               Close
             </button>
           </div>
@@ -185,96 +213,29 @@
       </div>
 
       <!-- Main Dashboard -->
-      <main :class="themeClasses.mainContent" class="flex-1 p-4 md:p-6 transition-all duration-300 ease-in-out">
+      <main :class="themeClasses.mainContent" class="flex-1 p-4 md:p-6 transition-all duration-300 ease-in-out min-h-screen"
+            :style="{ backgroundColor: store.getters['app/getCurrentTheme'] === 'dark' ? '#111827' : '#ffffff' }">
         <div class="flex justify-between items-center mb-6">
-          <h1 class="text-2xl font-bold">Dashboard</h1>
+          <h1 :class="[
+            'font-bold',
+            fontSizeClasses.heading,
+            store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+          ]">Dashboard</h1>
           <div class="flex items-center space-x-4">
           </div>
         </div>
 
         <!-- Dashboard Statistics -->
-        <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-5 gap-4 md:gap-6 mb-6">
-          <div :class="themeClasses.card" class="rounded-lg p-6">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="text-lg font-semibold">Total Notes</h3>
-              <font-awesome-icon :icon="['fas', 'book']" class="text-blue-500 text-xl" />
-            </div>
-            <div v-if="loadingDashboard" class="animate-pulse">
-              <div class="h-8 bg-gray-700 rounded mb-2"></div>
-              <div class="h-4 bg-gray-700 rounded w-3/4"></div>
-            </div>
-            <div v-else>
-              <p class="text-3xl font-bold">{{ stats.totalNotes }}</p>
-              <p class="text-sm text-gray-400">{{ stats.notesThisWeek }} new this week</p>
-            </div>
-          </div>
-
-          <div :class="themeClasses.card" class="rounded-lg p-6">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="text-lg font-semibold">Study Time</h3>
-              <font-awesome-icon :icon="['fas', 'clock']" class="text-green-500 text-xl" />
-            </div>
-            <div v-if="loadingDashboard" class="animate-pulse">
-              <div :class="themeClasses.card" class="h-8 rounded mb-2"></div>
-              <div :class="themeClasses.card" class="h-4 rounded w-3/4"></div>
-            </div>
-            <div v-else>
-              <p class="text-3xl font-bold">{{ stats.studyHours }}h</p>
-              <p :class="themeClasses.secondaryText" class="text-sm">{{ stats.studyHoursThisWeek }}h this week</p>
-              <p :class="themeClasses.secondaryText" class="text-xs mt-1">{{ stats.totalNotesStudied }} notes studied</p>
-            </div>
-          </div>
-
-          <div :class="themeClasses.card" class="rounded-lg p-6">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="text-lg font-semibold">Quiz Score</h3>
-              <font-awesome-icon :icon="['fas', 'check-circle']" class="text-yellow-500 text-xl" />
-            </div>
-            <div v-if="loadingDashboard" class="animate-pulse">
-              <div :class="themeClasses.card" class="h-8 rounded mb-2"></div>
-              <div :class="themeClasses.card" class="h-4 rounded w-3/4"></div>
-            </div>
-            <div v-else>
-              <p class="text-3xl font-bold">{{ stats.quizAverage }}%</p>
-              <p :class="themeClasses.secondaryText" class="text-sm">{{ stats.totalQuizzesTaken }} quizzes taken</p>
-            </div>
-          </div>
-
-          <div :class="themeClasses.card" class="rounded-lg p-6">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="text-lg font-semibold">Goals</h3>
-              <font-awesome-icon :icon="['fas', 'bullseye']" class="text-purple-500 text-xl" />
-            </div>
-            <div v-if="loadingDashboard" class="animate-pulse">
-              <div :class="themeClasses.card" class="h-8 rounded mb-2"></div>
-              <div :class="themeClasses.card" class="h-4 rounded w-3/4"></div>
-            </div>
-            <div v-else>
-              <p class="text-3xl font-bold">{{ stats.activeGoals }}</p>
-              <p :class="themeClasses.secondaryText" class="text-sm">{{ stats.completedGoals }} completed this month</p>
-            </div>
-          </div>
-
-          <div :class="themeClasses.card" class="rounded-lg p-6">
-            <div class="flex justify-between items-center mb-2">
-              <h3 class="text-lg font-semibold">Study Streak</h3>
-              <font-awesome-icon :icon="['fas', 'fire']" class="text-orange-500 text-xl" />
-            </div>
-            <div v-if="loadingDashboard" class="animate-pulse">
-              <div :class="themeClasses.card" class="h-8 rounded mb-2"></div>
-              <div :class="themeClasses.card" class="h-4 rounded w-3/4"></div>
-            </div>
-            <div v-else>
-              <p class="text-3xl font-bold">{{ stats.studyStreak }}</p>
-              <p :class="themeClasses.secondaryText" class="text-sm">days in a row</p>
-            </div>
-          </div>
-        </div>
+        <StatisticsCard
+          :stats="stats"
+          :loading="loadingDashboard"
+          :theme-classes="themeClasses"
+        />
 
         <!-- Create New Note Section -->
         <div :class="themeClasses.card" class="rounded-lg p-4 mb-4">
           <div class="mb-4">
-            <h2 class="text-base font-medium" :class="themeClasses.text">Create New Note</h2>
+            <h2 :class="[fontSizeClasses.body, 'font-medium', themeClasses.text]">Create New Note</h2>
           </div>
 
           <div class="space-y-4">
@@ -289,11 +250,11 @@
                 ]"
               ></textarea>
               <div class="flex justify-between items-center mt-1">
-                <span class="text-xs" :class="themeClasses.secondaryText">{{ quickNoteContent.length }}</span>
+                <span class="text-sm" :class="themeClasses.secondaryText">{{ quickNoteContent.length }}</span>
                 <button
                   @click="clearQuickNote"
                   v-if="quickNoteContent.trim()"
-                  class="text-xs"
+                  class="text-sm"
                   :class="themeClasses.secondaryText"
                 >
                   Clear
@@ -304,7 +265,7 @@
             <!-- Separator -->
             <div class="flex items-center">
               <div class="flex-1 border-t" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'border-gray-600' : 'border-gray-300'"></div>
-              <span class="px-2 text-xs" :class="themeClasses.secondaryText">or</span>
+              <span class="px-2 text-sm" :class="themeClasses.secondaryText">or</span>
               <div class="flex-1 border-t" :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'border-gray-600' : 'border-gray-300'"></div>
             </div>
 
@@ -341,38 +302,6 @@
               </label>
             </div>
 
-            <!-- Camera Interface -->
-            <div v-if="showCamera" class="mt-3 p-3 rounded border"
-                 :class="[
-                   store.getters['app/getCurrentTheme'] === 'dark'
-                     ? 'bg-gray-800 border-gray-600'
-                     : 'bg-gray-50 border-gray-200'
-                 ]">
-              <video
-                ref="video"
-                autoplay
-                class="w-full rounded"
-              ></video>
-              <div class="flex justify-center space-x-2 mt-2">
-                <button
-                  @click="capturePhoto"
-                  class="px-3 py-1 bg-blue-600 text-white text-sm rounded hover:bg-blue-700 transition-colors"
-                >
-                  Capture
-                </button>
-                <button
-                  @click="closeCamera"
-                  class="px-3 py-1 text-sm rounded transition-colors"
-                  :class="[
-                    store.getters['app/getCurrentTheme'] === 'dark'
-                      ? 'bg-gray-600 text-gray-300 hover:bg-gray-500'
-                      : 'bg-gray-300 text-gray-700 hover:bg-gray-400'
-                  ]"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
 
             <!-- Create Button -->
             <div class="flex justify-center pt-2">
@@ -401,13 +330,13 @@
           <div class="flex justify-between items-center mb-6">
             <div class="flex items-center space-x-3">
               <div class="w-8 h-8 bg-gradient-to-r from-blue-500 to-purple-600 rounded-lg flex items-center justify-center">
-                <font-awesome-icon :icon="['fas', 'clock']" class="text-white text-sm" />
+                <font-awesome-icon :icon="['fas', 'clock']" class="text-white text-base" />
               </div>
-              <h2 class="text-xl font-semibold">Recent Notes</h2>
+              <h2 :class="[fontSizeClasses.heading, 'font-semibold', themeClasses.text]">Recent Notes</h2>
             </div>
             <router-link to="/notes" class="flex items-center space-x-2 text-blue-400 hover:text-blue-300 transition-colors duration-200">
               <span class="text-sm font-medium">View All</span>
-              <font-awesome-icon :icon="['fas', 'arrow-right']" class="text-xs" />
+              <font-awesome-icon :icon="['fas', 'arrow-right']" class="text-sm" />
             </router-link>
           </div>
 
@@ -415,14 +344,19 @@
           <div v-if="loadingNotes" class="text-center py-12">
             <div class="inline-flex items-center space-x-3">
               <font-awesome-icon :icon="['fas', 'spinner']" class="animate-spin text-2xl text-blue-400" />
-              <p class="text-gray-400">Loading your recent notes...</p>
+              <p :class="store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-700'">Loading your recent notes...</p>
             </div>
           </div>
 
           <!-- Notes list -->
           <div v-else-if="recentNotes.length > 0" class="space-y-4">
             <div v-for="(note, index) in recentNotes" :key="note.id || index"
-                 class="group relative bg-gradient-to-r from-gray-800 to-gray-750 rounded-xl p-5 border border-gray-700 hover:border-gray-600 transition-all duration-300 hover:shadow-lg hover:shadow-gray-900/20 transform hover:-translate-y-0.5">
+                 :class="[
+                   'group relative rounded-xl p-5 transition-all duration-300 hover:shadow-lg transform hover:-translate-y-0.5',
+                   store.getters['app/getCurrentTheme'] === 'dark'
+                     ? 'bg-gradient-to-r from-gray-800 to-gray-750 border border-gray-700 hover:border-gray-600 hover:shadow-gray-900/20'
+                     : 'bg-white border border-gray-200 shadow-sm hover:shadow-md hover:bg-gray-50'
+                 ]">
               <!-- Note header -->
               <div class="flex items-start justify-between mb-3">
                 <div class="flex items-start space-x-4 flex-grow cursor-pointer" @click="viewNote(note.id)">
@@ -433,15 +367,24 @@
 
                   <!-- Note content -->
                   <div class="flex-grow min-w-0">
-                    <h3 class="font-semibold text-white group-hover:text-blue-400 transition-colors duration-200 truncate">
+                    <h3 :class="[
+                      'font-semibold group-hover:text-blue-400 transition-colors duration-200 truncate',
+                      store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+                    ]">
                       {{ note.title }}
                     </h3>
                     <div class="flex items-center space-x-3 mt-1">
-                      <div class="flex items-center space-x-1 text-gray-400 text-xs">
+                      <div :class="[
+                        'flex items-center space-x-1 text-sm',
+                        store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-700'
+                      ]">
                         <font-awesome-icon :icon="['fas', 'clock']" />
                         <span>{{ getTimeAgo(note.createdAt) }}</span>
                       </div>
-                      <div class="flex items-center space-x-1 text-gray-400 text-xs">
+                      <div :class="[
+                        'flex items-center space-x-1 text-sm',
+                        store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-700'
+                      ]">
                         <font-awesome-icon :icon="['fas', 'align-left']" />
                         <span>{{ note.wordCount }} words</span>
                       </div>
@@ -466,23 +409,39 @@
 
               <!-- Note preview -->
               <div class="ml-14">
-                <p class="text-sm text-gray-300 line-clamp-2 leading-relaxed">{{ note.summary }}</p>
+                <p :class="[
+                  'text-sm line-clamp-2 leading-relaxed',
+                  store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-300' : 'text-gray-700'
+                ]">{{ note.summary }}</p>
 
                 <!-- Tags and metadata -->
                 <div class="flex items-center justify-between mt-4">
                   <div class="flex flex-wrap gap-2">
                     <span v-for="(tag, tagIndex) in note.tags" :key="tagIndex"
-                          class="px-3 py-1 bg-gradient-to-r from-gray-700 to-gray-600 text-gray-300 rounded-full text-xs font-medium border border-gray-600">
+                          :class="[
+                            'px-3 py-1 rounded-full text-sm font-medium border',
+                            store.getters['app/getCurrentTheme'] === 'dark'
+                              ? 'bg-gradient-to-r from-gray-700 to-gray-600 text-gray-300 border-gray-600'
+                              : 'bg-gray-100 text-gray-800 border-gray-300'
+                          ]">
                       {{ tag }}
                     </span>
                     <span v-if="note.tags.length === 0"
-                          class="px-3 py-1 bg-gray-700/50 text-gray-500 rounded-full text-xs">
+                          :class="[
+                            'px-3 py-1 rounded-full text-sm',
+                            store.getters['app/getCurrentTheme'] === 'dark'
+                              ? 'bg-gray-700/50 text-gray-500'
+                              : 'bg-gray-200 text-gray-600'
+                          ]">
                       No tags
                     </span>
                   </div>
 
                   <!-- Reading time indicator -->
-                  <div class="flex items-center space-x-1 text-gray-500 text-xs">
+                  <div :class="[
+                    'flex items-center space-x-1 text-sm',
+                    store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-500' : 'text-gray-700'
+                  ]">
                     <font-awesome-icon :icon="['fas', 'eye']" />
                     <span>{{ note.readingTime }} min read</span>
                   </div>
@@ -495,13 +454,30 @@
           </div>
 
           <!-- Empty state -->
-          <div v-else class="text-center py-12">
+          <div v-else :class="[
+            'text-center py-12',
+            store.getters['app/getCurrentTheme'] === 'dark' ? '' : 'text-gray-900'
+          ]">
             <div class="max-w-md mx-auto">
-              <div class="w-20 h-20 bg-gradient-to-br from-gray-700 to-gray-600 rounded-full flex items-center justify-center mx-auto mb-6">
-                <font-awesome-icon :icon="['fas', 'book-open']" class="text-3xl text-gray-400" />
+              <div :class="[
+                'w-20 h-20 rounded-full flex items-center justify-center mx-auto mb-6',
+                store.getters['app/getCurrentTheme'] === 'dark'
+                  ? 'bg-gradient-to-br from-gray-700 to-gray-600'
+                  : 'bg-gray-100'
+              ]">
+                <font-awesome-icon :icon="['fas', 'book-open']" :class="[
+                  'text-3xl',
+                  store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-500'
+                ]" />
               </div>
-              <h3 class="text-lg font-semibold text-white mb-2">No notes yet</h3>
-              <p class="text-gray-400 mb-6 leading-relaxed">
+              <h3 :class="[
+                'text-lg font-semibold mb-2',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-white' : 'text-gray-900'
+              ]">No notes yet</h3>
+              <p :class="[
+                'mb-6 leading-relaxed',
+                store.getters['app/getCurrentTheme'] === 'dark' ? 'text-gray-400' : 'text-gray-700'
+              ]">
                 Start building your knowledge base by scanning your first note, uploading images with OCR text extraction, or creating one from scratch.
               </p>
               <div class="flex flex-col sm:flex-row gap-3 justify-center">
@@ -510,8 +486,12 @@
                   <font-awesome-icon :icon="['fas', 'camera']" />
                   <span>Scan Note</span>
                 </button>
-                <button @click="createNewNote"
-                        class="inline-flex items-center space-x-2 px-4 py-2 bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white rounded-lg transition-all duration-200">
+                <button @click="createNewNote" :class="[
+                  'inline-flex items-center space-x-2 px-4 py-2 rounded-lg transition-all duration-200',
+                  store.getters['app/getCurrentTheme'] === 'dark'
+                    ? 'bg-gradient-to-r from-gray-700 to-gray-600 hover:from-gray-600 hover:to-gray-500 text-white'
+                    : 'bg-gray-200 hover:bg-gray-300 text-gray-900'
+                ]">
                   <font-awesome-icon :icon="['fas', 'plus']" />
                   <span>Create Note</span>
                 </button>
@@ -520,25 +500,33 @@
           </div>
         </div>
       </main>
-    </div>
-  </div>
-</template>
 
+    <!-- Camera Modal -->
+    <CameraModal
+      :show="showCameraModal"
+      @close="closeCameraModal"
+      @photo-captured="handlePhotoCaptured"
+    />
+  </Header>
+</template>
 <script>
 import { ref, onMounted, computed } from 'vue';
 import { useRouter } from 'vue-router';
 import { useStore } from 'vuex';
 import Tesseract from 'tesseract.js';
-import { nextTick } from 'vue';
 import { useNotifications } from '@/composables/useNotifications';
 import { useUserProfile } from '@/composables/useUserProfile';
 import api from '@/services/api';
-import AppHeader from '@/components/AppHeader.vue';
+import CameraModal from '@/components/CameraModal.vue';
+import Header from '@/components/Header.vue';
+import StatisticsCard from '@/components/Statistics.vue';
 
 export default {
   name: 'DashboardView',
   components: {
-    AppHeader
+    CameraModal,
+    Header,
+    StatisticsCard
   },
   setup() {
     const router = useRouter();
@@ -562,13 +550,6 @@ export default {
     // NOTIFICATION SYSTEM
     // =====================================
     const {
-      showNotifications,
-      notifications,
-      unreadNotifications,
-      toggleNotifications,
-      closeNotifications,
-      markAsRead,
-      markAllAsRead,
       showSuccess,
       showInfo,
       showWarning
@@ -658,9 +639,6 @@ export default {
     // Use user from composable
     const user = userProfile;
 
-    // Sidebar visibility from store
-    const sidebarVisible = computed(() => store.getters['app/getSidebarVisible']);
-
     // Use global theme classes from store with computed property
     const themeClasses = computed(() => {
       try {
@@ -706,16 +684,29 @@ export default {
       }
     });
 
+    // Use global font size classes from store
+    const fontSizeClasses = computed(() => {
+      try {
+        return store.getters['app/getFontSizeClasses'];
+      } catch (error) {
+        return {
+          heading: 'text-xl',
+          body: 'text-base',
+          label: 'text-sm',
+          small: 'text-xs'
+        };
+      }
+    });
+
     // =====================================
     // UI STATE
     // =====================================
     const showProfileModal = ref(false);
-    const showCamera = ref(false);
-    const video = ref(null);
 
     // Note creation state
     const ocrText = ref('');
     const isProcessingFile = ref(false);
+    const isSavingNote = ref(false);
     const showSaveConfirmation = ref(false);
     const showTitleModal = ref(false);
     const noteTitle = ref('');
@@ -728,6 +719,9 @@ export default {
     // Note deletion state
     const showDeleteModal = ref(false);
     const noteToDelete = ref(null);
+
+    // Camera modal state
+    const showCameraModal = ref(false);
 
     // =====================================
     // API FUNCTIONS
@@ -854,13 +848,22 @@ export default {
     // Fetch dashboard stats from API
     const fetchStats = async () => {
       try {
+        console.log('🔍 DEBUG: Starting fetchStats...');
         loadingDashboard.value = true;
         const response = await api.getDashboardStats();
+        console.log('🔍 DEBUG: fetchStats response:', response);
+        console.log('🔍 DEBUG: fetchStats response.data:', response.data);
+        if (response.data && response.data.data) {
+          console.log('🔍 DEBUG: Goals stats - activeGoals:', response.data.data.activeGoals, 'completedGoals:', response.data.data.completedGoals);
+        }
         statsResponse.value = response.data;
+        console.log('🔍 DEBUG: statsResponse.value set to:', statsResponse.value);
       } catch (error) {
-        // Error fetching dashboard stats
+        console.error('❌ DEBUG: Error fetching dashboard stats:', error);
+        console.error('❌ DEBUG: Error details:', error.response?.data || error.message);
       } finally {
         loadingDashboard.value = false;
+        console.log('🔍 DEBUG: fetchStats completed');
       }
     };
 
@@ -944,28 +947,8 @@ export default {
     });
 
     // =====================================
-    // SIDEBAR FUNCTIONS
-    // =====================================
-
-    /**
-     * Handle sidebar toggle from AppHeader component
-     */
-    const handleSidebarToggle = () => {
-      store.dispatch('app/toggleSidebar');
-    };
-
-    /**
-     * Toggle sidebar visibility (legacy function for backward compatibility)
-     */
-    const toggleSidebar = () => {
-      store.dispatch('app/toggleSidebar');
-    };
-
-    // =====================================
     // USER MENU FUNCTIONS
     // =====================================
-
-    // User menu functions are now handled by AppHeader component
 
     /**
      * Open user profile modal
@@ -981,68 +964,34 @@ export default {
       showProfileModal.value = false;
     };
 
-    // Logout function is now handled by AppHeader component
-
     // =====================================
     // CAMERA & OCR FUNCTIONS
     // =====================================
 
     /**
-     * Open camera for note scanning
+     * Open camera modal
      */
-    const openCamera = async () => {
-      showCamera.value = true;
-
-      await nextTick(); // Wait for the video element to exist
-
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ video: true });
-        if (video.value) {
-          video.value.srcObject = stream;
-        }
-      } catch (err) {
-        // Camera access denied or error
-      }
+    const openCamera = () => {
+      showCameraModal.value = true;
     };
 
     /**
-     * Close camera and stop video stream
+     * Close camera modal
      */
-    const closeCamera = () => {
-      showCamera.value = false;
-      const stream = video.value.srcObject;
-      if (stream) {
-        stream.getTracks().forEach(track => track.stop());
-      }
-      video.value.srcObject = null;
+    const closeCameraModal = () => {
+      showCameraModal.value = false;
     };
 
     /**
-     * Capture photo from camera and perform OCR
+     * Handle photo captured from camera modal
      */
-    const capturePhoto = () => {
-      const canvas = document.createElement('canvas');
-      canvas.width = video.value.videoWidth;
-      canvas.height = video.value.videoHeight;
-      canvas.getContext('2d').drawImage(video.value, 0, 0);
+    const handlePhotoCaptured = (photoData) => {
+      // Store the captured data for processing
+      pendingImageData.value = photoData;
 
-      canvas.toBlob(async (blob) => {
-        try {
-          const { data: { text } } = await Tesseract.recognize(blob, 'eng', {
-            logger: () => {} // Disable logging
-          });
-
-          ocrText.value = text;
-          pendingImageData.value = { type: 'capture', data: text };
-          closeCamera();
-
-          showTitleModal.value = true;
-          noteTitle.value = ''; // Reset title input
-
-        } catch (error) {
-          // OCR error
-        }
-      }, 'image/jpeg');
+      // Show title modal to get note title
+      showTitleModal.value = true;
+      noteTitle.value = '';
     };
 
     /**
@@ -1102,6 +1051,12 @@ export default {
         return;
       }
 
+      // Prevent multiple concurrent saves
+      if (isSavingNote.value) {
+        console.log('⚠️ Save already in progress, ignoring duplicate save request');
+        return;
+      }
+
       try {
         let noteData;
 
@@ -1126,23 +1081,32 @@ export default {
           }
         }
 
+        // Set saving state
+        isSavingNote.value = true;
+
         try {
           // Create note using simple API call
-          await api.createNote(noteData);
+          const response = await api.createNote(noteData);
 
-          showSuccess('Note saved', 'Your note has been created successfully.');
+          // Check response success
+          if (response.data.success) {
+            showSuccess('Note saved', 'Your note has been created successfully.');
 
-          // Refresh notes and stats after successful creation
-          await Promise.all([
-            refreshNotes(),
-            refreshStats()
-          ]);
+            // Refresh notes and stats after successful creation
+            await Promise.all([
+              refreshNotes(),
+              refreshStats()
+            ]);
 
-          // Clear quick note content if it was a quick note
-          if (pendingImageData.value.type === 'quick_note') {
-            quickNoteContent.value = '';
+            // Clear quick note content if it was a quick note
+            if (pendingImageData.value.type === 'quick_note') {
+              quickNoteContent.value = '';
+            }
+          } else {
+            throw new Error(response.data.error || 'Failed to save note');
           }
         } catch (error) {
+          console.error('Error saving note:', error);
           showWarning('Save failed', 'Failed to save the note. Please try again.');
         }
 
@@ -1153,6 +1117,9 @@ export default {
 
       } catch (error) {
         showWarning('Save error', 'An error occurred while saving the note.');
+      } finally {
+        // Reset saving state
+        isSavingNote.value = false;
       }
     };
 
@@ -1228,8 +1195,6 @@ export default {
     return {
       // UI State
       showProfileModal,
-      showCamera,
-      video,
       showSaveConfirmation,
       showTitleModal,
       noteTitle,
@@ -1237,6 +1202,8 @@ export default {
       showDeleteModal,
       noteToDelete,
       isProcessingFile,
+      isSavingNote,
+      showCameraModal,
 
       // Quick note state
       quickNoteContent,
@@ -1246,7 +1213,6 @@ export default {
       user,
       recentNotes,
       stats,
-      sidebarVisible,
 
       // Computed properties
       canCreateNote,
@@ -1263,13 +1229,11 @@ export default {
       lastSync,
 
       // User interaction functions
-      handleSidebarToggle,
-      toggleSidebar,
       openProfileModal,
       closeProfileModal,
       openCamera,
-      closeCamera,
-      capturePhoto,
+      closeCameraModal,
+      handlePhotoCaptured,
       handleFileUpload,
       handleProfilePictureUpload,
       saveNoteWithTitle,
@@ -1289,13 +1253,6 @@ export default {
       handleImageLoad,
 
       // Notification functions
-      showNotifications,
-      notifications,
-      unreadNotifications,
-      toggleNotifications,
-      markAsRead,
-      markAllAsRead,
-      closeNotifications,
       showSuccess,
       showInfo,
       showWarning,
@@ -1318,6 +1275,7 @@ export default {
 
       // Theme classes
       themeClasses,
+      fontSizeClasses,
 
       // Store for theme access
       store

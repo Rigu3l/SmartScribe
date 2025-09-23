@@ -829,23 +829,11 @@ class AuthController extends BaseController {
 
     private function verifyGoogleAccessToken($accessToken) {
         try {
-            // Get Google client ID from environment
-            $clientId = getenv('GOOGLE_OAUTH_CLIENT_ID');
-            error_log("DEBUG: GOOGLE_OAUTH_CLIENT_ID = " . $clientId);
-            if (!$clientId) {
-                error_log("Google OAuth client ID not configured");
-                return false;
-            }
-
-            if ($clientId === 'your_production_google_oauth_client_id') {
-                error_log("ERROR: Google OAuth client ID is still set to placeholder value");
-                return false;
-            }
-
             // DEBUG: Log the access token (first 20 chars for security)
             error_log("DEBUG: Verifying access token: " . substr($accessToken, 0, 20) . "...");
 
             // Use the access token to get user info from Google's userinfo endpoint
+            // Note: Client ID is not required for userinfo endpoint validation
             $url = 'https://www.googleapis.com/oauth2/v2/userinfo';
             $context = stream_context_create([
                 'http' => [
@@ -858,13 +846,21 @@ class AuthController extends BaseController {
 
             if (!$response) {
                 error_log("Failed to get user info from Google - no response");
+                error_log("DEBUG: Access token used: " . substr($accessToken, 0, 20) . "...");
                 return false;
             }
 
+            error_log("DEBUG: Google userinfo response: " . substr($response, 0, 200) . "...");
+
             $userData = json_decode($response, true);
 
-            if (!$userData || !isset($userData['id'])) {
-                error_log("Invalid user data from Google: " . json_encode($userData));
+            if (!$userData) {
+                error_log("Failed to decode Google userinfo response as JSON");
+                return false;
+            }
+
+            if (!isset($userData['id'])) {
+                error_log("Invalid user data from Google - missing 'id': " . json_encode($userData));
                 return false;
             }
 
@@ -898,7 +894,7 @@ class AuthController extends BaseController {
             }
 
             // Insert new user
-            $stmt = $this->db->prepare("INSERT INTO users (first_name, last_name, name, email, google_id, auth_provider, profile_picture_url, created_at) VALUES (?, ?, ?, ?, ?, 'google', ?, NOW())");
+            $stmt = $this->db->prepare("INSERT INTO users (first_name, last_name, name, email, google_id, profile_picture, created_at) VALUES (?, ?, ?, ?, ?, ?, NOW())");
 
             $stmt->execute([
                 $firstName,
@@ -920,7 +916,7 @@ class AuthController extends BaseController {
     private function updateGoogleUserProfile($userId, $googleUser) {
         try {
             // Update user profile with latest Google data
-            $stmt = $this->db->prepare("UPDATE users SET name = ?, profile_picture_url = ? WHERE id = ?");
+            $stmt = $this->db->prepare("UPDATE users SET name = ?, profile_picture = ? WHERE id = ?");
 
             $fullName = $googleUser['name'] ?? 'Google User';
             $stmt->execute([$fullName, $googleUser['picture'] ?? null, $userId]);
@@ -933,7 +929,7 @@ class AuthController extends BaseController {
     private function linkGoogleAccount($userId, $googleUser) {
         try {
             // Link Google account to existing user
-            $stmt = $this->db->prepare("UPDATE users SET google_id = ?, auth_provider = 'google', profile_picture_url = ? WHERE id = ?");
+            $stmt = $this->db->prepare("UPDATE users SET google_id = ?, profile_picture = ? WHERE id = ?");
             $stmt->execute([$googleUser['sub'], $googleUser['picture'] ?? null, $userId]);
 
         } catch (Exception $e) {
@@ -1008,8 +1004,9 @@ class AuthController extends BaseController {
             $stmt = $this->db->prepare("INSERT INTO password_reset_tokens (user_id, token, email, expires_at) VALUES (?, ?, ?, ?)");
             $stmt->execute([$user['id'], $resetToken, $data['email'], $expiresAt]);
 
-            // Send reset email
-            $resetLink = "http://localhost:8080/reset-password?token=" . $resetToken;
+            // Send reset email - use configurable frontend URL
+            $frontendUrl = getenv('FRONTEND_URL') ?: 'http://localhost:8080';
+            $resetLink = $frontendUrl . "/reset-password?token=" . $resetToken;
 
             $emailService = new EmailService();
             $emailResult = $emailService->sendPasswordResetEmail($data['email'], $resetLink, $user['name']);
@@ -1207,6 +1204,80 @@ class AuthController extends BaseController {
 
         } catch (Exception $e) {
             $this->errorResponse('Failed to validate reset token: ' . $e->getMessage());
+        }
+    }
+
+    public function deleteAccount() {
+        try {
+            // Authenticate user first
+            if (!$this->authenticateUser()) {
+                $this->unauthorizedResponse();
+                return;
+            }
+
+            // Get user ID from header
+            $userId = $this->getUserId();
+
+            if (!$userId) {
+                $this->unauthorizedResponse();
+                return;
+            }
+
+            // Start transaction for data consistency
+            $this->db->beginTransaction();
+
+            try {
+                // Delete user-related data in correct order to avoid foreign key constraints
+
+                // 1. Delete password reset tokens
+                $stmt = $this->db->prepare("DELETE FROM password_reset_tokens WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 2. Delete user tokens
+                $stmt = $this->db->prepare("DELETE FROM user_tokens WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 3. Delete study sessions
+                $stmt = $this->db->prepare("DELETE FROM study_sessions WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 4. Delete learning goals
+                $stmt = $this->db->prepare("DELETE FROM learning_goals WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 5. Delete summaries
+                $stmt = $this->db->prepare("DELETE FROM summaries WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 6. Delete quizzes
+                $stmt = $this->db->prepare("DELETE FROM quizzes WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 7. Delete notes (this should be last as other tables might reference it)
+                $stmt = $this->db->prepare("DELETE FROM notes WHERE user_id = ?");
+                $stmt->execute([$userId]);
+
+                // 8. Finally, delete the user record
+                $stmt = $this->db->prepare("DELETE FROM users WHERE id = ?");
+                $result = $stmt->execute([$userId]);
+
+                if (!$result) {
+                    throw new Exception('Failed to delete user record');
+                }
+
+                // Commit transaction
+                $this->db->commit();
+
+                $this->successResponse(null, 'Account deleted successfully');
+
+            } catch (Exception $e) {
+                // Rollback transaction on error
+                $this->db->rollBack();
+                throw $e;
+            }
+
+        } catch (Exception $e) {
+            $this->errorResponse('Failed to delete account: ' . $e->getMessage());
         }
     }
 

@@ -28,12 +28,23 @@ import {
   faAngleLeft,
   faInfoCircle,
   faPaperPlane,
-  faRedo
+  faRedo,
+  faFlask,
+  faCalendar,
+  faCompass,
+  faChevronLeft,
+  faChevronRight,
+  faCheck,
+  faChartBar,
+  faExclamationTriangle
 } from '@fortawesome/free-solid-svg-icons'
 import {
   faTwitter, faFacebook, faInstagram, faGithub,
   faFacebookF, faGoogle, faApple
 } from '@fortawesome/free-brands-svg-icons'
+import {
+  faCircle
+} from '@fortawesome/free-regular-svg-icons'
 
 // Add all icons to the library
 library.add(
@@ -55,7 +66,16 @@ library.add(
   faAngleLeft,
   faInfoCircle,
   faPaperPlane,
-  faRedo
+  faRedo,
+  faFlask,
+  faCircle,
+  faCalendar,
+  faCompass,
+  faChevronLeft,
+  faChevronRight,
+  faCheck,
+  faChartBar,
+  faExclamationTriangle
 )
 
 

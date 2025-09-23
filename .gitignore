@@ -7,12 +7,22 @@ node_modules/
 .env.local
 .env.production
 .env.development
+.env.*
 
 # Build artifacts
 /dist/
 /public/css/
 /public/js/
 /public/sounds/
+/public/index.html
+/public/index.php
+
+
+# Windows batch files
+*.bat
+
+# Database setup files
+*setup*.sql
 
 # Logs
 logs/

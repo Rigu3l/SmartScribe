@@ -122,14 +122,16 @@ class GPTController extends BaseController {
         $difficulty = $data['difficulty'] ?? 'medium';
         $questionCount = $data['questionCount'] ?? 5;
         $noteTitle = $data['noteTitle'] ?? 'this study material';
+        $quizType = $data['quizType'] ?? 'multiple_choice';
 
-        error_log("QUIZ GENERATION: Parameters - difficulty: $difficulty, questionCount: $questionCount, noteTitle: $noteTitle");
+        error_log("QUIZ GENERATION: Parameters - difficulty: $difficulty, questionCount: $questionCount, noteTitle: $noteTitle, quizType: $quizType");
         error_log("QUIZ GENERATION: Text length: " . strlen($data['text']));
 
         $options = [
             'difficulty' => $difficulty,
             'questionCount' => $questionCount,
-            'noteTitle' => $noteTitle
+            'noteTitle' => $noteTitle,
+            'quizType' => $quizType
         ];
 
         error_log("QUIZ GENERATION: Calling Quiz service...");
