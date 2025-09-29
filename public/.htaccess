@@ -3,10 +3,6 @@
    RewriteEngine On
    RewriteBase /
 
-   # Debug logging
-   RewriteLog logs/rewrite_debug.log
-   RewriteLogLevel 3
-
    # API requests are handled by Vue proxy - don't rewrite here
    # RewriteCond %{REQUEST_URI} ^/api/(.*)$
    # RewriteRule ^api/(.*)$ ../api/index.php [QSA,L]
