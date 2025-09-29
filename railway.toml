@@ -1,0 +1,20 @@
+[build]
+builder = "nixpacks"
+
+[deploy]
+startCommand = "apache2-foreground"
+
+[[services]]
+name = "smartscribe-fullstack"
+builder = "nixpacks"
+buildCommand = """
+composer install --no-dev --optimize-autoloader && \
+npm install && \
+npm run build
+"""
+startCommand = "apache2-foreground"
+
+# Environment variables
+[services.environment]
+APP_ENV = "production"
+APP_DEBUG = "false"

@@ -1,26 +1,36 @@
-# Production .htaccess for SmartScribe
 <IfModule mod_rewrite.c>
   RewriteEngine On
   RewriteBase /
 
-
-  # Handle API requests - support both /api/ and /SmartScribe/api/
-  RewriteCond %{REQUEST_URI} ^/SmartScribe/api/.*
-  RewriteRule ^SmartScribe/api/(.*)$ api/index.php [QSA,L]
-
-  RewriteCond %{REQUEST_URI} ^/api/.*
+  # API routes
+  RewriteCond %{REQUEST_URI} ^/api/(.*)$
   RewriteRule ^api/(.*)$ api/index.php [QSA,L]
 
-  # Allow direct access to uploaded files
-  RewriteCond %{REQUEST_URI} ^/uploads/.*
-  RewriteRule . - [L]
-
-  # Allow direct access to PHP files in root
-  RewriteCond %{REQUEST_URI} \.php$
-  RewriteRule . - [L]
-
-  # Handle Vue Router (for SPA)
+  # Vue.js SPA routing
   RewriteCond %{REQUEST_FILENAME} !-f
   RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule . index.html [L]
+  RewriteRule . public/index.php [L]
 </IfModule>
+
+# Security headers
+<IfModule mod_headers.c>
+  Header always set X-Content-Type-Options nosniff
+  Header always set X-Frame-Options DENY
+  Header always set X-XSS-Protection "1; mode=block"
+</IfModule>
+
+# Enable CORS for API
+<IfModule mod_headers.c>
+  <Location "/api/">
+    Header always set Access-Control-Allow-Origin "*"
+    Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+  </Location>
+</IfModule>
+
+# File upload security
+<FilesMatch "\.(php|php5|php4|php3|phtml)$">
+  <If "%{REQUEST_URI} !^/api/">
+    Require all denied
+  </If>
+</FilesMatch>
