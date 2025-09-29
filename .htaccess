@@ -36,7 +36,3 @@
    # Deny all other PHP files for security
    Require all denied
  </FilesMatch>
-
-# Debug logging for access issues
-LogLevel warn authz_core:debug
-ErrorLog logs/access_debug.log
