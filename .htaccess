@@ -24,9 +24,12 @@
   Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
 </IfModule>
 
-# File upload security
+# File upload security - Simplified for .htaccess compatibility
 <FilesMatch "\.(php|php5|php4|php3|phtml)$">
-  <If "%{REQUEST_URI} !^/api/">
-    Require all denied
-  </If>
+  # Allow API files
+  <Files "api/index.php">
+    Allow from all
+  </Files>
+  # Deny all other PHP files
+  Require all denied
 </FilesMatch>
