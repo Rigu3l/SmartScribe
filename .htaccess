@@ -26,13 +26,17 @@
 
 # File security - Allow necessary PHP files
 <FilesMatch "\.(php|php5|php4|php3|phtml)$">
-  # Allow specific files
-  <Files "api/index.php">
-    Allow from all
-  </Files>
-  <Files "public/index.php">
-    Allow from all
-  </Files>
-  # Deny all other PHP files for security
-  Require all denied
-</FilesMatch>
+   # Allow specific files
+   <Files "api/index.php">
+     Allow from all
+   </Files>
+   <Files "public/index.php">
+     Allow from all
+   </Files>
+   # Deny all other PHP files for security
+   Require all denied
+ </FilesMatch>
+
+# Debug logging for access issues
+LogLevel warn authz_core:debug
+ErrorLog logs/access_debug.log
