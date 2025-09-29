@@ -1,16 +1,20 @@
 <IfModule mod_rewrite.c>
-  RewriteEngine On
-  RewriteBase /
+   RewriteEngine On
+   RewriteBase /
 
-  # API routes
-  RewriteCond %{REQUEST_URI} ^/api/(.*)$
-  RewriteRule ^api/(.*)$ api/index.php [QSA,L]
+   # API routes
+   RewriteCond %{REQUEST_URI} ^/api/(.*)$
+   RewriteRule ^api/(.*)$ api/index.php [QSA,L]
 
-  # Vue.js SPA routing
-  RewriteCond %{REQUEST_FILENAME} !-f
-  RewriteCond %{REQUEST_FILENAME} !-d
-  RewriteRule . public/index.php [L]
-</IfModule>
+   # Allow access to public directory
+   RewriteCond %{REQUEST_URI} ^/public/(.*)$
+   RewriteRule ^public/(.*)$ public/$1 [QSA,L]
+
+   # Vue.js SPA routing
+   RewriteCond %{REQUEST_FILENAME} !-f
+   RewriteCond %{REQUEST_FILENAME} !-d
+   RewriteRule . public/index.php [L]
+ </IfModule>
 
 # Security headers
 <IfModule mod_headers.c>
@@ -26,13 +30,18 @@
 
 # File security - Allow necessary PHP files
 <FilesMatch "\.(php|php5|php4|php3|phtml)$">
-   # Allow specific files
+   # Allow specific files (Apache 2.4 syntax)
    <Files "api/index.php">
-     Allow from all
+     Require all granted
    </Files>
    <Files "public/index.php">
-     Allow from all
+     Require all granted
    </Files>
    # Deny all other PHP files for security
    Require all denied
  </FilesMatch>
+
+# Ensure public directory access
+<Directory "public/">
+   Require all granted
+</Directory>
