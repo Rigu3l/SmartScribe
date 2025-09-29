@@ -1,47 +1,20 @@
+# Simplified .htaccess for testing
 <IfModule mod_rewrite.c>
    RewriteEngine On
    RewriteBase /
 
-   # API routes
-   RewriteCond %{REQUEST_URI} ^/api/(.*)$
-   RewriteRule ^api/(.*)$ api/index.php [QSA,L]
-
-   # Allow access to public directory
-   RewriteCond %{REQUEST_URI} ^/public/(.*)$
-   RewriteRule ^public/(.*)$ public/$1 [QSA,L]
-
-   # Vue.js SPA routing
+   # Simple routing to public/index.php
    RewriteCond %{REQUEST_FILENAME} !-f
    RewriteCond %{REQUEST_FILENAME} !-d
    RewriteRule . public/index.php [L]
  </IfModule>
 
-# Security headers
+# Basic security headers only
 <IfModule mod_headers.c>
-  Header always set X-Content-Type-Options nosniff
-  Header always set X-Frame-Options DENY
-  Header always set X-XSS-Protection "1; mode=block"
+   Header always set X-Content-Type-Options nosniff
+ </IfModule>
 
-  # CORS headers for API routes
-  Header always set Access-Control-Allow-Origin "*"
-  Header always set Access-Control-Allow-Methods "GET, POST, PUT, DELETE, OPTIONS"
-  Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
-</IfModule>
-
-# File security - Allow necessary PHP files
-<FilesMatch "\.(php|php5|php4|php3|phtml)$">
-   # Allow specific files (Apache 2.4 syntax)
-   <Files "api/index.php">
-     Require all granted
-   </Files>
-   <Files "public/index.php">
-     Require all granted
-   </Files>
-   # Deny all other PHP files for security
-   Require all denied
- </FilesMatch>
-
-# Ensure public directory access
-<Directory "public/">
-   Require all granted
-</Directory>
+# Minimal file access (commented out for testing)
+# <FilesMatch "\.(php|php5|php4|php3|phtml)$">
+#    Require all granted
+# </FilesMatch>
